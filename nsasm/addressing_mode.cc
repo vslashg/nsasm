@@ -4,14 +4,11 @@
 
 namespace nsasm {
 
-std::string ArgsToString(AddressingMode addressing_mode, int arg1, int arg2,
-                         bool wide_mode) {
-  if (addressing_mode == A_imm_a) {
-    addressing_mode = wide_mode ? A_imm_w : A_imm_b;
-  }
+std::string ArgsToString(AddressingMode addressing_mode, int arg1, int arg2) {
   switch (addressing_mode) {
     case A_imp:
-    case A_acc: {
+    case A_acc:
+    default: {
       return "";
     }
     case A_imm_b: {
@@ -103,8 +100,6 @@ std::string ArgsToString(AddressingMode addressing_mode, int arg1, int arg2,
     case A_rel16: {
       return absl::StrFormat(" @%d", arg1);
     }
-    default:
-      return "";
   }
 }
 

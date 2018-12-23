@@ -61,21 +61,15 @@ constexpr BitState ConstrainedForEBit(BitState input, BitState e) {
 // sizes depend on the state of the flags.
 class FlagState {
  public:
-  // defaults to fully unknown state
-  constexpr FlagState()
-      : m_bit_(B_original),
-        x_bit_(B_original),
-        e_bit_(B_original),
-        pushed_m_bit_(B_unknown),
-        pushed_x_bit_(B_unknown),
-        c_bit_(B_unknown) {}
-
-  constexpr FlagState(BitState m_bit, BitState x_bit, BitState e_bit,
-                      BitState pushed_m_bit, BitState pushed_x_bit,
-                      BitState c_bit)
-      : m_bit_(ConstrainedForEBit(m_bit, e_bit)),
+  // Defaults to assuming 65816 native mode, but with otherwise unknown state.
+  constexpr FlagState(BitState e_bit = B_off, BitState m_bit = B_original,
+                      BitState x_bit = B_original,
+                      BitState pushed_m_bit = B_unknown,
+                      BitState pushed_x_bit = B_unknown,
+                      BitState c_bit = B_unknown)
+      : e_bit_(e_bit),
+        m_bit_(ConstrainedForEBit(m_bit, e_bit)),
         x_bit_(ConstrainedForEBit(x_bit, e_bit)),
-        e_bit_(e_bit),
         pushed_m_bit_(pushed_m_bit),
         pushed_x_bit_(pushed_x_bit),
         c_bit_(c_bit) {}
@@ -83,29 +77,43 @@ class FlagState {
   constexpr FlagState(const FlagState& rhs) = default;
   FlagState& operator=(const FlagState& rhs) = default;
 
+  BitState EBit() const { return e_bit_; }
+  BitState MBit() const { return m_bit_; }
+  BitState XBit() const { return x_bit_; }
+
   // The | operator merges two FlagStates into the superposition of their
   // states.  This is used to reflect all possible values for these bits
   // when an instruction can be reached over multiple code paths.
-  friend constexpr FlagState operator|(FlagState lhs, FlagState rhs) {
+  friend constexpr FlagState operator|(const FlagState& lhs,
+                                       const FlagState& rhs) {
     return FlagState(
-        lhs.m_bit_ | rhs.m_bit_, lhs.x_bit_ | rhs.x_bit_,
-        lhs.e_bit_ | rhs.e_bit_, lhs.pushed_m_bit_ | rhs.pushed_m_bit_,
+        lhs.e_bit_ | rhs.e_bit_, lhs.m_bit_ | rhs.m_bit_,
+        lhs.x_bit_ | rhs.x_bit_, lhs.pushed_m_bit_ | rhs.pushed_m_bit_,
         lhs.pushed_x_bit_ | rhs.pushed_x_bit_, lhs.c_bit_ | rhs.c_bit_);
   }
 
-  FlagState& operator|=(FlagState rhs) {
+  FlagState& operator|=(const FlagState& rhs) {
     *this = *this | rhs;
     return *this;
   }
+
+  bool operator==(const FlagState& rhs) const {
+    return std::tie(e_bit_, m_bit_, x_bit_, pushed_m_bit_, pushed_x_bit_,
+                    c_bit_) ==  //
+           std::tie(rhs.e_bit_, rhs.m_bit_, rhs.x_bit_, rhs.pushed_m_bit_,
+                    rhs.pushed_x_bit_, rhs.c_bit_);
+  }
+
+  bool operator!=(const FlagState& rhs) const { return !(*this == rhs); }
 
   // Returns the new state that results from executing the given instruction
   // from the current state.
   ABSL_MUST_USE_RESULT FlagState Execute(Mnemonic m, int arg1) const;
 
  private:
+  BitState e_bit_;
   BitState m_bit_;
   BitState x_bit_;
-  BitState e_bit_;
   BitState pushed_m_bit_;
   BitState pushed_x_bit_;
   BitState c_bit_;

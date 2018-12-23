@@ -10,7 +10,6 @@ enum AddressingMode : int {
   A_acc,     // A or ''    Accumulator (0 bytes)
   A_imm_b,   // #$12       Immediate fixed byte (1 byte) (REP/SEP/COP)
   A_imm_w,   // #$1234     Immediate fixed word (2 bytes) (PEA)
-  A_imm_a,   // #$12..     Immediate flex (1 or 2 bytes, runtime bit) (ADC)
   A_dir_b,   // $12        Direct page direct (1 byte)
   A_dir_w,   // $1234      Absolute direct (2 bytes)
   A_dir_l,   // $123456    Absolute long direct (3 bytes)
@@ -32,10 +31,14 @@ enum AddressingMode : int {
   A_mov,     // #$12,#$34  Source Destination (1 byte, 1 byte)
   A_rel8,    // label      Relative 8 (1 byte) (BEQ, etc.)
   A_rel16,   // label      Relative 16 (2 bytes) (BRL/PER)
+
+  // sentinel values, indicating an addressing mode dependent on processor flags
+  A_imm_fm,  // #$12..     Immediate fixed word (size based on m flag) (ADC)
+  A_imm_fx,  // #$12..     Immediate fixed word (size based on x flag) (LDX)
 };
 
 // Renders an argument list that can be appended to an instruction mnemonic.
-std::string ArgsToString(AddressingMode a, int arg1, int arg2, bool wide_mode);
+std::string ArgsToString(AddressingMode a, int arg1, int arg2);
 
 }  // namespace nsasm
 

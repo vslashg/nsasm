@@ -65,3 +65,16 @@ cc_test(
         "@gtest//:gtest_main",
     ],
 )
+
+
+cc_library(
+    name="opcode_map",
+    srcs=["opcode_map.cc"],
+    hdrs=["opcode_map.h"],
+    copts=NSASM_COPTS,
+    deps=[
+        ":addressing_mode",
+        ":flag_state",
+        ":mnemonic",
+    ],
+)
