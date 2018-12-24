@@ -82,5 +82,35 @@ TEST(AddressingMode, rendering) {
   }
 }
 
+TEST(AddressingMode, instruction_size) {
+  EXPECT_EQ(InstructionLength(A_imp), 1);
+  EXPECT_EQ(InstructionLength(A_acc), 1);
+  EXPECT_EQ(InstructionLength(A_imm_b), 2);
+  EXPECT_EQ(InstructionLength(A_imm_w), 3);
+  EXPECT_EQ(InstructionLength(A_dir_b), 2);
+  EXPECT_EQ(InstructionLength(A_dir_w), 3);
+  EXPECT_EQ(InstructionLength(A_dir_l), 4);
+  EXPECT_EQ(InstructionLength(A_dir_bx), 2);
+  EXPECT_EQ(InstructionLength(A_dir_by), 2);
+  EXPECT_EQ(InstructionLength(A_dir_wx), 3);
+  EXPECT_EQ(InstructionLength(A_dir_wy), 3);
+  EXPECT_EQ(InstructionLength(A_dir_lx), 4);
+  EXPECT_EQ(InstructionLength(A_ind_b), 2);
+  EXPECT_EQ(InstructionLength(A_ind_w), 3);
+  EXPECT_EQ(InstructionLength(A_ind_bx), 2);
+  EXPECT_EQ(InstructionLength(A_ind_by), 2);
+  EXPECT_EQ(InstructionLength(A_ind_wx), 3);
+  EXPECT_EQ(InstructionLength(A_lng_b), 2);
+  EXPECT_EQ(InstructionLength(A_lng_w), 3);
+  EXPECT_EQ(InstructionLength(A_lng_by), 2);
+  EXPECT_EQ(InstructionLength(A_stk), 2);
+  EXPECT_EQ(InstructionLength(A_stk_y), 2);
+  EXPECT_EQ(InstructionLength(A_mov), 3);
+  EXPECT_EQ(InstructionLength(A_rel8), 2);
+  EXPECT_EQ(InstructionLength(A_rel16), 3);
+  EXPECT_EQ(InstructionLength(A_imm_fm), -1);
+  EXPECT_EQ(InstructionLength(A_imm_fx), -1);
+}
+
 }  // namespace
 }  // namespace nsasm

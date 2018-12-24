@@ -96,11 +96,33 @@ std::string ArgsToString(AddressingMode addressing_mode, int arg1, int arg2) {
       arg2 &= 0xff;
       return absl::StrFormat(" #$%02x, #$%02x", arg1, arg2);
     }
-    case A_rel8:
+    case A_rel8: {
+      return " label8";
+    }
     case A_rel16: {
-      return absl::StrFormat(" @%d", arg1);
+      return " label16";
     }
   }
+}
+
+int InstructionLength(AddressingMode a) {
+  if (a == A_imp || a == A_acc) {
+    return 1;
+  }
+  if (a == A_imm_b || a == A_dir_b || a == A_dir_bx || a == A_dir_by ||
+      a == A_ind_b || a == A_ind_bx || a == A_ind_by || a == A_lng_b ||
+      a == A_lng_by || a == A_stk || a == A_stk_y || a == A_rel8) {
+    return 2;
+  }
+  if (a == A_imm_w || a == A_dir_w || a == A_dir_wx || a == A_dir_wy ||
+      a == A_ind_w || a == A_ind_wx || a == A_lng_w || a == A_mov ||
+      a == A_rel16) {
+    return 3;
+  }
+  if (a == A_dir_l || a == A_dir_lx) {
+    return 4;
+  }
+  return -1;
 }
 
 }  // namespace nsasm

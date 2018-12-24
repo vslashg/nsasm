@@ -3,18 +3,11 @@
 
 #include <cstdint>
 
-#include "nsasm/addressing_mode.h"
-#include "nsasm/mnemonic.h"
-#include "nsasm/flag_state.h"
+#include "nsasm/instruction.h"
 
 namespace nsasm {
 
-struct DecodedOp {
-  Mnemonic mnemonic;
-  AddressingMode mode;
-};
-
-DecodedOp DecodeOpcode(uint8_t opcode);
+Instruction DecodeOpcode(uint8_t opcode);
 
 }  // namespace nsasm
 

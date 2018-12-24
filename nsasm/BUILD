@@ -1,5 +1,7 @@
 NSASM_COPTS = ["--std=c++14"]
 
+package(default_visibility=["//visibility:public"])
+
 cc_library(
     name="mnemonic",
     srcs=["mnemonic.cc"],
@@ -46,12 +48,34 @@ cc_test(
 
 
 cc_library(
+    name="instruction",
+    hdrs=["instruction.h"],
+    copts=NSASM_COPTS,
+    deps=[
+        ":addressing_mode",
+        ":mnemonic",
+    ],
+)
+
+
+cc_library(
+    name="opcode_map",
+    srcs=["opcode_map.cc"],
+    hdrs=["opcode_map.h"],
+    copts=NSASM_COPTS,
+    deps=[
+        ":instruction",
+    ],
+)
+
+
+cc_library(
     name="flag_state",
     srcs=["flag_state.cc"],
     hdrs=["flag_state.h"],
     copts=NSASM_COPTS,
     deps=[
-        ":mnemonic",
+        ":instruction",
         "@absl//absl/base:core_headers",
     ],
 )
@@ -68,13 +92,13 @@ cc_test(
 
 
 cc_library(
-    name="opcode_map",
-    srcs=["opcode_map.cc"],
-    hdrs=["opcode_map.h"],
+    name="decode",
+    srcs=["decode.cc"],
+    hdrs=["decode.h"],
     copts=NSASM_COPTS,
     deps=[
-        ":addressing_mode",
         ":flag_state",
-        ":mnemonic",
+        ":instruction",
+        ":opcode_map",
     ],
 )

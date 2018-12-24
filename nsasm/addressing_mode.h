@@ -40,6 +40,11 @@ enum AddressingMode : int {
 // Renders an argument list that can be appended to an instruction mnemonic.
 std::string ArgsToString(AddressingMode a, int arg1, int arg2);
 
+// Returns the size of an instruction with the given addressing mode.
+//
+// Returns -1 on invalid input.
+int InstructionLength(AddressingMode a);
+
 }  // namespace nsasm
 
 #endif  // NSASM_ADDRESSING_MODE_H_

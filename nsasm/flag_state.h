@@ -4,7 +4,7 @@
 #include <cstdint>
 
 #include "absl/base/attributes.h"
-#include "nsasm/mnemonic.h"
+#include "nsasm/instruction.h"
 
 namespace nsasm {
 
@@ -108,7 +108,7 @@ class FlagState {
 
   // Returns the new state that results from executing the given instruction
   // from the current state.
-  ABSL_MUST_USE_RESULT FlagState Execute(Mnemonic m, int arg1) const;
+  ABSL_MUST_USE_RESULT FlagState Execute(Instruction i) const;
 
  private:
   BitState e_bit_;

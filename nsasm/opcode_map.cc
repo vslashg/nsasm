@@ -4,7 +4,7 @@ namespace nsasm {
 
 namespace {
 
-constexpr DecodedOp decode_map[256] = {
+constexpr Instruction decode_map[256] = {
   { M_brk, A_imm_b },   // 0x00
   { M_ora, A_ind_bx },  // 0x01
   { M_cop, A_imm_b },   // 0x02
@@ -264,5 +264,9 @@ constexpr DecodedOp decode_map[256] = {
 };
 
 }  // namespace
+
+Instruction DecodeOpcode(uint8_t opcode) {
+  return decode_map[opcode];
+}
 
 }  // namespace nsasm
