@@ -25,7 +25,7 @@ FlagState FlagState::Execute(Instruction i) const {
     if (i.arg1 & 0x10) {
       new_state.x_bit_ = ConstrainedForEBit(target, e_bit_);
     }
-    if (i.arg1 & 0x80) {
+    if (i.arg1 & 0x20) {
       new_state.m_bit_ = ConstrainedForEBit(target, e_bit_);
     }
     return new_state;
