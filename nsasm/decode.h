@@ -15,7 +15,7 @@ namespace nsasm {
 // If a valid instruction can't be found (because there aren't enough bytes to
 // read, or because the provided FlagState is uncertain about a processor flag
 // required for proper decoding), returns nullopt instead.
-absl::optional<Instruction> Decode(absl::Span<uint8_t> bytes,
+absl::optional<Instruction> Decode(absl::Span<const uint8_t> bytes,
                                    const FlagState& state);
 
 }  // namespace nsasm

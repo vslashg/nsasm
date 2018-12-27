@@ -102,3 +102,14 @@ cc_library(
         ":opcode_map",
     ],
 )
+
+
+cc_library(
+    name="rom",
+    srcs=["rom.cc"],
+    hdrs=["rom.h"],
+    copts=NSASM_COPTS,
+    deps=[
+        "@absl//absl/types:optional",
+    ],
+)

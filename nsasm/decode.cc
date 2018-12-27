@@ -4,7 +4,7 @@
 
 namespace nsasm {
 
-absl::optional<Instruction> Decode(absl::Span<uint8_t> bytes,
+absl::optional<Instruction> Decode(absl::Span<const uint8_t> bytes,
                                    const FlagState& state) {
   if (bytes.empty()) {
     return absl::nullopt;

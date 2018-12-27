@@ -2,6 +2,7 @@
 #include "absl/strings/str_format.h"
 #include "nsasm/decode.h"
 #include "nsasm/instruction.h"
+#include "nsasm/rom.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -10,7 +11,7 @@
 
 void usage(char* path) {
   absl::PrintF(
-      "Usage: %s <path-to-rom> <file-offset>\n\n"
+      "Usage: %s <path-to-rom> <snes-hex-address>\n\n"
       "Disassembles some code starting at the named offset.\n",
       path);
 }
@@ -21,35 +22,32 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  FILE* f = fopen(argv[1], "rb");
-  if (!f) {
-    absl::PrintF("Failure opening file.\n");
+  auto rom = nsasm::LoadRomFile(argv[1]);
+  if (!rom.has_value()) {
+    absl::PrintF("Failure reading ROM file.\n");
     return 1;
   }
 
-  int offset;
-  if (!absl::SimpleAtoi(argv[2], &offset)) {
+  unsigned rd_address;
+  if (!sscanf(argv[2], "%x", &rd_address)) {
     usage(argv[0]);
     return 1;
   }
+  int pc = rd_address;
 
-  if (fseek(f, offset, SEEK_SET) == -1) {
-    absl::PrintF("Unable to seek.\n");
-    return 1;
-  }
-
-  uint8_t buffer[4096];
-  size_t bytes_read = fread(buffer, 1, 4096, f);
-  absl::Span<uint8_t> data(buffer, bytes_read);
-  absl::PrintF("%x %x %x\n", data[0], data[1], data[2]);
-
-  // Assume we are in native mode, with one-byte registers.
+  // Assume we are in native mode, with one-byte A and X/Y.
   //
   // This is a wild guess but works for my ad-hoc testing purposes at the
   // moment.
   nsasm::FlagState flag_state(nsasm::B_off, nsasm::B_on, nsasm::B_on);
   while (true) {
-    auto instruction = nsasm::Decode(data, flag_state);
+    // read 4 bytes (max size of an instruction)
+    auto data = rom->Read(pc, 4);
+    if (!data.has_value()) {
+      absl::PrintF("failed to read data...\n");
+      return 0;
+    }
+    auto instruction = nsasm::Decode(*data, flag_state);
     if (!instruction.has_value()) {
       absl::PrintF("failed to decode...\n");
       return 0;
@@ -58,7 +56,7 @@ int main(int argc, char** argv) {
     int bytes_read = InstructionLength(instruction->addressing_mode);
     for (int i = 0; i < 4; ++i) {
       if (i < bytes_read) {
-        absl::PrintF("%02x ", data[i]);
+        absl::PrintF("%02x ", (*data)[i]);
       } else {
         absl::PrintF("   ");
       }
@@ -67,7 +65,7 @@ int main(int argc, char** argv) {
                  nsasm::ArgsToString(instruction->addressing_mode,
                                      instruction->arg1, instruction->arg2));
     flag_state = flag_state.Execute(*instruction);
-    data.remove_prefix(InstructionLength(instruction->addressing_mode));
+    pc = nsasm::AddToPC(pc, bytes_read);
   }
   return 0;
 }
