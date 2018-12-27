@@ -1,13 +1,13 @@
 #include "nsasm/opcode_map.h"
 
+#include <algorithm>
+#include <map>
+
 namespace nsasm {
 
 namespace {
 
-struct DecodeMapEntry {
-  Mnemonic mnemonic;
-  AddressingMode addressing_mode;
-};
+using DecodeMapEntry = std::pair<Mnemonic, AddressingMode>;
 
 constexpr DecodeMapEntry decode_map[256] = {
   { M_brk, A_imm_b },   // 0x00
@@ -166,9 +166,9 @@ constexpr DecodeMapEntry decode_map[256] = {
   { M_sta, A_dir_wy },  // 0x99
   { M_txs, A_imp },     // 0x9a
   { M_txy, A_imp },     // 0x9b
-  { M_stz, A_dir_l },   // 0x9c
+  { M_stz, A_dir_w },   // 0x9c
   { M_sta, A_dir_wx },  // 0x9d
-  { M_stz, A_dir_lx },  // 0x9e
+  { M_stz, A_dir_wx },  // 0x9e
   { M_sta, A_dir_lx },  // 0x9f
   { M_ldy, A_imm_fx },  // 0xa0
   { M_lda, A_ind_bx },  // 0xa1
@@ -268,13 +268,59 @@ constexpr DecodeMapEntry decode_map[256] = {
   { M_sbc, A_dir_lx },  // 0xff
 };
 
+std::map<DecodeMapEntry, uint8_t> MakeReverseOpcodeMap() {
+  std::map<DecodeMapEntry, uint8_t> reverse;
+  for (int i = 0; i < 256; ++i) {
+    DecodeMapEntry entry = decode_map[i];
+    reverse[entry] = i;
+    if (entry.second == A_imm_fm ||
+        entry.second == A_imm_fx) {
+      // add reverse lookup entries for the non-sentinel immediate modes
+      entry.second = A_imm_b;
+      reverse[entry] = i;
+      entry.second = A_imm_w;
+      reverse[entry] = i;
+    }
+  }
+  return reverse;
+}
+
+const std::map<DecodeMapEntry, uint8_t>& ReverseOpcodeMap() {
+  static auto* map =
+      new std::map<DecodeMapEntry, uint8_t>(MakeReverseOpcodeMap());
+  return *map;
+}
+
 }  // namespace
 
 Instruction DecodeOpcode(uint8_t opcode) {
   Instruction ins;
-  ins.mnemonic = decode_map[opcode].mnemonic;
-  ins.addressing_mode = decode_map[opcode].addressing_mode;
+  ins.mnemonic = decode_map[opcode].first;
+  ins.addressing_mode = decode_map[opcode].second;
   return ins;
+}
+
+bool IsConsistent(const Instruction& instruction, const FlagState& flag_state) {
+  // Round trip through the opcode map to determine if this is a valid
+  // instruction, and if so, to undo flag-state-based addressing mode
+  // calculations.
+  auto opcode_it = ReverseOpcodeMap().find(
+      std::make_pair(instruction.mnemonic, instruction.addressing_mode));
+  if (opcode_it == ReverseOpcodeMap().end()) {
+    return false;
+  }
+  DecodeMapEntry round_tripped = decode_map[opcode_it->second];
+
+  if (round_tripped.second == A_imm_fm) {
+    // only legal if we know the state of the `m` bit
+    return flag_state.MBit() == B_on || flag_state.MBit() == B_off;
+  } else if (round_tripped.second == A_imm_fx) {
+    // as above, but for the `x` bit
+    return flag_state.XBit() == B_on || flag_state.XBit() == B_off;
+  } else {
+    // this instruction is consistent regardless of the flag state
+    return true;
+  }
 }
 
 }  // namespace nsasm

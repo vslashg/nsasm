@@ -73,17 +73,6 @@ cc_library(
 
 
 cc_library(
-    name="opcode_map",
-    srcs=["opcode_map.cc"],
-    hdrs=["opcode_map.h"],
-    copts=NSASM_COPTS,
-    deps=[
-        ":instruction",
-    ],
-)
-
-
-cc_library(
     name="flag_state",
     srcs=["flag_state.cc"],
     hdrs=["flag_state.h"],
@@ -106,6 +95,27 @@ cc_test(
 
 
 cc_library(
+    name="opcode_map",
+    srcs=["opcode_map.cc"],
+    hdrs=["opcode_map.h"],
+    copts=NSASM_COPTS,
+    deps=[
+        ":flag_state",
+        ":instruction",
+    ],
+)
+
+cc_test(
+    name="opcode_map_test",
+    srcs=["opcode_map_test.cc"],
+    copts=NSASM_COPTS,
+    deps=[
+        ":opcode_map",
+        "@gtest//:gtest_main",
+    ],
+)
+
+cc_library(
     name="decode",
     srcs=["decode.cc"],
     hdrs=["decode.h"],
@@ -125,5 +135,18 @@ cc_library(
     copts=NSASM_COPTS,
     deps=[
         "@absl//absl/types:optional",
+    ],
+)
+
+
+cc_library(
+    name="disassemble",
+    srcs=["disassemble.cc"],
+    hdrs=["disassemble.h"],
+    copts=NSASM_COPTS,
+    deps=[
+        ":flag_state",
+        ":instruction",
+        ":rom",
     ],
 )

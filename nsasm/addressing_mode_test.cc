@@ -1,7 +1,7 @@
 #include "nsasm/addressing_mode.h"
-#include "nsasm/argument.h"
 
 #include "gtest/gtest.h"
+#include "nsasm/argument.h"
 
 namespace nsasm {
 namespace {
