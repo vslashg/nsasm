@@ -19,13 +19,14 @@ FlagState FlagState::Execute(Instruction i) const {
   // Instructions that clear or set status bits explicitly
   if (m == M_rep || m == M_sep) {
     BitState target = (m == M_rep) ? B_off : B_on;
-    if (i.arg1 & 0x01) {
+    int arg = i.arg1.ToValue();
+    if (arg & 0x01) {
       new_state.c_bit_ = target;
     }
-    if (i.arg1 & 0x10) {
+    if (arg & 0x10) {
       new_state.x_bit_ = ConstrainedForEBit(target, e_bit_);
     }
-    if (i.arg1 & 0x20) {
+    if (arg & 0x20) {
       new_state.m_bit_ = ConstrainedForEBit(target, e_bit_);
     }
     return new_state;

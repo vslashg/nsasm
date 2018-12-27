@@ -2,6 +2,7 @@
 #define NSASM_INSTRUCTION_H_
 
 #include "nsasm/addressing_mode.h"
+#include "nsasm/argument.h"
 #include "nsasm/mnemonic.h"
 
 namespace nsasm {
@@ -9,8 +10,8 @@ namespace nsasm {
 struct Instruction {
   Mnemonic mnemonic;
   AddressingMode addressing_mode;
-  int arg1;
-  int arg2;
+  Argument arg1;
+  Argument arg2;
 };
 
 }  // namespace nsasm

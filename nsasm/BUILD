@@ -27,11 +27,24 @@ cc_test(
 
 
 cc_library(
+    name="argument",
+    srcs=["argument.cc"],
+    hdrs=["argument.h"],
+    copts=NSASM_COPTS,
+    deps=[
+        "@absl//absl/strings",
+        "@absl//absl/strings:str_format",
+    ],
+)
+
+
+cc_library(
     name="addressing_mode",
     srcs=["addressing_mode.cc"],
     hdrs=["addressing_mode.h"],
     copts=NSASM_COPTS,
     deps=[
+        ":argument",
         "@absl//absl/strings:str_format",
     ],
 )
@@ -53,6 +66,7 @@ cc_library(
     copts=NSASM_COPTS,
     deps=[
         ":addressing_mode",
+        ":argument",
         ":mnemonic",
     ],
 )

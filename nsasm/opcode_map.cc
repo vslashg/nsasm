@@ -4,7 +4,12 @@ namespace nsasm {
 
 namespace {
 
-constexpr Instruction decode_map[256] = {
+struct DecodeMapEntry {
+  Mnemonic mnemonic;
+  AddressingMode addressing_mode;
+};
+
+constexpr DecodeMapEntry decode_map[256] = {
   { M_brk, A_imm_b },   // 0x00
   { M_ora, A_ind_bx },  // 0x01
   { M_cop, A_imm_b },   // 0x02
@@ -266,7 +271,10 @@ constexpr Instruction decode_map[256] = {
 }  // namespace
 
 Instruction DecodeOpcode(uint8_t opcode) {
-  return decode_map[opcode];
+  Instruction ins;
+  ins.mnemonic = decode_map[opcode].mnemonic;
+  ins.addressing_mode = decode_map[opcode].addressing_mode;
+  return ins;
 }
 
 }  // namespace nsasm

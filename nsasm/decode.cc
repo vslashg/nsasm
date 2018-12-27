@@ -1,5 +1,6 @@
 #include "nsasm/decode.h"
 
+#include "nsasm/argument.h"
 #include "nsasm/opcode_map.h"
 
 namespace nsasm {
@@ -34,7 +35,8 @@ absl::optional<Instruction> Decode(absl::Span<const uint8_t> bytes,
     if (bytes.size() < 3) {
       return absl::nullopt;
     }
-    decoded.arg1 = bytes[0] + (bytes[1] * 256) + (bytes[2] * 256 * 256);
+    decoded.arg1 =
+        Argument(bytes[0] + (bytes[1] * 256) + (bytes[2] * 256 * 256));
   }
   if (decoded.addressing_mode == A_imm_w ||
       decoded.addressing_mode == A_dir_w ||
@@ -47,7 +49,7 @@ absl::optional<Instruction> Decode(absl::Span<const uint8_t> bytes,
     if (bytes.size() < 2) {
       return absl::nullopt;
     }
-    decoded.arg1 = bytes[0] + (bytes[1] * 256);
+    decoded.arg1 = Argument(bytes[0] + (bytes[1] * 256));
   }
   if (decoded.addressing_mode == A_imm_b ||
       decoded.addressing_mode == A_dir_b ||
@@ -64,35 +66,37 @@ absl::optional<Instruction> Decode(absl::Span<const uint8_t> bytes,
     if (bytes.size() < 1) {
       return absl::nullopt;
     }
-    decoded.arg1 = bytes[0];
+    decoded.arg1 = Argument(bytes[0]);
   }
   if (decoded.addressing_mode == A_mov) {
     // pair of 8 bit arguments
     if (bytes.size() < 2) {
       return absl::nullopt;
     }
-    decoded.arg1 = bytes[0];
-    decoded.arg2 = bytes[1];
+    decoded.arg1 = Argument(bytes[0]);
+    decoded.arg2 = Argument(bytes[1]);
   }
   if (decoded.addressing_mode == A_rel8) {
     // 8 bit signed argument
     if (bytes.size() < 1) {
       return absl::nullopt;
     }
-    decoded.arg1 = bytes[0];
-    if (decoded.arg1 >= 128) {
-      decoded.arg1 -= 256;
+    int value = bytes[0];
+    if (value >= 128) {
+      value -= 256;
     }
+    decoded.arg1 = Argument(value);
   }
   if (decoded.addressing_mode == A_rel16) {
     // 8 bit signed argument
     if (bytes.size() < 2) {
       return absl::nullopt;
     }
-    decoded.arg1 = bytes[0] + (bytes[1] * 256);
-    if (decoded.arg1 >= 32768) {
-      decoded.arg1 -= 65536;
+    int value = bytes[0] + (bytes[1] * 256);
+    if (value >= 32768) {
+      value -= 65536;
     }
+    decoded.arg1 = Argument(value);
   }
   return decoded;
 }

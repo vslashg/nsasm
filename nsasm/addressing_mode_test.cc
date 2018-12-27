@@ -1,4 +1,5 @@
 #include "nsasm/addressing_mode.h"
+#include "nsasm/argument.h"
 
 #include "gtest/gtest.h"
 
@@ -77,7 +78,8 @@ TEST(AddressingMode, rendering) {
   int index = 0;
   for (const TestCase& test_case : test_cases) {
     SCOPED_TRACE(index++);
-    EXPECT_EQ(ArgsToString(test_case.mode, test_case.arg1, test_case.arg2),
+    EXPECT_EQ(ArgsToString(test_case.mode, Argument(test_case.arg1),
+                           Argument(test_case.arg2)),
               test_case.expected);
   }
 }
