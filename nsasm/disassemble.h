@@ -18,7 +18,7 @@ struct DisassembledInstruction {
 using Disassembly = std::map<int, DisassembledInstruction>;
 
 absl::optional<Disassembly> Disassemble(const Rom& rom, int starting_address,
-                                        FlagState initial_flag_state);
+                                        const FlagState& initial_flag_state);
 
 };
 

@@ -18,6 +18,7 @@ cc_binary(
         "@absl//absl/strings",
         "@absl//absl/strings:str_format",
         "//nsasm:decode",
+        "//nsasm:disassemble",
         "//nsasm:rom",
     ],
 )

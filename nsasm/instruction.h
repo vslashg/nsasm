@@ -12,6 +12,8 @@ struct Instruction {
   AddressingMode addressing_mode;
   Argument arg1;
   Argument arg2;
+
+  std::string ToString() const;
 };
 
 }  // namespace nsasm

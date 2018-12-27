@@ -1,6 +1,7 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
 #include "nsasm/decode.h"
+#include "nsasm/disassemble.h"
 #include "nsasm/instruction.h"
 #include "nsasm/rom.h"
 
@@ -40,32 +41,18 @@ int main(int argc, char** argv) {
   // This is a wild guess but works for my ad-hoc testing purposes at the
   // moment.
   nsasm::FlagState flag_state(nsasm::B_off, nsasm::B_on, nsasm::B_on);
-  while (true) {
-    // read 4 bytes (max size of an instruction)
-    auto data = rom->Read(pc, 4);
-    if (!data.has_value()) {
-      absl::PrintF("failed to read data...\n");
-      return 0;
+
+  auto disassembly = nsasm::Disassemble(*rom, pc, flag_state);
+  if (!disassembly.has_value()) {
+    absl::PrintF("Failed to disassemble.\n");
+  } else {
+    absl::PrintF("Disassembled %d instructions.\n", disassembly->size());
+    for (const auto& value : *disassembly) {
+      int pc = value.first;
+      std::string label = value.second.label;
+      const nsasm::Instruction& instruction = value.second.instruction;
+
+      absl::PrintF("%06x %-8s %s\n", pc, label, instruction.ToString());
     }
-    auto instruction = nsasm::Decode(*data, flag_state);
-    if (!instruction.has_value()) {
-      absl::PrintF("failed to decode...\n");
-      return 0;
-    }
-    // Print a hexdecimal representation of the bytes read
-    int bytes_read = InstructionLength(instruction->addressing_mode);
-    for (int i = 0; i < 4; ++i) {
-      if (i < bytes_read) {
-        absl::PrintF("%02x ", (*data)[i]);
-      } else {
-        absl::PrintF("   ");
-      }
-    }
-    absl::PrintF(" %s%s\n", nsasm::ToString(instruction->mnemonic),
-                 nsasm::ArgsToString(instruction->addressing_mode,
-                                     instruction->arg1, instruction->arg2));
-    flag_state = flag_state.Execute(*instruction);
-    pc = nsasm::AddToPC(pc, bytes_read);
   }
-  return 0;
 }

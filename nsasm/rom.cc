@@ -33,7 +33,7 @@ absl::optional<int> SnesToROMAddress(int snes_address, Mapping mapping) {
   return absl::nullopt;
 }
 
-absl::optional<std::vector<uint8_t>> Rom::Read(int address, int length) {
+absl::optional<std::vector<uint8_t>> Rom::Read(int address, int length) const {
   if (length == 0) {
     return std::vector<uint8_t>();
   }

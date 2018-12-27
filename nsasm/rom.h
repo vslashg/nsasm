@@ -41,7 +41,7 @@ class Rom {
   // addresses with the same logic as `AddToPC()` above.
   //
   // Returns nullopt instead if given an out-of-range read region.
-  absl::optional<std::vector<uint8_t>> Read(int address, int length);
+  absl::optional<std::vector<uint8_t>> Read(int address, int length) const;
 
  private:
   Mapping mapping_mode_;

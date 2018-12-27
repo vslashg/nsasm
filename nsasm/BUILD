@@ -62,6 +62,7 @@ cc_test(
 
 cc_library(
     name="instruction",
+    srcs=["instruction.cc"],
     hdrs=["instruction.h"],
     copts=NSASM_COPTS,
     deps=[
@@ -145,6 +146,7 @@ cc_library(
     hdrs=["disassemble.h"],
     copts=NSASM_COPTS,
     deps=[
+        ":decode",
         ":flag_state",
         ":instruction",
         ":rom",
