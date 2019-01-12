@@ -116,12 +116,25 @@ cc_test(
     ],
 )
 
+
+cc_library(
+    name="error",
+    srcs=["error.cc"],
+    hdrs=["error.h"],
+    deps=[
+        "@absl//absl/strings:str_format",
+        "@absl//absl/types:variant",
+    ]
+)
+
+
 cc_library(
     name="decode",
     srcs=["decode.cc"],
     hdrs=["decode.h"],
     copts=NSASM_COPTS,
     deps=[
+        ":error",
         ":flag_state",
         ":instruction",
         ":opcode_map",
@@ -135,7 +148,7 @@ cc_library(
     hdrs=["rom.h"],
     copts=NSASM_COPTS,
     deps=[
-        "@absl//absl/types:optional",
+        ":error",
     ],
 )
 
@@ -147,6 +160,7 @@ cc_library(
     copts=NSASM_COPTS,
     deps=[
         ":decode",
+        ":error",
         ":flag_state",
         ":instruction",
         ":rom",

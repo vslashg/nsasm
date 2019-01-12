@@ -3,6 +3,7 @@
 
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
+#include "nsasm/error.h"
 #include "nsasm/flag_state.h"
 #include "nsasm/instruction.h"
 
@@ -12,11 +13,11 @@ namespace nsasm {
 
 // Returns a 65816 instruction decoded from a chunk of memory.
 //
-// If a valid instruction can't be found (because there aren't enough bytes to
-// read, or because the provided FlagState is uncertain about a processor flag
-// required for proper decoding), returns nullopt instead.
-absl::optional<Instruction> Decode(absl::Span<const uint8_t> bytes,
-                                   const FlagState& state);
+// Returns an error f a valid instruction can't be found (because there aren't
+// enough bytes to read, or because the provided FlagState is uncertain about a
+// processor flag required for proper decoding).
+ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
+                            const FlagState& state);
 
 }  // namespace nsasm
 

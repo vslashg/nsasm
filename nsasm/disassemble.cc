@@ -4,6 +4,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "nsasm/decode.h"
+#include "nsasm/error.h"
 
 namespace nsasm {
 
@@ -19,20 +20,20 @@ bool IsExitInstruction(const Instruction& ins) {
 
 }  // namespace
 
-absl::optional<Disassembly> Disassemble(const Rom& rom, int starting_address,
-                                        const FlagState& initial_flag_state) {
+ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
+                                 const FlagState& initial_flag_state) {
   // Mapping of instruction addresses to decoded instructions
   Disassembly result;
 
   // label generator
   int gensym_count = 0;
-  auto gensym =
-      [&gensym_count]() { return absl::StrCat("gensym", ++gensym_count); };
+  auto gensym = [&gensym_count]() {
+    return absl::StrCat("gensym", ++gensym_count);
+  };
 
   // Mapping of instruction addresses to jump target label name
   std::map<int, std::string> label_names;
-  auto get_label =
-      [&label_names, &gensym](int address) {
+  auto get_label = [&label_names, &gensym](int address) {
     auto it = label_names.find(address);
     if (it == label_names.end()) {
       return label_names[address] = gensym();
@@ -70,16 +71,10 @@ absl::optional<Disassembly> Disassemble(const Rom& rom, int starting_address,
       // This is the first time we've seen this address.  Try to disassemble
       // it.
       auto instruction_data = rom.Read(pc, 4);
-      if (!instruction_data) {
-        // ERR: failed to read memory from address `pc`
-        return absl::nullopt;
-      }
+      NSASM_RETURN_IF_ERROR_WITH_LOCATION(instruction_data, rom.path(), pc);
       auto instruction = Decode(*instruction_data, current_flag_state);
-      if (!instruction) {
-        // ERR: count not decode instruction at `pc`.  (This is probably
-        // an ambiguous flag state problem.)
-        return absl::nullopt;
-      }
+      NSASM_RETURN_IF_ERROR_WITH_LOCATION(instruction, rom.path(), pc);
+
       int instruction_bytes = InstructionLength(instruction->addressing_mode);
 
       int next_pc = AddToPC(pc, instruction_bytes);

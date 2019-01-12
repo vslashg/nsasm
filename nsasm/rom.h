@@ -1,9 +1,10 @@
 #ifndef NSASM_ROM_H_
 #define NSASM_ROM_H_
 
-#include "absl/types/optional.h"
+#include "nsasm/error.h"
 
 #include <cstdint>
+#include <string>
 
 namespace nsasm {
 
@@ -21,7 +22,7 @@ enum Mapping {
 //
 // Returns nullopt if snes_address is out of range, or if it maps to an address
 // intercepted by the SNES (for work ram or memory-mapped registers, say.)
-absl::optional<int> SnesToROMAddress(int snes_address, Mapping mapping);
+ErrorOr<int> SnesToROMAddress(int snes_address, Mapping mapping);
 
 // Add the given offset to an address.  Adds do not carry over into the bank
 // word.  (In other words, byte 2 does not carry into byte 3.  This is a weird
@@ -34,21 +35,25 @@ constexpr int AddToPC(int address, int offset) {
 // Representation of a SNES ROM, presumably loaded from disk.
 class Rom {
  public:
-  Rom(Mapping mapping_mode, std::vector<uint8_t> data)
-      : mapping_mode_(mapping_mode), data_(std::move(data)) {}
+  Rom(Mapping mapping_mode, std::string path, std::vector<uint8_t> data)
+      : mapping_mode_(mapping_mode),
+        path_(std::move(path)),
+        data_(std::move(data)) {}
 
   // Returns `length` bytes of program data, starting at `address`, incrementing
   // addresses with the same logic as `AddToPC()` above.
   //
   // Returns nullopt instead if given an out-of-range read region.
-  absl::optional<std::vector<uint8_t>> Read(int address, int length) const;
+  ErrorOr<std::vector<uint8_t>> Read(int address, int length) const;
 
+  const std::string& path() const { return path_; }
  private:
   Mapping mapping_mode_;
+  std::string path_;
   std::vector<uint8_t> data_;
 };
 
-absl::optional<Rom> LoadRomFile(const std::string& path);
+ErrorOr<Rom> LoadRomFile(const std::string& path);
 
 }  // namespace nsasm
 

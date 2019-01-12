@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 
+#include "nsasm/error.h"
 #include "nsasm/flag_state.h"
 #include "nsasm/instruction.h"
 #include "nsasm/rom.h"
@@ -17,8 +18,8 @@ struct DisassembledInstruction {
 
 using Disassembly = std::map<int, DisassembledInstruction>;
 
-absl::optional<Disassembly> Disassemble(const Rom& rom, int starting_address,
-                                        const FlagState& initial_flag_state);
+ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
+                                 const FlagState& initial_flag_state);
 
 };
 

@@ -24,8 +24,8 @@ int main(int argc, char** argv) {
   }
 
   auto rom = nsasm::LoadRomFile(argv[1]);
-  if (!rom.has_value()) {
-    absl::PrintF("Failure reading ROM file.\n");
+  if (!rom.ok()) {
+    absl::PrintF("%s\n", rom.error().ToString());
     return 1;
   }
 
@@ -43,8 +43,8 @@ int main(int argc, char** argv) {
   nsasm::FlagState flag_state(nsasm::B_off, nsasm::B_on, nsasm::B_on);
 
   auto disassembly = nsasm::Disassemble(*rom, pc, flag_state);
-  if (!disassembly.has_value()) {
-    absl::PrintF("Failed to disassemble.\n");
+  if (!disassembly.ok()) {
+    absl::PrintF("%s\n", disassembly.error().ToString());
   } else {
     absl::PrintF("Disassembled %d instructions.\n", disassembly->size());
     for (const auto& value : *disassembly) {
