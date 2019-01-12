@@ -1,7 +1,6 @@
 #ifndef NSASM_DECODE_H_
 #define NSASM_DECODE_H_
 
-#include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "nsasm/error.h"
 #include "nsasm/flag_state.h"

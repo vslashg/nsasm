@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "nsasm/decode.h"
 #include "nsasm/error.h"
@@ -102,6 +103,21 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
       }
     } else {
       // If we were ambitious, we could back-propogate new flag state info here.
+    }
+  }
+
+  // Currently all labels are "gensym#"; change them to "label#" in order of appearance.
+  int i = 0;
+  absl::flat_hash_map<std::string, std::string> label_rewrite;
+  for (auto& node : label_names) {
+    std::string new_label = absl::StrCat("label", ++i);
+    label_rewrite[node.second] = new_label;
+    node.second = new_label;
+  }
+  for (auto& node : result) {
+    Argument& arg1 = node.second.instruction.arg1;
+    if (!arg1.Label().empty()) {
+      arg1 = Argument(arg1.ToValue(), label_rewrite[arg1.Label()]);
     }
   }
 
