@@ -19,14 +19,34 @@ FlagState FlagState::Execute(Instruction i) const {
   // Instructions that clear or set status bits explicitly
   if (m == M_rep || m == M_sep) {
     BitState target = (m == M_rep) ? B_off : B_on;
-    int arg = i.arg1.ToValue();
-    if (arg & 0x01) {
+    auto arg = i.arg1.ToValue();
+    if (!arg.has_value()) {
+      // If REP or SEP are invoked with an unknown argument (a constant pulled
+      // from another module, say), we will have to account for the ambiguity.
+      //
+      // Each bit will either be set to `target` or else left alone.  If the
+      // current value of a bit is equal to `target`, it's unchanged; otherwise
+      // it becomes ambiguous.
+      if (c_bit_ != target) {
+        new_state.c_bit_ = B_unknown;
+      }
+      if (x_bit_ != target) {
+        new_state.x_bit_ = ConstrainedForEBit(B_unknown, e_bit_);
+      }
+      if (m_bit_ != target) {
+        new_state.m_bit_ = ConstrainedForEBit(B_unknown, e_bit_);
+      }
+      return new_state;
+    }
+
+    // If the argument is known, we can set the effected bits.
+    if (*arg & 0x01) {
       new_state.c_bit_ = target;
     }
-    if (arg & 0x10) {
+    if (*arg & 0x10) {
       new_state.x_bit_ = ConstrainedForEBit(target, e_bit_);
     }
-    if (arg & 0x20) {
+    if (*arg & 0x20) {
       new_state.m_bit_ = ConstrainedForEBit(target, e_bit_);
     }
     return new_state;

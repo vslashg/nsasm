@@ -34,6 +34,7 @@ cc_library(
     deps=[
         "@absl//absl/strings",
         "@absl//absl/strings:str_format",
+        "@absl//absl/types:optional",
     ],
 )
 

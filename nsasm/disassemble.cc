@@ -85,9 +85,9 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
       // need to add that address to code we should try to disassemble.
       if (instruction->addressing_mode == A_rel8 ||
           instruction->addressing_mode == A_rel16) {
-        int value = instruction->arg1.ToValue();
+        int value = *instruction->arg1.ToValue();
         int target = AddToPC(next_pc, value);
-        instruction->arg1 = Argument(value, get_label(target));
+        instruction->arg1.SetLabel(get_label(target));
         add_to_decode_stack(target, new_flag_state);
       }
 
@@ -117,7 +117,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
   for (auto& node : result) {
     Argument& arg1 = node.second.instruction.arg1;
     if (!arg1.Label().empty()) {
-      arg1 = Argument(arg1.ToValue(), label_rewrite[arg1.Label()]);
+      arg1.SetLabel(label_rewrite[arg1.Label()]);
     }
   }
 

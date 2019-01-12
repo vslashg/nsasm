@@ -17,7 +17,8 @@ void CheckToString(Mnemonic m, std::string s) {
   EXPECT_EQ(*ToMnemonic(s), m);
 }
 
-#define CHECK_TO_STRING(name) CheckToString(M_ ## name, #name)
+#define CHECK_TO_STRING(name) CheckToString(M_##name, #name)
+#define CHECK_PSEUDO_TO_STRING(name) CheckToString(PM_##name, #name)
 
 TEST(Opcodes, string_conversions) {
   CHECK_TO_STRING(adc);
@@ -111,6 +112,8 @@ TEST(Opcodes, string_conversions) {
   CHECK_TO_STRING(wdm);
   CHECK_TO_STRING(xba);
   CHECK_TO_STRING(xce);
+  CHECK_PSEUDO_TO_STRING(add);
+  CHECK_PSEUDO_TO_STRING(sub);
 
   // Invalid strings should not be converted
   EXPECT_FALSE(ToMnemonic("").has_value());
