@@ -107,6 +107,11 @@ enum Mnemonic : int {
   M_sec,
   M_sep,
   M_xce,
+
+  // END REAL MNEMONICS.  PSEUDO-OPS BEYOND THIS POINT
+
+  PM_add,  // ADD is add without carry -- CLC followed by ADC
+  PM_sub,  // SUB is subtract without carry - CLC followed by SBC
 };
 
 // Conversions between Mnemonic values, and the matching strings.

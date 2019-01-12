@@ -16,13 +16,13 @@ constexpr absl::string_view mnemonic_names[] = {
     "TSB", "TSC", "TSX", "TXA", "TXS", "TXY", "TYA", "TYX", "WAI", "WDM", "XBA",
     "BCC", "BCS", "BEQ", "BMI", "BNE", "BPL", "BRA", "BRK", "BRL", "BVC", "BVS",
     "COP", "JMP", "JSL", "JSR", "RTI", "RTL", "RTS", "CLC", "PHP", "PLP", "REP",
-    "SEC", "SEP", "XCE",
+    "SEC", "SEP", "XCE", "ADD", "SUB",
 };
 
 }  // namespace
 
 absl::string_view ToString(Mnemonic m) {
-  if (m < M_adc || m > M_xce) {
+  if (m < M_adc || m > PM_sub) {
     return "";
   }
   return mnemonic_names[m];
@@ -52,7 +52,8 @@ absl::optional<Mnemonic> ToMnemonic(std::string s) {
       {"BVS", M_bvs}, {"COP", M_cop}, {"JMP", M_jmp}, {"JSL", M_jsl},
       {"JSR", M_jsr}, {"RTI", M_rti}, {"RTL", M_rtl}, {"RTS", M_rts},
       {"CLC", M_clc}, {"PHP", M_php}, {"PLP", M_plp}, {"REP", M_rep},
-      {"SEC", M_sec}, {"SEP", M_sep}, {"XCE", M_xce},
+      {"SEC", M_sec}, {"SEP", M_sep}, {"XCE", M_xce}, {"ADD", PM_add},
+      {"SUB", PM_sub},
   };
   absl::AsciiStrToUpper(&s);
   auto iter = lookup.find(s);

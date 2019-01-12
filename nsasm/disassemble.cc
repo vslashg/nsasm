@@ -125,6 +125,33 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
   for (const auto& label_name : label_names) {
     result[label_name.first].label = label_name.second;
   }
+
+  // Pseudo-op folding.  Merge CLC/ADC and CLC/SBC into ADD and SUB, respectively.
+  auto iter = result.begin();
+  while (iter != result.end()) {
+    auto next_iter = std::next(iter);
+    if (next_iter == result.end()) {
+      break;
+    }
+    if (iter->second.instruction.mnemonic == M_clc &&
+        next_iter->second.instruction.mnemonic == M_adc &&
+        next_iter->second.label.empty()) {
+      iter->second.instruction = next_iter->second.instruction;
+      iter->second.instruction.mnemonic = PM_add;
+      result.erase(next_iter);
+      continue;
+    }
+    if (iter->second.instruction.mnemonic == M_clc &&
+        next_iter->second.instruction.mnemonic == M_sbc &&
+        next_iter->second.label.empty()) {
+      iter->second.instruction = next_iter->second.instruction;
+      iter->second.instruction.mnemonic = PM_sub;
+      result.erase(next_iter);
+      continue;
+    }
+    iter = next_iter;
+  }
+
   return result;
 }
 
