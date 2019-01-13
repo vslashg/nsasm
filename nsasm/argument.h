@@ -18,11 +18,11 @@ class Argument {
   //
   // (Later this will have to account for the case when a value is unknown, for
   // labels and expressions not evaluable until link time.)
-  absl::optional<int> ToValue() const { return value_; };
+  absl::optional<int> ToValue() const { return value_; }
 
   // Returns the name of the label representing this argument, or an empty
   // string view if this argument is not a label.
-  absl::string_view Label() const { return label_; };
+  absl::string_view Label() const { return label_; }
 
   // Sets the label of an existing argument.
   void SetLabel(absl::string_view label) { label_ = std::string(label); }
