@@ -167,3 +167,15 @@ cc_library(
         ":rom",
     ],
 )
+
+
+cc_library(
+    name="token",
+    srcs=["token.cc"],
+    hdrs=["token.h"],
+    copts=NSASM_COPTS,
+    deps=[
+        ":error",
+        ":mnemonic",
+    ],
+)
