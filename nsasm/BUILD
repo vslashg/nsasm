@@ -180,3 +180,13 @@ cc_library(
         ":mnemonic",
     ],
 )
+
+cc_test(
+    name="token_test",
+    srcs=["token_test.cc"],
+    copts=NSASM_COPTS,
+    deps=[
+        ":token",
+        "@gtest//:gtest_main",
+    ],
+)

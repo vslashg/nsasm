@@ -58,8 +58,8 @@ class ErrorOr {
 
   const T& operator*() const& { return absl::get<T>(value); }
   T& operator*() & { return absl::get<T>(value); }
-  const T&& operator*() const&& { return absl::get<T>(value); }
-  T&& operator*() && { return absl::get<T>(value); }
+  const T&& operator*() const&& { return absl::get<T>(std::move(value)); }
+  T&& operator*() && { return absl::get<T>(std::move(value)); }
 
   const T* operator->() const { return &absl::get<T>(value); }
   T* operator->() { return &absl::get<T>(value); }
@@ -87,5 +87,12 @@ class ErrorOr {
       return v.error().SetLocation(__VA_ARGS__);    \
     }                                               \
   } while (0)
+
+#define NSASM_EXPECT_OK(v, ...) \
+  EXPECT_EQ(v.ok() ? "ok" : v.error().ToString(), "ok")
+
+#define NSASM_ASSERT_OK(v, ...) \
+  ASSERT_EQ(v.ok() ? "ok" : v.error().ToString(), "ok")
+
 
 #endif  // NSASM_ERROR_H_

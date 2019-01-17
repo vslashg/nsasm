@@ -110,6 +110,7 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
       }
       // Not a reserved word, so it's an identifier
       result.emplace_back(identifier, loc);
+      continue;
     }
 
     // none of the above
