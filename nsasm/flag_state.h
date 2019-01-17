@@ -6,6 +6,31 @@
 #include "absl/base/attributes.h"
 #include "nsasm/instruction.h"
 
+// The flag state tracks whether the 65816 is in emulation mode or native mode,
+// and if in native mode, the value of the `m` and `x` status bits.  It also
+// tracks the status of the `c` (carry) bit, since the emulation bit can only
+// bet set via the carry bit, and keeps limited track of the `m` and `x` status
+// bits as they have been pushed on the stack.
+//
+// Bit states can be converted to names and back, for use in assembly directives
+// and error messages.  These names do not fully express all possible bit combinations,
+// but are intended to capture useful ones.  Some such names are:
+//
+// unk (when the emulation state is unknown)
+// emu (emulation mode)
+// m8x8 (native mode, `m` and `x` bits on, 8 bits wide)
+// m8x16
+// m16x16
+// m?x? (`m` and `x` in unknown state)
+// m*x* (`m` and `x` in original state)
+//
+// The last two deserve some further explanation.  `*` as a bit value
+// represents the "original" input state to a subroutine.  This is used
+// to track an unknown bit state that the subroutine promises to return
+// to that state before returning.  `?` represents a true unknown state,
+// with no promise to be returned.  These two values are represented with
+// B_original and B_unknown below.
+
 namespace nsasm {
 
 // Possible states of a status bit, for the purposes of static analysis.
@@ -77,9 +102,15 @@ class FlagState {
   constexpr FlagState(const FlagState& rhs) = default;
   FlagState& operator=(const FlagState& rhs) = default;
 
+  // Returns a FlagState reflecting the given name, or `nullopt` if the name is
+  // not valid.
+  static absl::optional<FlagState> FromName(absl::string_view name);
+
   BitState EBit() const { return e_bit_; }
   BitState MBit() const { return m_bit_; }
   BitState XBit() const { return x_bit_; }
+
+  std::string ToName() const;
 
   // The | operator merges two FlagStates into the superposition of their
   // states.  This is used to reflect all possible values for these bits

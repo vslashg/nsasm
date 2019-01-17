@@ -82,6 +82,7 @@ cc_library(
     deps=[
         ":instruction",
         "@absl//absl/base:core_headers",
+        "@absl//absl/strings",
     ],
 )
 
