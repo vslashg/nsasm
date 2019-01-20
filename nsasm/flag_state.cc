@@ -103,10 +103,14 @@ FlagState FlagState::Execute(Instruction i) const {
   Mnemonic m = i.mnemonic;
   // Instructions that clear or set carry bit (used to prime the XCE
   // instruction, which swaps the carry bit and emulation bit.)
-  if (m == M_sec) {
+  //
+  // BCC and BCS essentially set and clear the c bit for the next instruction,
+  // respectively, because if the bit is in the opposite state, we will branch
+  // instead.
+  if (m == M_sec || m == M_bcc) {
     new_state.c_bit_ = B_on;
     return new_state;
-  } else if (m == M_clc) {
+  } else if (m == M_clc || m == M_bcs) {
     new_state.c_bit_ = B_off;
     return new_state;
   }
@@ -181,6 +185,17 @@ FlagState FlagState::Execute(Instruction i) const {
   }
 
   // Other instructions don't effect the flag state.
+  return new_state;
+}
+
+FlagState FlagState::ExecuteBranch(Instruction i) const {
+  FlagState new_state = Execute(i);
+  Mnemonic m = i.mnemonic;
+  if (m == M_bcc) {
+    new_state.c_bit_ = B_off;
+  } else if (m == M_bcs) {
+    new_state.c_bit_ = B_on;
+  }
   return new_state;
 }
 

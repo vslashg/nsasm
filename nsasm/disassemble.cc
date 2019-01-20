@@ -6,6 +6,7 @@
 #include "absl/strings/str_cat.h"
 #include "nsasm/decode.h"
 #include "nsasm/error.h"
+#include "nsasm/opcode_map.h"
 
 namespace nsasm {
 
@@ -55,7 +56,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
     if (it == decode_stack.end()) {
       decode_stack[address] = state;
     } else {
-      decode_stack[address] |= state;
+      it->second |= state;
     }
   };
   decode_stack[starting_address] = initial_flag_state;
@@ -68,7 +69,8 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
     int pc = next.first;
     const FlagState& current_flag_state = next.second;
 
-    if (result.count(pc) == 0) {
+    auto existing_instruction_iter = result.find(pc);
+    if (existing_instruction_iter == result.end()) {
       // This is the first time we've seen this address.  Try to disassemble
       // it.
       auto instruction_data = rom.Read(pc, 4);
@@ -79,7 +81,8 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
       int instruction_bytes = InstructionLength(instruction->addressing_mode);
 
       int next_pc = AddToPC(pc, instruction_bytes);
-      const FlagState new_flag_state = current_flag_state.Execute(*instruction);
+      const FlagState next_flag_state =
+          current_flag_state.Execute(*instruction);
 
       // If this instruction is relatively addressed, we need a label, and
       // need to add that address to code we should try to disassemble.
@@ -88,26 +91,58 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
         int value = *instruction->arg1.ToValue();
         int target = AddToPC(next_pc, value);
         instruction->arg1.SetLabel(get_label(target));
-        add_to_decode_stack(target, new_flag_state);
+        const FlagState branch_flag_state =
+            current_flag_state.ExecuteBranch(*instruction);
+        add_to_decode_stack(target, branch_flag_state);
       }
 
       // We've decoded an instruction!  Store it.
       DisassembledInstruction di;
       di.instruction = *instruction;
-      di.flag_state = new_flag_state;
+      di.current_flag_state = current_flag_state;
+      di.next_flag_state = next_flag_state;
       result[pc] = std::move(di);
 
       // If this instruction doesn't terminate the subroutine, we need to
       // execute the next line as well.
       if (!IsExitInstruction(*instruction)) {
-        add_to_decode_stack(next_pc, new_flag_state);
+        add_to_decode_stack(next_pc, next_flag_state);
       }
     } else {
-      // If we were ambitious, we could back-propogate new flag state info here.
+      // We've been here before.  Weaken the incoming state bits for this
+      // instruction to allow for the new input flag state.  If this represents
+      // a change, check that the resulting state is still consistent, and
+      // propagate the changed flag state bits forward.
+      DisassembledInstruction& di = existing_instruction_iter->second;
+      FlagState combined_flag_state =
+          current_flag_state | di.current_flag_state;
+      if (combined_flag_state != di.current_flag_state) {
+        if (!IsConsistent(di.instruction, combined_flag_state)) {
+          return Error(
+                     "Instruction %s can be reached with inconsistent status "
+                     "bits, and cannot be consistently decoded.",
+                     di.instruction.ToString())
+              .SetLocation(rom.path(), pc);
+        }
+        di.current_flag_state = combined_flag_state;
+        di.next_flag_state = combined_flag_state.Execute(di.instruction);
+        int instruction_bytes =
+            InstructionLength(di.instruction.addressing_mode);
+        int next_pc = AddToPC(pc, instruction_bytes);
+        add_to_decode_stack(next_pc, di.next_flag_state);
+        if (di.instruction.addressing_mode == A_rel8 ||
+            di.instruction.addressing_mode == A_rel16) {
+          int value = *di.instruction.arg1.ToValue();
+          int target = AddToPC(next_pc, value);
+          add_to_decode_stack(
+              target, combined_flag_state.ExecuteBranch(di.instruction));
+        }
+      }
     }
   }
 
-  // Currently all labels are "gensym#"; change them to "label#" in order of appearance.
+  // Currently all labels are "gensym#"; change them to "label#" in order of
+  // appearance.
   int i = 0;
   absl::flat_hash_map<std::string, std::string> label_rewrite;
   for (auto& node : label_names) {
@@ -127,7 +162,8 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
     result[label_name.first].label = label_name.second;
   }
 
-  // Pseudo-op folding.  Merge CLC/ADC and CLC/SBC into ADD and SUB, respectively.
+  // Pseudo-op folding.  Merge CLC/ADC and CLC/SBC into ADD and SUB,
+  // respectively.
   auto iter = result.begin();
   while (iter != result.end()) {
     auto next_iter = std::next(iter);
@@ -139,7 +175,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
         next_iter->second.label.empty()) {
       iter->second.instruction = next_iter->second.instruction;
       iter->second.instruction.mnemonic = PM_add;
-      iter->second.flag_state = next_iter->second.flag_state;
+      iter->second.next_flag_state = next_iter->second.next_flag_state;
       result.erase(next_iter);
       continue;
     }
@@ -148,7 +184,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
         next_iter->second.label.empty()) {
       iter->second.instruction = next_iter->second.instruction;
       iter->second.instruction.mnemonic = PM_sub;
-      iter->second.flag_state = next_iter->second.flag_state;
+      iter->second.next_flag_state = next_iter->second.next_flag_state;
       result.erase(next_iter);
       continue;
     }

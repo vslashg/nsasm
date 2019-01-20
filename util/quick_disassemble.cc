@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
 
       std::string text =
           absl::StrFormat("%06x %-8s %s", pc, label, instruction.ToString());
-      absl::PrintF("%-30s ;%s\n", text, value.second.flag_state.ToString());
+      absl::PrintF("%-30s ;%s\n", text, value.second.next_flag_state.ToString());
     }
   }
 }
