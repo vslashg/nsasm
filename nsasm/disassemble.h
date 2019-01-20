@@ -14,6 +14,7 @@ namespace nsasm {
 struct DisassembledInstruction {
   std::string label;
   Instruction instruction;
+  FlagState flag_state;
 };
 
 using Disassembly = std::map<int, DisassembledInstruction>;

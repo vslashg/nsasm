@@ -110,7 +110,11 @@ class FlagState {
   BitState MBit() const { return m_bit_; }
   BitState XBit() const { return x_bit_; }
 
+  // Returns the name of this flag state.
   std::string ToName() const;
+
+  // Returns a human-readable representation of this flag state.
+  std::string ToString() const;
 
   // The | operator merges two FlagStates into the superposition of their
   // states.  This is used to reflect all possible values for these bits

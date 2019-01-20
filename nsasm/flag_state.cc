@@ -65,6 +65,12 @@ std::string FlagState::ToName() const {
   }
 }
 
+std::string FlagState::ToString() const {
+  const char* c_bit_str =
+      (c_bit_ == B_on) ? ", c=1" : (c_bit_ == B_off) ? ", c=0" : "";
+  return absl::StrCat(ToName(), c_bit_str);
+}
+
 absl::optional<FlagState> FlagState::FromName(absl::string_view name) {
   std::string lower_name_str = absl::AsciiStrToLower(name);
   absl::string_view lower_name = lower_name_str;

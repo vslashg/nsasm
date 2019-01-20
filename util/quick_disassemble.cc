@@ -52,7 +52,9 @@ int main(int argc, char** argv) {
       std::string label = value.second.label;
       const nsasm::Instruction& instruction = value.second.instruction;
 
-      absl::PrintF("%06x %-8s %s\n", pc, label, instruction.ToString());
+      std::string text =
+          absl::StrFormat("%06x %-8s %s", pc, label, instruction.ToString());
+      absl::PrintF("%-30s ;%s\n", text, value.second.flag_state.ToString());
     }
   }
 }

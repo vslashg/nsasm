@@ -94,6 +94,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
       // We've decoded an instruction!  Store it.
       DisassembledInstruction di;
       di.instruction = *instruction;
+      di.flag_state = new_flag_state;
       result[pc] = std::move(di);
 
       // If this instruction doesn't terminate the subroutine, we need to
@@ -138,6 +139,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
         next_iter->second.label.empty()) {
       iter->second.instruction = next_iter->second.instruction;
       iter->second.instruction.mnemonic = PM_add;
+      iter->second.flag_state = next_iter->second.flag_state;
       result.erase(next_iter);
       continue;
     }
@@ -146,6 +148,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
         next_iter->second.label.empty()) {
       iter->second.instruction = next_iter->second.instruction;
       iter->second.instruction.mnemonic = PM_sub;
+      iter->second.flag_state = next_iter->second.flag_state;
       result.erase(next_iter);
       continue;
     }
