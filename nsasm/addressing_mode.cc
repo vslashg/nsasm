@@ -4,8 +4,8 @@
 
 namespace nsasm {
 
-std::string ArgsToString(AddressingMode addressing_mode, Argument arg1,
-                         Argument arg2) {
+std::string ArgsToString(AddressingMode addressing_mode, const Expression& arg1,
+                         const Expression& arg2) {
   switch (addressing_mode) {
     case A_imp:
     case A_acc:
@@ -13,71 +13,71 @@ std::string ArgsToString(AddressingMode addressing_mode, Argument arg1,
       return "";
     }
     case A_imm_b: {
-      return absl::StrFormat(" #%s", arg1.ToString(1));
+      return absl::StrFormat(" #%s", arg1.ToString(N_byte));
     }
     case A_imm_w: {
-      return absl::StrFormat(" #%s", arg1.ToString(2));
+      return absl::StrFormat(" #%s", arg1.ToString(N_word));
     }
     case A_dir_b: {
-      return absl::StrFormat(" %s", arg1.ToString(1));
+      return absl::StrFormat(" %s", arg1.ToString(N_byte));
     }
     case A_dir_w: {
-      return absl::StrFormat(" %s", arg1.ToString(2));
+      return absl::StrFormat(" %s", arg1.ToString(N_word));
     }
     case A_dir_l: {
-      return absl::StrFormat(" %s", arg1.ToString(3));
+      return absl::StrFormat(" %s", arg1.ToString(N_long));
     }
     case A_dir_bx: {
-      return absl::StrFormat(" %s, X", arg1.ToString(1));
+      return absl::StrFormat(" %s, X", arg1.ToString(N_byte));
     }
     case A_dir_by: {
-      return absl::StrFormat(" %s, Y", arg1.ToString(1));
+      return absl::StrFormat(" %s, Y", arg1.ToString(N_byte));
     }
     case A_dir_wx: {
-      return absl::StrFormat(" %s, X", arg1.ToString(2));
+      return absl::StrFormat(" %s, X", arg1.ToString(N_word));
     }
     case A_dir_wy: {
-      return absl::StrFormat(" %s, Y", arg1.ToString(2));
+      return absl::StrFormat(" %s, Y", arg1.ToString(N_word));
     }
     case A_dir_lx: {
-      return absl::StrFormat(" %s, X", arg1.ToString(3));
+      return absl::StrFormat(" %s, X", arg1.ToString(N_long));
     }
     case A_ind_b: {
-      return absl::StrFormat(" (%s)", arg1.ToString(1));
+      return absl::StrFormat(" (%s)", arg1.ToString(N_byte));
     }
     case A_ind_w: {
-      return absl::StrFormat(" (%s)", arg1.ToString(2));
+      return absl::StrFormat(" (%s)", arg1.ToString(N_word));
     }
     case A_ind_bx: {
-      return absl::StrFormat(" (%s, X)", arg1.ToString(1));
+      return absl::StrFormat(" (%s, X)", arg1.ToString(N_byte));
     }
     case A_ind_by: {
-      return absl::StrFormat(" (%s), Y", arg1.ToString(1));
+      return absl::StrFormat(" (%s), Y", arg1.ToString(N_byte));
     }
     case A_ind_wx: {
-      return absl::StrFormat(" (%s, X)", arg1.ToString(2));
+      return absl::StrFormat(" (%s, X)", arg1.ToString(N_word));
     }
     case A_lng_b: {
-      return absl::StrFormat(" [%s]", arg1.ToString(1));
+      return absl::StrFormat(" [%s]", arg1.ToString(N_byte));
     }
     case A_lng_w: {
-      return absl::StrFormat(" [%s]", arg1.ToString(2));
+      return absl::StrFormat(" [%s]", arg1.ToString(N_word));
     }
     case A_lng_by: {
-      return absl::StrFormat(" [%s], Y", arg1.ToString(1));
+      return absl::StrFormat(" [%s], Y", arg1.ToString(N_byte));
     }
     case A_stk: {
-      return absl::StrFormat(" %s, S", arg1.ToString(1));
+      return absl::StrFormat(" %s, S", arg1.ToString(N_byte));
     }
     case A_stk_y: {
-      return absl::StrFormat(" (%s, S), Y", arg1.ToString(1));
+      return absl::StrFormat(" (%s, S), Y", arg1.ToString(N_byte));
     }
     case A_mov: {
-      return absl::StrFormat(" #%s, #%s", arg1.ToString(1), arg2.ToString(1));
+      return absl::StrFormat(" #%s, #%s", arg1.ToString(N_byte), arg2.ToString(N_byte));
     }
     case A_rel8:
     case A_rel16: {
-      return absl::StrFormat(" %s", arg1.ToBranchOffset());
+      return absl::StrFormat(" %s", arg1.ToString());
     }
   }
 }

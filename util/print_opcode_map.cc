@@ -1,5 +1,5 @@
 #include "absl/strings/str_format.h"
-#include "nsasm/argument.h"
+#include "nsasm/expression.h"
 #include "nsasm/instruction.h"
 #include "nsasm/opcode_map.h"
 
@@ -14,8 +14,8 @@ int main() {
     }
     absl::PrintF(
         "%02X  %s%s%s\n", i, nsasm::ToString(op.mnemonic), suffix,
-        nsasm::ArgsToString(op.addressing_mode, nsasm::Argument(0x654321),
-                            nsasm::Argument(0x43)));
+        nsasm::ArgsToString(op.addressing_mode, nsasm::Literal(0x654321),
+                            nsasm::Literal(0x43)));
   }
   return 0;
 }

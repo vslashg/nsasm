@@ -97,7 +97,7 @@ absl::optional<FlagState> FlagState::FromName(absl::string_view name) {
   return FlagState(B_off, *m_bit, *x_bit);
 }
 
-FlagState FlagState::Execute(Instruction i) const {
+FlagState FlagState::Execute(const Instruction& i) const {
   FlagState new_state = *this;
 
   Mnemonic m = i.mnemonic;
@@ -118,8 +118,8 @@ FlagState FlagState::Execute(Instruction i) const {
   // Instructions that clear or set status bits explicitly
   if (m == M_rep || m == M_sep) {
     BitState target = (m == M_rep) ? B_off : B_on;
-    auto arg = i.arg1.ToValue();
-    if (!arg.has_value()) {
+    auto arg = i.arg1.Evaluate();
+    if (!arg.ok()) {
       // If REP or SEP are invoked with an unknown argument (a constant pulled
       // from another module, say), we will have to account for the ambiguity.
       //
@@ -188,7 +188,7 @@ FlagState FlagState::Execute(Instruction i) const {
   return new_state;
 }
 
-FlagState FlagState::ExecuteBranch(Instruction i) const {
+FlagState FlagState::ExecuteBranch(const Instruction& i) const {
   FlagState new_state = Execute(i);
   Mnemonic m = i.mnemonic;
   if (m == M_bcc) {

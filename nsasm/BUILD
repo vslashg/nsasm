@@ -27,14 +27,24 @@ cc_test(
 
 
 cc_library(
-    name="argument",
-    srcs=["argument.cc"],
-    hdrs=["argument.h"],
+    name="numeric_type",
+    srcs=[],
+    hdrs=["numeric_type.h"],
     copts=NSASM_COPTS,
     deps=[
-        "@absl//absl/strings",
-        "@absl//absl/strings:str_format",
-        "@absl//absl/types:optional",
+        ":error",
+    ],
+)
+
+
+cc_library(
+    name="expression",
+    srcs=["expression.cc"],
+    hdrs=["expression.h"],
+    copts=NSASM_COPTS,
+    deps=[
+        ":error",
+        ":numeric_type",
     ],
 )
 
@@ -45,7 +55,7 @@ cc_library(
     hdrs=["addressing_mode.h"],
     copts=NSASM_COPTS,
     deps=[
-        ":argument",
+        ":expression",
         "@absl//absl/strings:str_format",
     ],
 )
@@ -68,7 +78,7 @@ cc_library(
     copts=NSASM_COPTS,
     deps=[
         ":addressing_mode",
-        ":argument",
+        ":expression",
         ":mnemonic",
     ],
 )
@@ -136,6 +146,7 @@ cc_library(
     hdrs=["decode.h"],
     copts=NSASM_COPTS,
     deps=[
+        "@absl//absl/memory",
         ":error",
         ":flag_state",
         ":instruction",

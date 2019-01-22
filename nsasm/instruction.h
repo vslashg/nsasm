@@ -2,7 +2,7 @@
 #define NSASM_INSTRUCTION_H_
 
 #include "nsasm/addressing_mode.h"
-#include "nsasm/argument.h"
+#include "nsasm/expression.h"
 #include "nsasm/mnemonic.h"
 
 namespace nsasm {
@@ -10,8 +10,12 @@ namespace nsasm {
 struct Instruction {
   Mnemonic mnemonic;
   AddressingMode addressing_mode;
-  Argument arg1;
-  Argument arg2;
+  ExpressionOrNull arg1;
+  ExpressionOrNull arg2;
+
+  Instruction() = default;
+  Instruction(Instruction&&) = default;
+  Instruction& operator=(Instruction&&) = default;
 
   std::string ToString() const;
 };

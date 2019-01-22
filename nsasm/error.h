@@ -51,7 +51,7 @@ class Error {
 template <typename T>
 class ErrorOr {
  public:
-  ErrorOr(T&& t) : value(t) {}
+  ErrorOr(T&& t) : value(std::move(t)) {}
   ErrorOr(const T& t) : value(t) {}
   ErrorOr(Error&& e) : value(e) {}
   ErrorOr(const Error& e) : value(e) {}

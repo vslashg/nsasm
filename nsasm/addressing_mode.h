@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "nsasm/argument.h"
+#include "nsasm/expression.h"
 
 namespace nsasm {
 
@@ -40,7 +40,8 @@ enum AddressingMode : int {
 };
 
 // Renders an argument list that can be appended to an instruction mnemonic.
-std::string ArgsToString(AddressingMode a, Argument arg1, Argument arg2);
+std::string ArgsToString(AddressingMode a, const Expression& arg1,
+                         const Expression& arg2);
 
 // Returns the size of an instruction with the given addressing mode.
 //

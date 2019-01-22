@@ -1,6 +1,7 @@
 #include "nsasm/decode.h"
 
-#include "nsasm/argument.h"
+#include "absl/memory/memory.h"
+#include "nsasm/expression.h"
 #include "nsasm/opcode_map.h"
 
 namespace nsasm {
@@ -25,8 +26,10 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
     } else if (narrow_register == B_off) {
       decoded.addressing_mode = A_imm_w;
     } else {
-      return Error("Argument size of opcode 0x%02x (%s) depends on processor state, "
-                   "which is not known here", opcode, ToString(decoded.mnemonic));
+      return Error(
+          "Argument size of opcode 0x%02x (%s) depends on processor state, "
+          "which is not known here",
+          opcode, ToString(decoded.mnemonic));
     }
   }
 
@@ -37,8 +40,8 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
     if (bytes.size() < 3) {
       return Error("Not enough bytes to decode");
     }
-    decoded.arg1 =
-        Argument(bytes[0] + (bytes[1] * 256) + (bytes[2] * 256 * 256));
+    decoded.arg1 = absl::make_unique<Literal>(
+        bytes[0] + (bytes[1] * 256) + (bytes[2] * 256 * 256), N_long);
   }
   if (decoded.addressing_mode == A_imm_w ||
       decoded.addressing_mode == A_dir_w ||
@@ -51,7 +54,8 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
     if (bytes.size() < 2) {
       return Error("Not enough bytes to decode");
     }
-    decoded.arg1 = Argument(bytes[0] + (bytes[1] * 256));
+    decoded.arg1 =
+        absl::make_unique<Literal>(bytes[0] + (bytes[1] * 256), N_word);
   }
   if (decoded.addressing_mode == A_imm_b ||
       decoded.addressing_mode == A_dir_b ||
@@ -67,15 +71,15 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
     if (bytes.size() < 1) {
       return Error("Not enough bytes to decode");
     }
-    decoded.arg1 = Argument(bytes[0]);
+    decoded.arg1 = absl::make_unique<Literal>(bytes[0], N_byte);
   }
   if (decoded.addressing_mode == A_mov) {
     // pair of 8 bit arguments
     if (bytes.size() < 2) {
       return Error("Not enough bytes to decode");
     }
-    decoded.arg1 = Argument(bytes[0]);
-    decoded.arg2 = Argument(bytes[1]);
+    decoded.arg1 = absl::make_unique<Literal>(bytes[0], N_byte);
+    decoded.arg2 = absl::make_unique<Literal>(bytes[1], N_byte);
   }
   if (decoded.addressing_mode == A_rel8) {
     // 8 bit signed argument
@@ -86,7 +90,7 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
     if (value >= 128) {
       value -= 256;
     }
-    decoded.arg1 = Argument(value);
+    decoded.arg1 = absl::make_unique<Literal>(value, N_signed_byte);
   }
   if (decoded.addressing_mode == A_rel16) {
     // 8 bit signed argument
@@ -97,9 +101,9 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
     if (value >= 32768) {
       value -= 65536;
     }
-    decoded.arg1 = Argument(value);
+    decoded.arg1 = absl::make_unique<Literal>(value, N_signed_word);
   }
-  return decoded;
+  return {std::move(decoded)};
 }
 
 }  // namespace nsasm

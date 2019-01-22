@@ -88,9 +88,9 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
       // need to add that address to code we should try to disassemble.
       if (instruction->addressing_mode == A_rel8 ||
           instruction->addressing_mode == A_rel16) {
-        int value = *instruction->arg1.ToValue();
+        int value = *instruction->arg1.Evaluate();
         int target = AddToPC(next_pc, value);
-        instruction->arg1.SetLabel(get_label(target));
+        instruction->arg1.ApplyLabel(get_label(target));
         const FlagState branch_flag_state =
             current_flag_state.ExecuteBranch(*instruction);
         add_to_decode_stack(target, branch_flag_state);
@@ -98,14 +98,14 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
 
       // We've decoded an instruction!  Store it.
       DisassembledInstruction di;
-      di.instruction = *instruction;
+      di.instruction = std::move(*instruction);
       di.current_flag_state = current_flag_state;
       di.next_flag_state = next_flag_state;
       result[pc] = std::move(di);
 
       // If this instruction doesn't terminate the subroutine, we need to
       // execute the next line as well.
-      if (!IsExitInstruction(*instruction)) {
+      if (!IsExitInstruction(di.instruction)) {
         add_to_decode_stack(next_pc, next_flag_state);
       }
     } else {
@@ -132,7 +132,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
         add_to_decode_stack(next_pc, di.next_flag_state);
         if (di.instruction.addressing_mode == A_rel8 ||
             di.instruction.addressing_mode == A_rel16) {
-          int value = *di.instruction.arg1.ToValue();
+          int value = *di.instruction.arg1.Evaluate();
           int target = AddToPC(next_pc, value);
           add_to_decode_stack(
               target, combined_flag_state.ExecuteBranch(di.instruction));
@@ -151,9 +151,9 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
     node.second = new_label;
   }
   for (auto& node : result) {
-    Argument& arg1 = node.second.instruction.arg1;
-    if (!arg1.Label().empty()) {
-      arg1.SetLabel(label_rewrite[arg1.Label()]);
+    ExpressionOrNull& arg1 = node.second.instruction.arg1;
+    if (arg1.IsLabel()) {
+      arg1.ApplyLabel(label_rewrite[arg1.ToString()]);
     }
   }
 
@@ -173,7 +173,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
     if (iter->second.instruction.mnemonic == M_clc &&
         next_iter->second.instruction.mnemonic == M_adc &&
         next_iter->second.label.empty()) {
-      iter->second.instruction = next_iter->second.instruction;
+      iter->second.instruction = std::move(next_iter->second.instruction);
       iter->second.instruction.mnemonic = PM_add;
       iter->second.next_flag_state = next_iter->second.next_flag_state;
       result.erase(next_iter);
@@ -182,7 +182,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
     if (iter->second.instruction.mnemonic == M_clc &&
         next_iter->second.instruction.mnemonic == M_sbc &&
         next_iter->second.label.empty()) {
-      iter->second.instruction = next_iter->second.instruction;
+      iter->second.instruction = std::move(next_iter->second.instruction);
       iter->second.instruction.mnemonic = PM_sub;
       iter->second.next_flag_state = next_iter->second.next_flag_state;
       result.erase(next_iter);

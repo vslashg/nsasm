@@ -1,7 +1,7 @@
 #include "nsasm/addressing_mode.h"
 
 #include "gtest/gtest.h"
-#include "nsasm/argument.h"
+#include "nsasm/expression.h"
 
 namespace nsasm {
 namespace {
@@ -78,9 +78,10 @@ TEST(AddressingMode, rendering) {
   int index = 0;
   for (const TestCase& test_case : test_cases) {
     SCOPED_TRACE(index++);
-    EXPECT_EQ(ArgsToString(test_case.mode, Argument(test_case.arg1),
-                           Argument(test_case.arg2)),
-              test_case.expected);
+    ExpressionOrNull arg1 = absl::make_unique<Literal>(test_case.arg1);
+    ExpressionOrNull arg2 = absl::make_unique<Literal>(test_case.arg2);
+    SCOPED_TRACE(arg1.Type());
+    EXPECT_EQ(ArgsToString(test_case.mode, arg1, arg2), test_case.expected);
   }
 }
 

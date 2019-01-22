@@ -143,7 +143,7 @@ class FlagState {
 
   // Returns the new state that results from executing the given instruction
   // from the current state.
-  ABSL_MUST_USE_RESULT FlagState Execute(Instruction i) const;
+  ABSL_MUST_USE_RESULT FlagState Execute(const Instruction& i) const;
 
   // As above, but returns the state that results from a successful conditional
   // branch from this instruction.
@@ -151,7 +151,7 @@ class FlagState {
   // This difference matters for BCC/BCS.  For example, after BCC (branch if
   // carry clear), the C bit is set if we continue to the next instruction, and
   // clear if set.
-  ABSL_MUST_USE_RESULT FlagState ExecuteBranch(Instruction i) const;
+  ABSL_MUST_USE_RESULT FlagState ExecuteBranch(const Instruction& i) const;
 
  private:
   BitState e_bit_;
