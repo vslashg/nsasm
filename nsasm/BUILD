@@ -1,4 +1,4 @@
-NSASM_COPTS = ["--std=c++14"]
+NSASM_COPTS = ["--std=c++17"]
 
 package(default_visibility=["//visibility:public"])
 
