@@ -152,9 +152,9 @@ TEST(AddressingMode, simple_deduce_mode) {
 
       if (test_case.sam == SA_imm &&
           (ImmediateArgumentUsesMBit(m) || ImmediateArgumentUsesXBit(m))) {
-        // This instruction/addressing mode pair cares and processor status bit.
-        // Bail out for now; this case is handled by the deduce_immediate_mode
-        // test below.
+        // This instruction/addressing mode pair cares about processor status
+        // bit. Bail out for now; this case is handled by the
+        // deduce_immediate_mode test below.
         continue;
       }
 
@@ -246,7 +246,7 @@ TEST(AddressingMode, deduce_immediate_mode) {
 
       // We should deduce this as an instruction that cares about the m bit
       auto deduced = DeduceMode(m, SA_imm, arg1, arg2);
-      EXPECT_TRUE(deduced.ok()&&* deduced == A_imm_fm);
+      EXPECT_TRUE(deduced.ok() && *deduced == A_imm_fm);
     }
 
     if (ImmediateArgumentUsesXBit(m)) {
@@ -261,7 +261,7 @@ TEST(AddressingMode, deduce_immediate_mode) {
 
       // We should deduce this as an instruction that cares about the x bit
       auto deduced = DeduceMode(m, SA_imm, arg1, arg2);
-      EXPECT_TRUE(deduced.ok()&&* deduced == A_imm_fx);
+      EXPECT_TRUE(deduced.ok() && *deduced == A_imm_fx);
     }
   }
 }
