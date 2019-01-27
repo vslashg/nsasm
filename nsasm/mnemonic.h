@@ -114,6 +114,9 @@ enum Mnemonic {
   PM_sub,  // SUB is subtract without carry - CLC followed by SBC
 };
 
+// Returns all mnemonics, for test code
+const std::vector<Mnemonic>& AllMnemonics();
+
 // Conversions between Mnemonic values, and the matching strings.
 absl::string_view ToString(Mnemonic m);
 absl::optional<Mnemonic> ToMnemonic(std::string s);

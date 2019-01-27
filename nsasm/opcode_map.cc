@@ -299,6 +299,17 @@ Instruction DecodeOpcode(uint8_t opcode) {
   return ins;
 }
 
+bool ImmediateArgumentUsesMBit(Mnemonic m) {
+  DecodeMapEntry e(m, A_imm_fm);
+  return ReverseOpcodeMap().find(e) != ReverseOpcodeMap().end() ||
+         m == PM_add || m == PM_sub;
+}
+
+bool ImmediateArgumentUsesXBit(Mnemonic m) {
+  DecodeMapEntry e(m, A_imm_fx);
+  return ReverseOpcodeMap().find(e) != ReverseOpcodeMap().end();
+}
+
 // TODO: This needs to be moved to instruction.h, and given argument type
 // smarts.  We've progressed a ways since this was introduced.
 bool IsConsistent(const Instruction& instruction, const FlagState& flag_state) {

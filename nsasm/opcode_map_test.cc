@@ -256,17 +256,17 @@ TEST(OpcodeMap, decode) {
   }
   for (const auto& outer_node : map) {
     Mnemonic mnemonic = outer_node.first;
-    SCOPED_TRACE(mnemonic);
+    SCOPED_TRACE(ToString(mnemonic));
     for (const auto& inner_node : outer_node.second) {
       AddressingMode addressing_mode = inner_node.first;
       uint8_t opcode = inner_node.second;
       not_seen.erase(opcode);
-      SCOPED_TRACE(addressing_mode);
-      SCOPED_TRACE(opcode);
+      SCOPED_TRACE(ToString(addressing_mode));
+      SCOPED_TRACE(int(opcode));
 
       Instruction decoded = DecodeOpcode(opcode);
-      EXPECT_EQ(decoded.mnemonic, mnemonic);
-      EXPECT_EQ(decoded.addressing_mode, addressing_mode);
+      EXPECT_EQ(ToString(decoded.mnemonic), ToString(mnemonic));
+      EXPECT_EQ(ToString(decoded.addressing_mode), ToString(addressing_mode));
     }
   }
   EXPECT_THAT(not_seen, IsEmpty());

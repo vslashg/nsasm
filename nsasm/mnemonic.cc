@@ -63,4 +63,19 @@ absl::optional<Mnemonic> ToMnemonic(std::string s) {
   return iter->second;
 }
 
+namespace {
+std::vector<Mnemonic>* MakeAllMnemonics() {
+  auto result = new std::vector<Mnemonic>;
+  for (int mnemonic_index = M_adc; mnemonic_index <= PM_sub; ++mnemonic_index) {
+    result->push_back(static_cast<Mnemonic>(mnemonic_index));
+  }
+  return result;
+}
+}  // namespace
+
+const std::vector<Mnemonic>& AllMnemonics() {
+  static std::vector<Mnemonic>* all_mnemonics = MakeAllMnemonics();
+  return *all_mnemonics;
+}
+
 }  // namespace nsasm

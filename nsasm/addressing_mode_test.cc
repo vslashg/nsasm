@@ -127,6 +127,7 @@ TEST(AddressingMode, simple_deduce_mode) {
   const FlagState dummy_flag_state;
 
   SimpleDeductionCase test_cases[] = {
+      {SA_imm, {A_imm_b, A_imm_w, none}},
       {SA_dir, {A_dir_b, A_dir_w, A_dir_l}},
       {SA_dir_x, {A_dir_bx, A_dir_wx, A_dir_lx}},
       {SA_dir_y, {A_dir_by, A_dir_wy, none}},
@@ -144,11 +145,19 @@ TEST(AddressingMode, simple_deduce_mode) {
   // If the combination of mnemonic and addressing mode is valid, then
   // it should syntactically deduce correctly.  Otherwise, deduction should
   // fail.
-  for (int mnemonic_index = M_adc; mnemonic_index <= PM_sub; ++mnemonic_index) {
-    Mnemonic m = static_cast<Mnemonic>(mnemonic_index);
+  for (Mnemonic m : AllMnemonics()) {
     SCOPED_TRACE(ToString(m));
     for (const auto& test_case : test_cases) {
       SCOPED_TRACE(ToString(test_case.sam));
+
+      if (test_case.sam == SA_imm &&
+          (ImmediateArgumentUsesMBit(m) || ImmediateArgumentUsesXBit(m))) {
+        // This instruction/addressing mode pair cares and processor status bit.
+        // Bail out for now; this case is handled by the deduce_immediate_mode
+        // test below.
+        continue;
+      }
+
       NumericType numeric_type_list[3] = {T_byte, T_word, T_long};
       for (int i = 0; i < 3; ++i) {
         NumericType numeric_type = numeric_type_list[i];
@@ -183,6 +192,76 @@ TEST(AddressingMode, simple_deduce_mode) {
           }
         }
       }
+    }
+  }
+}
+
+TEST(AddressingMode, deduce_no_arg_mode) {
+  // Test instructions taking no arguments and/or taking A as an argument.
+  const ExpressionOrNull null;
+  const FlagState dummy_flag_state;
+
+  for (Mnemonic m : AllMnemonics()) {
+    SCOPED_TRACE(ToString(m));
+    Instruction implied_instruction = {m, A_imp, null, null};
+    Instruction accumulator_instruction = {m, A_acc, null, null};
+
+    if (IsConsistent(accumulator_instruction, dummy_flag_state)) {
+      // For instructions that support accumulator mode (like DEC), we should
+      // support syntactic forms `DEC A` and `DEC`.
+      auto deduced_acc = DeduceMode(m, SA_acc, null, null);
+      auto deduced_imp = DeduceMode(m, SA_imp, null, null);
+      EXPECT_TRUE(deduced_acc.ok() && (*deduced_acc == A_acc));
+      EXPECT_TRUE(deduced_imp.ok() && (*deduced_imp == A_acc));
+    } else if (IsConsistent(implied_instruction, dummy_flag_state)) {
+      // For instructions that take no argumnet (like RTS), we should accept
+      // `RTS` but not `RTS A`
+      auto deduced_acc = DeduceMode(m, SA_acc, null, null);
+      auto deduced_imp = DeduceMode(m, SA_imp, null, null);
+      EXPECT_FALSE(deduced_acc.ok());
+      EXPECT_TRUE(deduced_imp.ok() && (*deduced_imp == A_imp));
+    } else {
+      // Other instructions should accept neither form.
+      auto deduced_acc = DeduceMode(m, SA_acc, null, null);
+      auto deduced_imp = DeduceMode(m, SA_imp, null, null);
+      EXPECT_FALSE(deduced_acc.ok());
+      EXPECT_FALSE(deduced_imp.ok());
+    }
+  }
+}
+
+TEST(AddressingMode, deduce_immediate_mode) {
+  // Test instructions in immediate mode which care about flag bits
+  for (Mnemonic m : AllMnemonics()) {
+    SCOPED_TRACE(ToString(m));
+    if (ImmediateArgumentUsesMBit(m)) {
+      // flag state where m bit is known
+      FlagState flag_state(B_off, B_off, B_original);
+      Literal arg1(0, T_word);
+      ExpressionOrNull arg2;
+
+      // Sanity-check ImmediateArgumentUsesMBit()
+      Instruction instruction = {m, A_imm_fm, ExpressionOrNull(arg1), arg2};
+      EXPECT_TRUE(IsConsistent(instruction, flag_state));
+
+      // We should deduce this as an instruction that cares about the m bit
+      auto deduced = DeduceMode(m, SA_imm, arg1, arg2);
+      EXPECT_TRUE(deduced.ok()&&* deduced == A_imm_fm);
+    }
+
+    if (ImmediateArgumentUsesXBit(m)) {
+      // flag state where x bit is known
+      FlagState flag_state(B_off, B_original, B_off);
+      Literal arg1(0, T_word);
+      ExpressionOrNull arg2;
+
+      // Sanity-check ImmediateArgumentUsesXBit()
+      Instruction instruction = {m, A_imm_fx, ExpressionOrNull(arg1), arg2};
+      EXPECT_TRUE(IsConsistent(instruction, flag_state));
+
+      // We should deduce this as an instruction that cares about the x bit
+      auto deduced = DeduceMode(m, SA_imm, arg1, arg2);
+      EXPECT_TRUE(deduced.ok()&&* deduced == A_imm_fx);
     }
   }
 }

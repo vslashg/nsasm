@@ -257,7 +257,7 @@ ErrorOr<AddressingMode> DeduceMode(Mnemonic m, SyntacticAddressingMode smode,
         return A_imm_fx;
       }
 
-      if (m == M_cop || m == M_rep || m == M_sep || m == M_brk || m == M_pei) {
+      if (m == M_cop || m == M_rep || m == M_sep || m == M_brk || m == M_wdm) {
         return CoerceByte(arg1, m, "Immediate", A_imm_b);
       }
       if (m == M_pea) {
