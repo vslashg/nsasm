@@ -55,7 +55,9 @@ cc_library(
     hdrs=["addressing_mode.h"],
     copts=NSASM_COPTS,
     deps=[
+        ":error",
         ":expression",
+        ":mnemonic",
         "@absl//absl/strings:str_format",
     ],
 )
@@ -66,6 +68,8 @@ cc_test(
     copts=NSASM_COPTS,
     deps=[
         ":addressing_mode",
+        ":flag_state",
+        ":opcode_map",
         "@gtest//:gtest_main",
     ],
 )
@@ -189,6 +193,7 @@ cc_library(
     deps=[
         ":error",
         ":mnemonic",
+        ":numeric_type",
     ],
 )
 
@@ -199,5 +204,18 @@ cc_test(
     deps=[
         ":token",
         "@gtest//:gtest_main",
+    ],
+)
+
+
+cc_library(
+    name="assemble",
+    srcs=["assemble.cc"],
+    hdrs=["assemble.h"],
+    copts=NSASM_COPTS,
+    deps=[
+        ":error",
+        ":instruction",
+        ":token",
     ],
 )

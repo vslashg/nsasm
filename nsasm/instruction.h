@@ -13,10 +13,6 @@ struct Instruction {
   ExpressionOrNull arg1;
   ExpressionOrNull arg2;
 
-  Instruction() = default;
-  Instruction(Instruction&&) = default;
-  Instruction& operator=(Instruction&&) = default;
-
   std::string ToString() const;
 };
 

@@ -6,7 +6,7 @@
 
 namespace nsasm {
 
-enum Mnemonic : int {
+enum Mnemonic {
   // Inert operations: mnemonics for opcodes that static analysis does not need
   // to understand.
   M_adc,

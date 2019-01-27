@@ -41,7 +41,7 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
       return Error("Not enough bytes to decode");
     }
     decoded.arg1 = absl::make_unique<Literal>(
-        bytes[0] + (bytes[1] * 256) + (bytes[2] * 256 * 256), N_long);
+        bytes[0] + (bytes[1] * 256) + (bytes[2] * 256 * 256), T_long);
   }
   if (decoded.addressing_mode == A_imm_w ||
       decoded.addressing_mode == A_dir_w ||
@@ -55,7 +55,7 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
       return Error("Not enough bytes to decode");
     }
     decoded.arg1 =
-        absl::make_unique<Literal>(bytes[0] + (bytes[1] * 256), N_word);
+        absl::make_unique<Literal>(bytes[0] + (bytes[1] * 256), T_word);
   }
   if (decoded.addressing_mode == A_imm_b ||
       decoded.addressing_mode == A_dir_b ||
@@ -71,15 +71,15 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
     if (bytes.size() < 1) {
       return Error("Not enough bytes to decode");
     }
-    decoded.arg1 = absl::make_unique<Literal>(bytes[0], N_byte);
+    decoded.arg1 = absl::make_unique<Literal>(bytes[0], T_byte);
   }
   if (decoded.addressing_mode == A_mov) {
     // pair of 8 bit arguments
     if (bytes.size() < 2) {
       return Error("Not enough bytes to decode");
     }
-    decoded.arg1 = absl::make_unique<Literal>(bytes[0], N_byte);
-    decoded.arg2 = absl::make_unique<Literal>(bytes[1], N_byte);
+    decoded.arg1 = absl::make_unique<Literal>(bytes[0], T_byte);
+    decoded.arg2 = absl::make_unique<Literal>(bytes[1], T_byte);
   }
   if (decoded.addressing_mode == A_rel8) {
     // 8 bit signed argument
@@ -90,7 +90,7 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
     if (value >= 128) {
       value -= 256;
     }
-    decoded.arg1 = absl::make_unique<Literal>(value, N_signed_byte);
+    decoded.arg1 = absl::make_unique<Literal>(value, T_signed_byte);
   }
   if (decoded.addressing_mode == A_rel16) {
     // 8 bit signed argument
@@ -101,7 +101,7 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
     if (value >= 32768) {
       value -= 65536;
     }
-    decoded.arg1 = absl::make_unique<Literal>(value, N_signed_word);
+    decoded.arg1 = absl::make_unique<Literal>(value, T_signed_word);
   }
   return {std::move(decoded)};
 }

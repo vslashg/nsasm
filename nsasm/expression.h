@@ -21,7 +21,13 @@ class Expression {
 
   // Returns a human-readable stringized represenation of this argument, coerced
   // to the requested type if provided.
-  virtual std::string ToString(NumericType type = N_unknown) const = 0;
+  virtual std::string ToString(NumericType type = T_unknown) const = 0;
+
+ protected:
+  friend class ExpressionOrNull;
+  friend class Label;
+  // Returns a copy of this expression.
+  virtual std::unique_ptr<Expression> Copy() const = 0;
 };
 
 // Value type that holds an arbitrary Expression, or null.
@@ -31,8 +37,20 @@ class ExpressionOrNull : public Expression {
   template <typename T>
   ExpressionOrNull(std::unique_ptr<T> rhs) : expr_(std::move(rhs)) {}
 
+  ExpressionOrNull(const ExpressionOrNull& rhs)
+      : expr_(rhs.expr_ ? rhs.expr_->Copy() : nullptr) {}
+  ExpressionOrNull& operator=(const ExpressionOrNull& rhs) {
+    expr_ = rhs.expr_ ? rhs.expr_->Copy() : nullptr;
+    return *this;
+  }
   ExpressionOrNull(ExpressionOrNull&& rhs) = default;
   ExpressionOrNull& operator=(ExpressionOrNull&& rhs) = default;
+
+  explicit ExpressionOrNull(const Expression& rhs) : expr_(rhs.Copy()) {}
+  ExpressionOrNull& operator=(const Expression& rhs) {
+    expr_ = rhs.Copy();
+    return *this;
+  }
 
   ErrorOr<int> Evaluate(Location loc = Location()) const override {
     if (expr_) {
@@ -42,10 +60,10 @@ class ExpressionOrNull : public Expression {
   }
 
   NumericType Type() const override {
-    return expr_ ? expr_->Type() : N_unknown;
+    return expr_ ? expr_->Type() : T_unknown;
   }
 
-  std::string ToString(NumericType type = N_unknown) const override {
+  std::string ToString(NumericType type = T_unknown) const override {
     return expr_ ? expr_->ToString(type) : "<NULL>";
   }
 
@@ -53,13 +71,21 @@ class ExpressionOrNull : public Expression {
   void ApplyLabel(const std::string label);
 
  private:
+  std::unique_ptr<Expression> Copy() const override {
+    if (!expr_) {
+      return absl::make_unique<ExpressionOrNull>();
+    } else {
+      return absl::make_unique<ExpressionOrNull>(expr_->Copy());
+    }
+  }
+
   std::unique_ptr<Expression> expr_;
 };
 
 // Literal numeric value.
 class Literal : public Expression {
  public:
-  explicit Literal(int value, NumericType type = N_unknown)
+  explicit Literal(int value, NumericType type = T_unknown)
       : value_(CastTo(type, value)), type_(type) {}
 
   ErrorOr<int> Evaluate(Location loc) const override { return value_; }
@@ -67,6 +93,10 @@ class Literal : public Expression {
   std::string ToString(NumericType type) const override;
 
  private:
+  std::unique_ptr<Expression> Copy() const override {
+    return absl::make_unique<Literal>(value_, type_);
+  }
+
   int value_;
   NumericType type_;
 };
@@ -85,6 +115,10 @@ class Label : public Expression {
 
  private:
   friend class ExpressionOrNull;
+
+  std::unique_ptr<Expression> Copy() const override {
+    return absl::make_unique<Label>(label_, held_value_->Copy());
+  }
 
   std::string label_;
   std::unique_ptr<Expression> held_value_;

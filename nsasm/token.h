@@ -6,15 +6,9 @@
 #include "absl/types/variant.h"
 #include "nsasm/error.h"
 #include "nsasm/mnemonic.h"
+#include "nsasm/numeric_type.h"
 
 namespace nsasm {
-
-enum NumericType {
-  T_unknown,
-  T_byte,
-  T_word,
-  T_long,
-};
 
 class Token {
  public:

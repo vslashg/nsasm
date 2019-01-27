@@ -2,6 +2,9 @@
 
 #include "gtest/gtest.h"
 #include "nsasm/expression.h"
+#include "nsasm/flag_state.h"
+#include "nsasm/numeric_type.h"
+#include "nsasm/opcode_map.h"
 
 namespace nsasm {
 namespace {
@@ -80,7 +83,6 @@ TEST(AddressingMode, rendering) {
     SCOPED_TRACE(index++);
     ExpressionOrNull arg1 = absl::make_unique<Literal>(test_case.arg1);
     ExpressionOrNull arg2 = absl::make_unique<Literal>(test_case.arg2);
-    SCOPED_TRACE(arg1.Type());
     EXPECT_EQ(ArgsToString(test_case.mode, arg1, arg2), test_case.expected);
   }
 }
@@ -113,6 +115,76 @@ TEST(AddressingMode, instruction_size) {
   EXPECT_EQ(InstructionLength(A_rel16), 3);
   EXPECT_EQ(InstructionLength(A_imm_fm), -1);
   EXPECT_EQ(InstructionLength(A_imm_fx), -1);
+}
+
+struct SimpleDeductionCase {
+  SyntacticAddressingMode sam;
+  AddressingMode am[3];
+};
+
+TEST(AddressingMode, simple_deduce_mode) {
+  AddressingMode none = A_imp;  // sentinel value
+  const FlagState dummy_flag_state;
+
+  SimpleDeductionCase test_cases[] = {
+      {SA_dir, {A_dir_b, A_dir_w, A_dir_l}},
+      {SA_dir_x, {A_dir_bx, A_dir_wx, A_dir_lx}},
+      {SA_dir_y, {A_dir_by, A_dir_wy, none}},
+      {SA_ind, {A_ind_b, A_ind_w, none}},
+      {SA_ind_x, {A_ind_bx, A_ind_wx, none}},
+      {SA_ind_y, {A_ind_by, none, none}},
+      {SA_lng, {A_lng_b, A_lng_w, none}},
+      {SA_lng_y, {A_lng_by, none, none}},
+      {SA_stk, {A_stk, none, none}},
+      {SA_stk_y, {A_stk_y, none, none}},
+  };
+
+  // Test every combination of mnemonic and addressing mode.
+  //
+  // If the combination of mnemonic and addressing mode is valid, then
+  // it should syntactically deduce correctly.  Otherwise, deduction should
+  // fail.
+  for (int mnemonic_index = M_adc; mnemonic_index <= PM_sub; ++mnemonic_index) {
+    Mnemonic m = static_cast<Mnemonic>(mnemonic_index);
+    SCOPED_TRACE(ToString(m));
+    for (const auto& test_case : test_cases) {
+      SCOPED_TRACE(ToString(test_case.sam));
+      NumericType numeric_type_list[3] = {T_byte, T_word, T_long};
+      for (int i = 0; i < 3; ++i) {
+        NumericType numeric_type = numeric_type_list[i];
+        AddressingMode addressing_mode = test_case.am[i];
+        SCOPED_TRACE(ToString(addressing_mode));
+
+        // Construct an argument of the given type
+        Literal arg1(0, numeric_type);
+        ExpressionOrNull arg2;
+        Instruction instruction = {m, addressing_mode, ExpressionOrNull(arg1),
+                                   arg2};
+        auto deduced = DeduceMode(m, test_case.sam, arg1, arg2);
+        if (deduced.ok()) {
+          EXPECT_EQ(*deduced, addressing_mode)
+              << "DeduceMode() returned a mode of " << ToString(*deduced)
+              << " for mnemonic " << ToString(m) << " where "
+              << ToString(addressing_mode) << " was expected";
+          EXPECT_TRUE(IsConsistent(instruction, dummy_flag_state))
+              << "DeduceMode() returned a mode of " << ToString(*deduced)
+              << " for mnemonic " << ToString(m)
+              << ", but this is not a valid combination";
+        } else {
+          // Failed to deduce.  There are two valid reasons for this:
+          //   a) the addressing mode never supports the argument type
+          //   b) this addressing mode and type is invalid for the mnemonic.
+          if (addressing_mode != none) {
+            // not in case (a), check that we are in case (b)
+            EXPECT_FALSE(IsConsistent(instruction, dummy_flag_state))
+                << "DeduceMode() did not deduce " << ToString(addressing_mode)
+                << " argument for mnemonic " << ToString(m)
+                << ", but this combination is valid";
+          }
+        }
+      }
+    }
+  }
 }
 
 }  // namespace
