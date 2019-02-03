@@ -178,8 +178,17 @@ FlagState FlagState::Execute(const Instruction& i) const {
   // Instructions that use the c bit to indicate carry.  For the
   // purposes of this static analysis, treat these as setting the c
   // bit to an unknown state.
-  if (m == M_adc || m == M_sbc || m == M_cmp || m == M_cpx || m == M_cpy ||
-      m == M_asl || m == M_lsr || m == M_rol || m == M_ror) {
+  if (m == M_adc || m == M_sbc || m == PM_add || m == PM_sub || m == M_cmp ||
+      m == M_cpx || m == M_cpy || m == M_asl || m == M_lsr || m == M_rol ||
+      m == M_ror) {
+    new_state.c_bit_ = B_unknown;
+    return new_state;
+  }
+
+  // Subroutine and interrupt calls.  This logic will get more robust as we
+  // introduce calling conventions, but for now we should assume these trash the
+  // carry bit.
+  if (m == M_jmp || m == M_jsl || m == M_jsr || m == M_brk || m == M_cop) {
     new_state.c_bit_ = B_unknown;
     return new_state;
   }
