@@ -72,6 +72,12 @@ ErrorOr<std::vector<uint8_t>> Rom::Read(int address, int length) const {
   }
 }
 
+ErrorOr<int> Rom::ReadWord(int address) const {
+  auto read = Read(address, 2);
+  NSASM_RETURN_IF_ERROR(read);
+  return (*read)[0] + ((*read)[1] * 256);
+}
+
 namespace {
 
 // Returns true if, heuristically, this looks like a SNES header.

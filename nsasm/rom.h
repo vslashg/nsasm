@@ -46,6 +46,8 @@ class Rom {
   // Returns nullopt instead if given an out-of-range read region.
   ErrorOr<std::vector<uint8_t>> Read(int address, int length) const;
 
+  ErrorOr<int> ReadWord(int address) const;
+
   const std::string& path() const { return path_; }
  private:
   Mapping mapping_mode_;
