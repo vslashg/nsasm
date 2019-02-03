@@ -8,7 +8,7 @@ namespace nsasm {
 
 template <typename... T>
 std::vector<Token> TokenVector(const T&... arg) {
-  return {Token(arg, Location())...};
+  return {Token(arg, Location())..., Token(EndOfLine(), Location())};
 }
 
 TEST(Token, Names) {

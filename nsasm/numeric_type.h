@@ -49,6 +49,27 @@ inline NumericType Unsigned(NumericType type) {
   return type;
 }
 
+inline NumericType Signed(NumericType type) {
+  if (type == T_byte) return T_signed_byte;
+  if (type == T_word) return T_signed_word;
+  if (type == T_long) return T_signed_long;
+  return type;
+}
+
+inline bool IsSigned(NumericType type) {
+  return type == T_signed_byte || type == T_signed_word ||
+         type == T_signed_long;
+}
+
+// The type to use when two types are combined (by +, say)
+inline NumericType ArtihmeticConversion(NumericType lhs, NumericType rhs) {
+  if (lhs == T_unknown) return rhs;
+  if (rhs == T_unknown) return lhs;
+  bool signed_result = IsSigned(lhs) || IsSigned(rhs);
+  NumericType wider = std::max(Unsigned(lhs), Unsigned(rhs));
+  return signed_result ? Signed(wider) : Unsigned(wider);
+}
+
 inline std::string ToString(NumericType type) {
   if (type == T_unknown) return "unknown";
   if (type == T_byte) return "byte";
@@ -57,6 +78,7 @@ inline std::string ToString(NumericType type) {
   if (type == T_signed_byte) return "signed byte";
   if (type == T_signed_word) return "signed word";
   if (type == T_signed_long) return "signed long";
+  return "???";
 }
 
 }  // namespace nsasm

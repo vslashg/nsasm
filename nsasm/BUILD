@@ -1,12 +1,9 @@
-NSASM_COPTS = ["--std=c++17"]
-
 package(default_visibility=["//visibility:public"])
 
 cc_library(
     name="mnemonic",
     srcs=["mnemonic.cc"],
     hdrs=["mnemonic.h"],
-    copts=NSASM_COPTS,
     deps=[
         "@absl//absl/strings",
         "@absl//absl/types:optional",
@@ -17,7 +14,6 @@ cc_library(
 cc_test(
     name="mnemonic_test",
     srcs=["mnemonic_test.cc"],
-    copts=NSASM_COPTS,
     deps=[
         ":mnemonic",
         "@absl//absl/strings",
@@ -30,7 +26,6 @@ cc_library(
     name="numeric_type",
     srcs=[],
     hdrs=["numeric_type.h"],
-    copts=NSASM_COPTS,
     deps=[
         ":error",
     ],
@@ -41,10 +36,10 @@ cc_library(
     name="expression",
     srcs=["expression.cc"],
     hdrs=["expression.h"],
-    copts=NSASM_COPTS,
     deps=[
         ":error",
         ":numeric_type",
+        "@absl//absl/types:optional",
     ],
 )
 
@@ -53,7 +48,6 @@ cc_library(
     name="addressing_mode",
     srcs=["addressing_mode.cc"],
     hdrs=["addressing_mode.h"],
-    copts=NSASM_COPTS,
     deps=[
         ":error",
         ":expression",
@@ -65,7 +59,6 @@ cc_library(
 cc_test(
     name="addressing_mode_test",
     srcs=["addressing_mode_test.cc"],
-    copts=NSASM_COPTS,
     deps=[
         ":addressing_mode",
         ":flag_state",
@@ -79,7 +72,6 @@ cc_library(
     name="instruction",
     srcs=["instruction.cc"],
     hdrs=["instruction.h"],
-    copts=NSASM_COPTS,
     deps=[
         ":addressing_mode",
         ":expression",
@@ -92,7 +84,6 @@ cc_library(
     name="flag_state",
     srcs=["flag_state.cc"],
     hdrs=["flag_state.h"],
-    copts=NSASM_COPTS,
     deps=[
         ":instruction",
         "@absl//absl/base:core_headers",
@@ -103,7 +94,6 @@ cc_library(
 cc_test(
     name="flag_state_test",
     srcs=["flag_state_test.cc"],
-    copts=NSASM_COPTS,
     deps=[
         ":flag_state",
         "@gtest//:gtest_main",
@@ -115,17 +105,16 @@ cc_library(
     name="opcode_map",
     srcs=["opcode_map.cc"],
     hdrs=["opcode_map.h"],
-    copts=NSASM_COPTS,
     deps=[
         ":flag_state",
         ":instruction",
+        "@absl//absl/container:flat_hash_map",
     ],
 )
 
 cc_test(
     name="opcode_map_test",
     srcs=["opcode_map_test.cc"],
-    copts=NSASM_COPTS,
     deps=[
         ":opcode_map",
         "@gtest//:gtest_main",
@@ -148,7 +137,6 @@ cc_library(
     name="decode",
     srcs=["decode.cc"],
     hdrs=["decode.h"],
-    copts=NSASM_COPTS,
     deps=[
         "@absl//absl/memory",
         ":error",
@@ -163,7 +151,6 @@ cc_library(
     name="rom",
     srcs=["rom.cc"],
     hdrs=["rom.h"],
-    copts=NSASM_COPTS,
     deps=[
         ":error",
     ],
@@ -174,7 +161,6 @@ cc_library(
     name="disassemble",
     srcs=["disassemble.cc"],
     hdrs=["disassemble.h"],
-    copts=NSASM_COPTS,
     deps=[
         ":decode",
         ":error",
@@ -189,7 +175,6 @@ cc_library(
     name="token",
     srcs=["token.cc"],
     hdrs=["token.h"],
-    copts=NSASM_COPTS,
     deps=[
         ":error",
         ":mnemonic",
@@ -200,7 +185,6 @@ cc_library(
 cc_test(
     name="token_test",
     srcs=["token_test.cc"],
-    copts=NSASM_COPTS,
     deps=[
         ":token",
         "@gtest//:gtest_main",
@@ -212,10 +196,10 @@ cc_library(
     name="assemble",
     srcs=["assemble.cc"],
     hdrs=["assemble.h"],
-    copts=NSASM_COPTS,
     deps=[
         ":error",
         ":instruction",
+        ":opcode_map",
         ":token",
     ],
 )

@@ -18,6 +18,13 @@ bool ImmediateArgumentUsesMBit(Mnemonic m);
 // controlled by the X status bit.
 bool ImmediateArgumentUsesXBit(Mnemonic m);
 
+// Returns true iff this mnemonic takes an offset (that is, if it is a branch
+// instruction.)
+bool TakesOffsetArgument(Mnemonic m);
+
+// Returns true iff this mnemonic takes a 16-bit offset.
+bool TakesLongOffsetArgument(Mnemonic m);
+
 // Returns true if the given instruction is consistent with the provided flag
 // state.
 bool IsConsistent(const Instruction& instruction, const FlagState& flag_state);

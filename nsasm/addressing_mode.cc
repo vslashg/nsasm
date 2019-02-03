@@ -80,6 +80,10 @@ std::string ArgsToString(AddressingMode addressing_mode, const Expression& arg1,
     case A_rel16: {
       return absl::StrFormat(" %s", arg1.ToString());
     }
+    case A_imm_fm:
+    case A_imm_fx: {
+      return absl::StrFormat(" #%s", arg1.ToString());
+    }
   }
 }
 
@@ -198,11 +202,17 @@ ErrorOr<AddressingMode> ForceLong(const Expression& arg, Mnemonic mnemonic,
 ErrorOr<AddressingMode> DeduceMode(Mnemonic m, SyntacticAddressingMode smode,
                                    const Expression& arg1,
                                    const Expression& arg2) {
-  // Relative addressing modes don't require deducing modes.
+  // Relative addressing is a special case.
   if (m == M_bcc || m == M_bcs || m == M_beq || m == M_bmi || m == M_bne ||
       m == M_bpl || m == M_bra || m == M_brl || m == M_bvc || m == M_bvs ||
       m == M_per) {
-    return Error("Logic error: DeduceMode() called on branch instruction");
+    if (smode != SA_dir || !arg1.SimpleIdentifier()) {
+      return Error("Branch instruction %s requires a named branch target.",
+                   ToString(m));
+    }
+    // TODO: This ought to be TakesLongOffsetArgument(), but there are
+    // cyclical dep problems with that.
+    return (m == M_brl || m == M_per) ? A_rel16 : A_rel8;
   }
 
   // Common check -- addressing modes that take addresses as arguments require

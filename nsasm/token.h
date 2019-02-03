@@ -2,6 +2,7 @@
 #define NSASM_TOKEN_H_
 
 #include <string>
+#include <ostream>
 
 #include "absl/types/variant.h"
 #include "nsasm/error.h"
@@ -9,6 +10,11 @@
 #include "nsasm/numeric_type.h"
 
 namespace nsasm {
+
+struct EndOfLine {
+  bool operator==(EndOfLine rhs) const { return true; }
+  bool operator!=(EndOfLine rhs) const { return false; }
+};
 
 class Token {
  public:
@@ -20,80 +26,128 @@ class Token {
       : value_(mnemonic), location_(loc) {}
   explicit Token(char punctuation, Location loc)
       : value_(punctuation), location_(loc) {}
+  explicit Token(EndOfLine eol, Location loc) : value_(eol), location_(loc) {}
 
-  const NumericType Type() const { return type_; }
+  bool IsIdentifier() const {
+    return absl::holds_alternative<std::string>(value_);
+  }
+
+  bool IsLiteral() const { return absl::holds_alternative<int>(value_); }
+
+  bool IsMnemonic() const {
+    return absl::holds_alternative<nsasm::Mnemonic>(value_);
+  }
+
+  bool IsPunctuation() const { return absl::holds_alternative<char>(value_); }
+
+  bool IsEndOfLine() const {
+    return absl::holds_alternative<EndOfLine>(value_);
+  }
+
+  absl::optional<std::string> Identifier() const {
+    if (!IsIdentifier()) {
+      return absl::nullopt;
+    }
+    return absl::get<std::string>(value_);
+  }
+  absl::optional<int> Literal() const {
+    if (!IsLiteral()) {
+      return absl::nullopt;
+    }
+    return absl::get<int>(value_);
+  }
+  absl::optional<nsasm::Mnemonic> Mnemonic() const {
+    if (!IsMnemonic()) {
+      return absl::nullopt;
+    }
+    return absl::get<nsasm::Mnemonic>(value_);
+  }
+  absl::optional<char> Punctuation() const {
+    if (!IsPunctuation()) {
+      return absl::nullopt;
+    }
+    return absl::get<char>(value_);
+  }
+
+  NumericType Type() const { return type_; }
+  const nsasm::Location& Location() const { return location_; }
+
+  // Stringize this token, for use in error messages
+  std::string ToString() const;
 
   // Equality compares raw value, but not location or bit width.
   // Intended for testing and parser writing.
-  bool operator==(const Token& rhs) const {
-    return value_ == rhs.value_;
-  }
-  bool operator!=(const Token& rhs) const {
-    return value_ != rhs.value_;
-  }
+  bool operator==(const Token& rhs) const { return value_ == rhs.value_; }
+  bool operator!=(const Token& rhs) const { return value_ != rhs.value_; }
 
  private:
-  absl::variant<std::string, int, Mnemonic, char> value_;
-  Location location_;
+  absl::variant<std::string, int, nsasm::Mnemonic, char, EndOfLine> value_;
+  nsasm::Location location_;
   NumericType type_ = T_unknown;
 };
+
+using TokenSpan = absl::Span<const nsasm::Token>;
 
 ErrorOr<std::vector<Token>> Tokenize(absl::string_view, Location loc);
 
 // Convenience comparisons.  Tokens cannot be created from values implicitly,
 // but can be compared for equality with those objects.
-bool operator==(const std::string& lhs, const Token& rhs) {
+inline bool operator==(const std::string& lhs, const Token& rhs) {
   return Token(lhs, Location()) == rhs;
 }
-bool operator!=(const std::string& lhs, const Token& rhs) {
+inline bool operator!=(const std::string& lhs, const Token& rhs) {
   return Token(lhs, Location()) != rhs;
 }
-bool operator==(const Token& lhs, const std::string& rhs) {
+inline bool operator==(const Token& lhs, const std::string& rhs) {
   return lhs == Token(rhs, Location());
 }
-bool operator!=(const Token& lhs, const std::string& rhs) {
+inline bool operator!=(const Token& lhs, const std::string& rhs) {
   return lhs != Token(rhs, Location());
 }
 
-bool operator==(int lhs, const Token& rhs) {
+inline bool operator==(int lhs, const Token& rhs) {
   return Token(lhs, Location()) == rhs;
 }
-bool operator!=(int lhs, const Token& rhs) {
+inline bool operator!=(int lhs, const Token& rhs) {
   return Token(lhs, Location()) != rhs;
 }
-bool operator==(const Token& lhs, int rhs) {
+inline bool operator==(const Token& lhs, int rhs) {
   return lhs == Token(rhs, Location());
 }
-bool operator!=(const Token& lhs, int rhs) {
+inline bool operator!=(const Token& lhs, int rhs) {
   return lhs != Token(rhs, Location());
 }
 
-bool operator==(Mnemonic lhs, const Token& rhs) {
+inline bool operator==(Mnemonic lhs, const Token& rhs) {
   return Token(lhs, Location()) == rhs;
 }
-bool operator!=(Mnemonic lhs, const Token& rhs) {
+inline bool operator!=(Mnemonic lhs, const Token& rhs) {
   return Token(lhs, Location()) != rhs;
 }
-bool operator==(const Token& lhs, Mnemonic rhs) {
+inline bool operator==(const Token& lhs, Mnemonic rhs) {
   return lhs == Token(rhs, Location());
 }
-bool operator!=(const Token& lhs, Mnemonic rhs) {
+inline bool operator!=(const Token& lhs, Mnemonic rhs) {
   return lhs != Token(rhs, Location());
 }
 
-bool operator==(char lhs, const Token& rhs) {
+inline bool operator==(char lhs, const Token& rhs) {
   return Token(lhs, Location()) == rhs;
 }
-bool operator!=(char lhs, const Token& rhs) {
+inline bool operator!=(char lhs, const Token& rhs) {
   return Token(lhs, Location()) != rhs;
 }
-bool operator==(const Token& lhs, char rhs) {
+inline bool operator==(const Token& lhs, char rhs) {
   return lhs == Token(rhs, Location());
 }
-bool operator!=(const Token& lhs, char rhs) {
+inline bool operator!=(const Token& lhs, char rhs) {
   return lhs != Token(rhs, Location());
 }
 
+// googletest pretty printer (streams suck)
+inline void PrintTo(const Token& v, std::ostream* out) {
+  *out << v.ToString();
+}
 
 }  // namespace nsasm
 

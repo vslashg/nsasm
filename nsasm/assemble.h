@@ -5,12 +5,14 @@
 #include "nsasm/instruction.h"
 #include "nsasm/token.h"
 
+#include "absl/types/variant.h"
+
 namespace nsasm {
 
-// Assemble an Instruction from the provided span of tokens.
-//
-// On success, consumes the assembled tokens off the front of the input.
-ErrorOr<Instruction> Assemble(absl::Span<const Token>* tokens);
+// Assembles a sequence of instructions and labels from a sequence of tokens.
+// These tokens are assumed to be from a single line of code.
+ErrorOr<std::vector<absl::variant<Instruction, std::string>>> Assemble(
+    absl::Span<const Token> tokens);
 
 }  // namespace nsasm
 

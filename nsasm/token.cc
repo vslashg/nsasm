@@ -1,6 +1,9 @@
 #include "nsasm/token.h"
 
 #include "absl/strings/ascii.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "nsasm/mnemonic.h"
 
 namespace nsasm {
 
@@ -23,11 +26,39 @@ bool IsIdentifierChar(char ch) {
 
 }  // namespace
 
+std::string Token::ToString() const {
+  if (IsEndOfLine()) {
+    return "end of line";
+  }
+  auto mnemonic = Mnemonic();
+  if (mnemonic) {
+    return absl::StrCat("mnemonic ", nsasm::ToString(*mnemonic));
+  }
+  auto literal = Literal();
+  if (literal) {
+    return absl::StrCat("literal ", *literal);
+  }
+  auto identifier = Identifier();
+  if (identifier) {
+    return absl::StrCat("identifier ", *identifier);
+  }
+  auto punctuation = Punctuation();
+  if (punctuation) {
+    char v = *punctuation;
+    if (v == 'A' || v == 'S' || v == 'X' || v == 'Y') {
+      return absl::StrFormat("register %c", v);
+    }
+    return absl::StrFormat("symbol `%c`", v);
+  }
+  return "logic error?";
+}
+
 ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
   std::vector<Token> result;
   while (true) {
     sv = absl::StripLeadingAsciiWhitespace(sv);
     if (sv.empty()) {
+      result.emplace_back(EndOfLine(), loc);
       return result;
     }
     int remain = sv.size();
@@ -35,7 +66,8 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
     // punctuation
     char next = sv[0];
     if (next == '(' || next == ')' || next == '[' || next == ']' ||
-        next == ',' || next == ':' || next == ',' || next == '#') {
+        next == ',' || next == ':' || next == ',' || next == '#' ||
+        next == '+' || next == '-' || next == '*' || next == '/') {
       sv.remove_prefix(1);
       result.emplace_back(next, loc);
       continue;
@@ -103,7 +135,7 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
       // register name?
       if (identifier.size() == 1) {
         char next = absl::ascii_toupper(identifier[0]);
-        if (next == 'A' || next == 'X' || next == 'Y') {
+        if (next == 'A' || next == 'S' || next == 'X' || next == 'Y') {
           result.emplace_back(next, loc);
           continue;
         }

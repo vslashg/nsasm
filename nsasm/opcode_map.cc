@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <map>
 
+#include "absl/container/flat_hash_map.h"
+
 namespace nsasm {
 
 namespace {
@@ -268,8 +270,8 @@ constexpr DecodeMapEntry decode_map[256] = {
     {M_sbc, A_dir_lx},  // 0xff
 };
 
-std::map<DecodeMapEntry, uint8_t> MakeReverseOpcodeMap() {
-  std::map<DecodeMapEntry, uint8_t> reverse;
+absl::flat_hash_map<DecodeMapEntry, uint8_t> MakeReverseOpcodeMap() {
+  absl::flat_hash_map<DecodeMapEntry, uint8_t> reverse;
   for (int i = 0; i < 256; ++i) {
     DecodeMapEntry entry = decode_map[i];
     reverse[entry] = i;
@@ -284,9 +286,9 @@ std::map<DecodeMapEntry, uint8_t> MakeReverseOpcodeMap() {
   return reverse;
 }
 
-const std::map<DecodeMapEntry, uint8_t>& ReverseOpcodeMap() {
+const absl::flat_hash_map<DecodeMapEntry, uint8_t>& ReverseOpcodeMap() {
   static auto* map =
-      new std::map<DecodeMapEntry, uint8_t>(MakeReverseOpcodeMap());
+      new absl::flat_hash_map<DecodeMapEntry, uint8_t>(MakeReverseOpcodeMap());
   return *map;
 }
 
@@ -301,14 +303,25 @@ Instruction DecodeOpcode(uint8_t opcode) {
 
 bool ImmediateArgumentUsesMBit(Mnemonic m) {
   DecodeMapEntry e(m, A_imm_fm);
-  return ReverseOpcodeMap().find(e) != ReverseOpcodeMap().end() ||
-         m == PM_add || m == PM_sub;
+  return ReverseOpcodeMap().contains(e) || m == PM_add || m == PM_sub;
 }
 
 bool ImmediateArgumentUsesXBit(Mnemonic m) {
   DecodeMapEntry e(m, A_imm_fx);
-  return ReverseOpcodeMap().find(e) != ReverseOpcodeMap().end();
+  return ReverseOpcodeMap().contains(e);
 }
+
+bool TakesOffsetArgument(Mnemonic m) {
+  DecodeMapEntry e8(m, A_rel8);
+  DecodeMapEntry e16(m, A_rel16);
+  return ReverseOpcodeMap().contains(e8) || ReverseOpcodeMap().contains(e16);
+}
+
+bool TakesLongOffsetArgument(Mnemonic m) {
+  DecodeMapEntry e16(m, A_rel16);
+  return ReverseOpcodeMap().contains(e16);
+}
+
 
 // TODO: This needs to be moved to instruction.h, and given argument type
 // smarts.  We've progressed a ways since this was introduced.
