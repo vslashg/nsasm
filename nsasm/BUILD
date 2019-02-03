@@ -203,3 +203,12 @@ cc_library(
         ":token",
     ],
 )
+
+cc_test(
+    name="assemble_test",
+    srcs=["assemble_test.cc"],
+    deps=[
+        ":assemble",
+        "@gtest//:gtest_main",
+    ],
+)

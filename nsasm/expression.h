@@ -212,7 +212,7 @@ class UnaryExpression : public Expression {
   }
   NumericType Type() const override { return Signed(arg_.Type()); }
   std::string ToString(NumericType type) const override {
-    return absl::StrCat("-", arg_.ToString(type));
+    return absl::StrFormat("op%c(%s)", op_.symbol, arg_.ToString(type));
   }
 
  private:
