@@ -17,7 +17,8 @@ bool IsHexDigit(char ch) {
 bool IsDecimalDigit(char ch) { return (ch >= '0' && ch <= '9'); }
 
 bool IsIdentifierFirstChar(char ch) {
-  return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_';
+  return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_' ||
+         ch == '.';
 }
 
 bool IsIdentifierChar(char ch) {
