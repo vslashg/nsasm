@@ -273,7 +273,6 @@ ErrorOr<Instruction> ParseInstruction(TokenSpan* pos) {
         NSASM_RETURN_IF_ERROR(
             ConfirmLegalRegister(pos, "Y", "with indirect indexing"));
         NSASM_RETURN_IF_ERROR(Consume(pos, 'Y', "register Y"));
-        NSASM_RETURN_IF_ERROR(Consume(pos, ')', "close parenthesis"));
         NSASM_RETURN_IF_ERROR(
             ConfirmAtEnd(pos, "after indirect indexed argument"));
         return CreateInstruction(mnemonic, SA_ind_y, Loc(pos),
