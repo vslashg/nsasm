@@ -31,7 +31,7 @@ class Token {
       : value_(mnemonic), location_(loc) {}
   explicit Token(char punctuation, Location loc)
       : value_(nsasm::Punctuation(punctuation)), location_(loc) {}
-  explicit Token(Punctuation punctuation, Location loc)
+  explicit Token(nsasm::Punctuation punctuation, Location loc)
       : value_(punctuation), location_(loc) {}
   explicit Token(EndOfLine eol, Location loc) : value_(eol), location_(loc) {}
 
@@ -151,6 +151,19 @@ inline bool operator==(const Token& lhs, char rhs) {
   return lhs == Token(rhs, Location());
 }
 inline bool operator!=(const Token& lhs, char rhs) {
+  return lhs != Token(rhs, Location());
+}
+
+inline bool operator==(nsasm::Punctuation lhs, const Token& rhs) {
+  return Token(lhs, Location()) == rhs;
+}
+inline bool operator!=(nsasm::Punctuation lhs, const Token& rhs) {
+  return Token(lhs, Location()) != rhs;
+}
+inline bool operator==(const Token& lhs, nsasm::Punctuation rhs) {
+  return lhs == Token(rhs, Location());
+}
+inline bool operator!=(const Token& lhs, nsasm::Punctuation rhs) {
   return lhs != Token(rhs, Location());
 }
 

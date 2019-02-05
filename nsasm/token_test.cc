@@ -11,7 +11,7 @@ std::vector<Token> TokenVector(const T&... arg) {
   return {Token(arg, Location())..., Token(EndOfLine(), Location())};
 }
 
-TEST(Token, Names) {
+TEST(Token, names) {
   {
     // Test that register names are reserved (aren't scanned as identifiers)
     auto x = Tokenize("a b c x y z", Location());
@@ -48,6 +48,20 @@ TEST(Token, Names) {
     NSASM_ASSERT_OK(x);
     EXPECT_EQ(*x, TokenVector("label1", M_adc, '(', 0x1234, ',', 'X', ')'));
   }
+  {
+    // Sanity check that something that looks like assembly can be tokenized
+    auto x = Tokenize("label1 JSL @module::func", Location());
+    NSASM_ASSERT_OK(x);
+    EXPECT_EQ(*x, TokenVector("label1", M_jsl, '@', "module", P_scope, "func"));
+  }
+}
+
+TEST(Token, convenience_equality_operator) {
+  EXPECT_EQ(Token('@', Location()), '@');
+  EXPECT_EQ(Token(P_scope, Location()), P_scope);
+  EXPECT_EQ(Token(12345, Location()), 12345);
+  EXPECT_EQ(Token("abcde", Location()), "abcde");
+  EXPECT_EQ(Token(M_adc, Location()), M_adc);
 }
 
 }  // namespace nsasm
