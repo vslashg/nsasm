@@ -45,11 +45,16 @@ std::string Token::ToString() const {
   }
   auto punctuation = Punctuation();
   if (punctuation) {
-    char v = *punctuation;
-    if (v == 'A' || v == 'S' || v == 'X' || v == 'Y') {
-      return absl::StrFormat("register %c", v);
+    switch (*punctuation) {
+    case P_scope:
+      return "symbol `::`";
+    default:
+      char v = *punctuation;
+      if (v == 'A' || v == 'S' || v == 'X' || v == 'Y') {
+        return absl::StrFormat("register %c", v);
+      }
+      return absl::StrFormat("symbol `%c`", v);
     }
-    return absl::StrFormat("symbol `%c`", v);
   }
   return "logic error?";
 }
@@ -65,6 +70,18 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
     int remain = sv.size();
 
     // punctuation
+    if (sv.size() >= 2) {
+      absl::string_view next = sv.substr(0, 2);
+      Punctuation found = P_none;
+      if (next == "::") {
+        found = P_scope;
+      }
+      if (found != P_none) {
+        sv.remove_prefix(2);
+        result.emplace_back(found, loc);
+        continue;
+      }
+    }
     char next = sv[0];
     if (next == '(' || next == ')' || next == '[' || next == ']' ||
         next == ',' || next == ':' || next == ',' || next == '#' ||

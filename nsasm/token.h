@@ -16,6 +16,11 @@ struct EndOfLine {
   bool operator!=(EndOfLine rhs) const { return false; }
 };
 
+enum Punctuation {
+  P_none = 0,
+  P_scope = 257,
+};
+
 class Token {
  public:
   explicit Token(const std::string& identifier, Location loc)
@@ -25,6 +30,8 @@ class Token {
   explicit Token(Mnemonic mnemonic, Location loc)
       : value_(mnemonic), location_(loc) {}
   explicit Token(char punctuation, Location loc)
+      : value_(nsasm::Punctuation(punctuation)), location_(loc) {}
+  explicit Token(Punctuation punctuation, Location loc)
       : value_(punctuation), location_(loc) {}
   explicit Token(EndOfLine eol, Location loc) : value_(eol), location_(loc) {}
 
@@ -38,7 +45,9 @@ class Token {
     return absl::holds_alternative<nsasm::Mnemonic>(value_);
   }
 
-  bool IsPunctuation() const { return absl::holds_alternative<char>(value_); }
+  bool IsPunctuation() const {
+    return absl::holds_alternative<nsasm::Punctuation>(value_);
+  }
 
   bool IsEndOfLine() const {
     return absl::holds_alternative<EndOfLine>(value_);
@@ -62,11 +71,11 @@ class Token {
     }
     return absl::get<nsasm::Mnemonic>(value_);
   }
-  absl::optional<char> Punctuation() const {
+  absl::optional<nsasm::Punctuation> Punctuation() const {
     if (!IsPunctuation()) {
       return absl::nullopt;
     }
-    return absl::get<char>(value_);
+    return absl::get<nsasm::Punctuation>(value_);
   }
 
   NumericType Type() const { return type_; }
@@ -81,7 +90,8 @@ class Token {
   bool operator!=(const Token& rhs) const { return value_ != rhs.value_; }
 
  private:
-  absl::variant<std::string, int, nsasm::Mnemonic, char, EndOfLine> value_;
+  absl::variant<std::string, int, nsasm::Mnemonic, nsasm::Punctuation,
+                EndOfLine> value_;
   nsasm::Location location_;
   NumericType type_ = T_unknown;
 };
