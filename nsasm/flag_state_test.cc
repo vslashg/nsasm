@@ -17,22 +17,15 @@ TEST(FlagState, Names) {
   const NameTestCase name_test_cases[] = {
       {"unk", B_unknown, B_unknown, B_unknown},
       {"emu", B_on, B_on, B_on},
+      {"native", B_off, B_original, B_original},
       {"m8x8", B_off, B_on, B_on},
       {"m8x16", B_off, B_on, B_off},
-      {"m8x*", B_off, B_on, B_original},
-      {"m8x?", B_off, B_on, B_unknown},
+      {"m8", B_off, B_on, B_original},
       {"m16x8", B_off, B_off, B_on},
       {"m16x16", B_off, B_off, B_off},
-      {"m16x*", B_off, B_off, B_original},
-      {"m16x?", B_off, B_off, B_unknown},
-      {"m*x8", B_off, B_original, B_on},
-      {"m*x16", B_off, B_original, B_off},
-      {"m*x*", B_off, B_original, B_original},
-      {"m*x?", B_off, B_original, B_unknown},
-      {"m?x8", B_off, B_unknown, B_on},
-      {"m?x16", B_off, B_unknown, B_off},
-      {"m?x*", B_off, B_unknown, B_original},
-      {"m?x?", B_off, B_unknown, B_unknown},
+      {"m16", B_off, B_off, B_original},
+      {"x8", B_off, B_original, B_on},
+      {"x16", B_off, B_original, B_off},
   };
 
   for (const NameTestCase& test_case : name_test_cases) {

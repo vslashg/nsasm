@@ -14,22 +14,17 @@
 //
 // Bit states can be converted to names and back, for use in assembly directives
 // and error messages.  These names do not fully express all possible bit combinations,
-// but are intended to capture useful ones.  Some such names are:
+// but are intended to capture useful ones.
 //
-// unk (when the emulation state is unknown)
-// emu (emulation mode)
-// m8x8 (native mode, `m` and `x` bits on, 8 bits wide)
-// m8x16
-// m16x16
-// m?x? (`m` and `x` in unknown state)
-// m*x* (`m` and `x` in original state)
-//
-// The last two deserve some further explanation.  `*` as a bit value
-// represents the "original" input state to a subroutine.  This is used
-// to track an unknown bit state that the subroutine promises to return
-// to that state before returning.  `?` represents a true unknown state,
-// with no promise to be returned.  These two values are represented with
-// B_original and B_unknown below.
+// The naming scheme is:
+//   unknown (when the state is entirely unknown)
+//   emu (`e` bit on)
+//   native (native -- `e` bit off -- `m` and `x` bits unknown)
+//   m8x8 (native mode, `m` and `x` bits on, 8 bits wide)
+//   m8x16
+//   m16x16
+//   m8 (native, `m` bit on, `x` bit in unknown state)
+//   x16 (native, `x` bit off, `m` bit in unknown state)
 
 namespace nsasm {
 
@@ -87,11 +82,12 @@ constexpr BitState ConstrainedForEBit(BitState input, BitState e) {
 class FlagState {
  public:
   // Defaults to assuming 65816 native mode, but with otherwise unknown state.
-  constexpr FlagState(BitState e_bit = B_off, BitState m_bit = B_original,
-                      BitState x_bit = B_original,
-                      BitState pushed_m_bit = B_unknown,
-                      BitState pushed_x_bit = B_unknown,
-                      BitState c_bit = B_unknown)
+  explicit constexpr FlagState(BitState e_bit = B_off,
+                               BitState m_bit = B_original,
+                               BitState x_bit = B_original,
+                               BitState pushed_m_bit = B_unknown,
+                               BitState pushed_x_bit = B_unknown,
+                               BitState c_bit = B_unknown)
       : e_bit_(e_bit),
         m_bit_(ConstrainedForEBit(m_bit, e_bit)),
         x_bit_(ConstrainedForEBit(x_bit, e_bit)),
@@ -161,6 +157,22 @@ class FlagState {
   BitState pushed_x_bit_;
   BitState c_bit_;
 };
+
+// googletest pretty printer (streams are hot garbage)
+inline void PrintTo(BitState v, std::ostream* out) {
+  if (v == B_on) {
+    *out << "B_on";
+  } else if (v == B_off) {
+    *out << "B_off";
+  } else if (v == B_unknown) {
+    *out << "B_unknown";
+  } else if (v == B_original) {
+    *out << "B_orignal";
+  } else {
+    *out << static_cast<int>(v);
+  }
+}
+
 
 }  // namespace nsasm
 
