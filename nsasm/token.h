@@ -1,10 +1,11 @@
 #ifndef NSASM_TOKEN_H_
 #define NSASM_TOKEN_H_
 
-#include <string>
 #include <ostream>
+#include <string>
 
 #include "absl/types/variant.h"
+#include "nsasm/directive.h"
 #include "nsasm/error.h"
 #include "nsasm/mnemonic.h"
 #include "nsasm/numeric_type.h"
@@ -29,6 +30,8 @@ class Token {
       : value_(number), location_(loc), type_(type) {}
   explicit Token(Mnemonic mnemonic, Location loc)
       : value_(mnemonic), location_(loc) {}
+  explicit Token(DirectiveName directive_name, Location loc)
+      : value_(directive_name), location_(loc) {}
   explicit Token(char punctuation, Location loc)
       : value_(nsasm::Punctuation(punctuation)), location_(loc) {}
   explicit Token(nsasm::Punctuation punctuation, Location loc)
@@ -43,6 +46,10 @@ class Token {
 
   bool IsMnemonic() const {
     return absl::holds_alternative<nsasm::Mnemonic>(value_);
+  }
+
+  bool IsDirectiveName() const {
+    return absl::holds_alternative<nsasm::DirectiveName>(value_);
   }
 
   bool IsPunctuation() const {
@@ -71,6 +78,12 @@ class Token {
     }
     return absl::get<nsasm::Mnemonic>(value_);
   }
+  absl::optional<nsasm::DirectiveName> DirectiveName() const {
+    if (!IsMnemonic()) {
+      return absl::nullopt;
+    }
+    return absl::get<nsasm::DirectiveName>(value_);
+  }
   absl::optional<nsasm::Punctuation> Punctuation() const {
     if (!IsPunctuation()) {
       return absl::nullopt;
@@ -90,8 +103,9 @@ class Token {
   bool operator!=(const Token& rhs) const { return value_ != rhs.value_; }
 
  private:
-  absl::variant<std::string, int, nsasm::Mnemonic, nsasm::Punctuation,
-                EndOfLine> value_;
+  absl::variant<std::string, int, nsasm::Mnemonic, nsasm::DirectiveName,
+                nsasm::Punctuation, EndOfLine>
+      value_;
   nsasm::Location location_;
   NumericType type_ = T_unknown;
 };
@@ -141,6 +155,19 @@ inline bool operator!=(const Token& lhs, Mnemonic rhs) {
   return lhs != Token(rhs, Location());
 }
 
+inline bool operator==(DirectiveName lhs, const Token& rhs) {
+  return Token(lhs, Location()) == rhs;
+}
+inline bool operator!=(DirectiveName lhs, const Token& rhs) {
+  return Token(lhs, Location()) != rhs;
+}
+inline bool operator==(const Token& lhs, DirectiveName rhs) {
+  return lhs == Token(rhs, Location());
+}
+inline bool operator!=(const Token& lhs, DirectiveName rhs) {
+  return lhs != Token(rhs, Location());
+}
+
 inline bool operator==(char lhs, const Token& rhs) {
   return Token(lhs, Location()) == rhs;
 }
@@ -168,9 +195,7 @@ inline bool operator!=(const Token& lhs, nsasm::Punctuation rhs) {
 }
 
 // googletest pretty printer (streams suck)
-inline void PrintTo(const Token& v, std::ostream* out) {
-  *out << v.ToString();
-}
+inline void PrintTo(const Token& v, std::ostream* out) { *out << v.ToString(); }
 
 }  // namespace nsasm
 

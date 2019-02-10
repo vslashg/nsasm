@@ -310,9 +310,9 @@ ErrorOr<Instruction> ParseInstruction(TokenSpan* pos) {
 
 }  // namespace
 
-ErrorOr<std::vector<absl::variant<Instruction, std::string>>> Assemble(
-    absl::Span<const Token> tokens) {
-  std::vector<absl::variant<Instruction, std::string>> result_vector;
+ErrorOr<std::vector<absl::variant<Instruction, Directive, std::string>>>
+Assemble(absl::Span<const Token> tokens) {
+  std::vector<absl::variant<Instruction, Directive, std::string>> result_vector;
 
   while (!tokens.empty()) {
     // An unexpected token at the beginning of the line is a label.

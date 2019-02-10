@@ -151,6 +151,12 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
         result.emplace_back(*mnemonic, loc);
         continue;
       }
+      // directive?
+      auto directive = ToDirectiveName(identifier);
+      if (directive.has_value()) {
+        result.emplace_back(*directive, loc);
+        continue;
+      }
       // register name?
       if (identifier.size() == 1) {
         char next = absl::ascii_toupper(identifier[0]);

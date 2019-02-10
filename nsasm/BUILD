@@ -172,10 +172,35 @@ cc_library(
 
 
 cc_library(
+    name="directive",
+    srcs=["directive.cc"],
+    hdrs=["directive.h"],
+    deps=[
+        ":expression",
+        ":flag_state",
+        "@absl//absl/container:flat_hash_map",
+        "@absl//absl/strings",
+        "@absl//absl/types:optional",
+    ],
+)
+
+cc_test(
+    name="directive_test",
+    srcs=["directive_test.cc"],
+    deps=[
+        ":directive",
+        "@absl//absl/strings",
+        "@gtest//:gtest_main",
+    ],
+)
+
+
+cc_library(
     name="token",
     srcs=["token.cc"],
     hdrs=["token.h"],
     deps=[
+        ":directive",
         ":error",
         ":mnemonic",
         ":numeric_type",
@@ -197,6 +222,7 @@ cc_library(
     srcs=["assemble.cc"],
     hdrs=["assemble.h"],
     deps=[
+        ":directive",
         ":error",
         ":instruction",
         ":opcode_map",
@@ -209,30 +235,6 @@ cc_test(
     srcs=["assemble_test.cc"],
     deps=[
         ":assemble",
-        "@gtest//:gtest_main",
-    ],
-)
-
-
-cc_library(
-    name="directive",
-    srcs=["directive.cc"],
-    hdrs=["directive.h"],
-    deps=[
-        ":expression",
-        ":flag_state",
-        "@absl//absl/container:flat_hash_map",
-        "@absl//absl/strings",
-        "@absl//absl/types:optional",
-    ],
-)
-
-cc_test(
-    name="directive_test",
-    srcs=["directive_test.cc"],
-    deps=[
-        ":directive",
-        "@absl//absl/strings",
         "@gtest//:gtest_main",
     ],
 )

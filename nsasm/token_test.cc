@@ -54,6 +54,12 @@ TEST(Token, names) {
     NSASM_ASSERT_OK(x);
     EXPECT_EQ(*x, TokenVector("label1", M_jsl, '@', "module", P_scope, "func"));
   }
+  {
+    // Sanity check that directives can be tokenized
+    auto x = Tokenize("label1 .DB $12, $34, foo", Location());
+    NSASM_ASSERT_OK(x);
+    EXPECT_EQ(*x, TokenVector("label1", D_db, 0x12, ',', 0x34, ',', "foo"));
+  }
 }
 
 TEST(Token, convenience_equality_operator) {
