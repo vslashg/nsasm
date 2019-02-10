@@ -212,3 +212,27 @@ cc_test(
         "@gtest//:gtest_main",
     ],
 )
+
+
+cc_library(
+    name="directive",
+    srcs=["directive.cc"],
+    hdrs=["directive.h"],
+    deps=[
+        ":expression",
+        ":flag_state",
+        "@absl//absl/container:flat_hash_map",
+        "@absl//absl/strings",
+        "@absl//absl/types:optional",
+    ],
+)
+
+cc_test(
+    name="directive_test",
+    srcs=["directive_test.cc"],
+    deps=[
+        ":directive",
+        "@absl//absl/strings",
+        "@gtest//:gtest_main",
+    ],
+)

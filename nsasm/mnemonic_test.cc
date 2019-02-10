@@ -8,19 +8,22 @@ namespace {
 
 // Helper to make conversion tests; intended to be invoked by macro.
 void CheckToString(Mnemonic m, std::string s) {
+  SCOPED_TRACE(s);
   std::string upper = s;
   absl::AsciiStrToUpper(&upper);
   EXPECT_EQ(ToString(m), upper);
+  EXPECT_TRUE(ToMnemonic(upper).has_value());
   EXPECT_EQ(*ToMnemonic(upper), m);
 
   // lowercase strings should convert to mnemonics as well
+  EXPECT_TRUE(ToMnemonic(s).has_value());
   EXPECT_EQ(*ToMnemonic(s), m);
 }
 
 #define CHECK_TO_STRING(name) CheckToString(M_##name, #name)
 #define CHECK_PSEUDO_TO_STRING(name) CheckToString(PM_##name, #name)
 
-TEST(Opcodes, string_conversions) {
+TEST(Mnemonic, string_conversions) {
   CHECK_TO_STRING(adc);
   CHECK_TO_STRING(and);
   CHECK_TO_STRING(asl);
