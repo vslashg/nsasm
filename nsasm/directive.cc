@@ -2,6 +2,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 
 namespace nsasm {
@@ -46,6 +47,24 @@ DirectiveType DirectiveTypeByName(DirectiveName d) {
     return DT_single_arg;  // ???
   }
   return iter->second;
+}
+
+std::string Directive::ToString() const {
+  DirectiveType type = DirectiveTypeByName(name);
+  switch (type) {
+    case DT_single_arg:
+      return absl::StrCat(nsasm::ToString(name), " ", argument.ToString());
+    case DT_flag_arg:
+      return absl::StrCat(nsasm::ToString(name), " ",
+                          flag_state_argument.ToName());
+    case DT_list_arg:
+      return absl::StrCat(
+          nsasm::ToString(name), " ",
+          absl::StrJoin(list_argument, ", ",
+                        [](std::string* out, const ExpressionOrNull& v) {
+                          out->append(v.ToString());
+                        }));
+  }
 }
 
 }  // namespace nsasm

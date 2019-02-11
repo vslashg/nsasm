@@ -38,7 +38,11 @@ struct Directive {
   ExpressionOrNull argument;
   FlagState flag_state_argument;
   std::vector<ExpressionOrNull> list_argument;
+
+  std::string ToString() const;
 };
+
+
 
 // googletest pretty printers (streams are an abomination)
 inline void PrintTo(DirectiveName d, std::ostream* out) {

@@ -79,7 +79,7 @@ class Token {
     return absl::get<nsasm::Mnemonic>(value_);
   }
   absl::optional<nsasm::DirectiveName> DirectiveName() const {
-    if (!IsMnemonic()) {
+    if (!IsDirectiveName()) {
       return absl::nullopt;
     }
     return absl::get<nsasm::DirectiveName>(value_);

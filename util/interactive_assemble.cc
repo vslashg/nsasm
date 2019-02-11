@@ -5,6 +5,7 @@
 #include "nsasm/token.h"
 
 using nsasm::Assemble;
+using nsasm::Directive;
 using nsasm::Instruction;
 using nsasm::Location;
 using nsasm::Tokenize;
@@ -37,6 +38,10 @@ int main(int argc, char** argv) {
       if (absl::holds_alternative<Instruction>(line)) {
         const Instruction& ins = absl::get<Instruction>(line);
         std::cout << "    " << ins.ToString() << "\n";
+      }
+      if (absl::holds_alternative<Directive>(line)) {
+        const Directive& dir = absl::get<Directive>(line);
+        std::cout << "    " << dir.ToString() << "\n";
       }
     }
   }

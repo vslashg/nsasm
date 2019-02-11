@@ -65,7 +65,7 @@ ErrorOr<ExpressionOrNull> Expr(TokenSpan* pos) {
   NSASM_RETURN_IF_ERROR(term_or_error);
   ExpressionOrNull term = std::move(*term_or_error);
 
-  while (!pos->empty()) {
+  while (!AtEnd(pos)) {
     BinaryOp oper;
     if (pos->front() == '+') {
       oper = plus_op;
@@ -89,7 +89,7 @@ ErrorOr<ExpressionOrNull> Term(TokenSpan* pos) {
   NSASM_RETURN_IF_ERROR(factor_or_error);
   ExpressionOrNull factor = std::move(*factor_or_error);
 
-  while (!pos->empty()) {
+  while (!AtEnd(pos)) {
     BinaryOp oper;
     if (pos->front() == '*') {
       oper = multiply_op;
@@ -161,8 +161,8 @@ ErrorOr<Instruction> CreateInstruction(
 }
 
 ErrorOr<Instruction> ParseInstruction(TokenSpan* pos) {
-  if (pos->empty() || !pos->front().IsMnemonic()) {
-    return Error("logic error: AssembleExpression() called on non-mnemonic");
+  if (AtEnd(pos) || !pos->front().IsMnemonic()) {
+    return Error("logic error: ParseInstruction() called on non-mnemonic");
   }
   Mnemonic mnemonic = *pos->front().Mnemonic();
   pos->remove_prefix(1);
@@ -308,6 +308,56 @@ ErrorOr<Instruction> ParseInstruction(TokenSpan* pos) {
   }
 }
 
+ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
+  if (AtEnd(pos) || !pos->front().IsDirectiveName()) {
+    return Error("logic error: ParseDirective() called on non-directive-name");
+  }
+  Directive directive;
+  directive.name = *pos->front().DirectiveName();
+  pos->remove_prefix(1);
+  DirectiveType directive_type = DirectiveTypeByName(directive.name);
+  switch (directive_type) {
+    case DT_single_arg: {
+      auto arg1 = Expr(pos);
+      NSASM_RETURN_IF_ERROR(arg1);
+      directive.argument = std::move(*arg1);
+      NSASM_RETURN_IF_ERROR(ConfirmAtEnd(pos, "after directive argument"));
+      return std::move(directive);
+    }
+    case DT_list_arg: {
+      // Loop structured such that we must find at least one argument, but more
+      // are ok.
+      while (true) {
+        auto arg = Expr(pos);
+        NSASM_RETURN_IF_ERROR(arg);
+        directive.list_argument.push_back(std::move(*arg));
+        if (AtEnd(pos)) {
+          return std::move(directive);
+        }
+        NSASM_RETURN_IF_ERROR(Consume(pos, ',', "comma or end of line"));
+      }
+      return std::move(directive);
+    }
+    case DT_flag_arg: {
+      Location loc = pos->front().Location();
+      if (!pos->front().IsIdentifier()) {
+        return Error("Expected mode name, found %s", pos->front().ToString())
+            .SetLocation(loc);
+      }
+      std::string flag_name = *pos->front().Identifier();
+      pos->remove_prefix(1);
+      auto flag_state = FlagState::FromName(flag_name);
+      if (!flag_state.has_value()) {
+        return Error("\"%s\" does not name a flag state", flag_name)
+            .SetLocation(loc);
+      }
+      directive.flag_state_argument = *flag_state;
+      NSASM_RETURN_IF_ERROR(ConfirmAtEnd(pos, "after flag state"));
+      return std::move(directive);
+    }
+  }
+}
+
 }  // namespace
 
 ErrorOr<std::vector<absl::variant<Instruction, Directive, std::string>>>
@@ -330,10 +380,27 @@ Assemble(absl::Span<const Token> tokens) {
       }
     }
 
+    if (AtEnd(&tokens)) {
+      return result_vector;
+    }
+
+    if (tokens.front().IsDirectiveName()) {
+      auto directive = ParseDirective(&tokens);
+      NSASM_RETURN_IF_ERROR(directive);
+      if (!AtEnd(&tokens)) {
+        return Error(
+            "logic error: ParseDirective() did not read to a line end");
+      }
+      tokens.remove_prefix(1);
+      result_vector.push_back(std::move(*directive));
+      continue;
+    }
+
     auto mnemonic = tokens.front().Mnemonic();
     Location mnemonic_location = tokens.front().Location();
     if (!mnemonic) {
-      return Error("Expected mnemonic but found %s", tokens.front().ToString())
+      return Error("Expected mnemonic or directive but found %s",
+                   tokens.front().ToString())
           .SetLocation(mnemonic_location);
     }
     auto instruction = ParseInstruction(&tokens);
