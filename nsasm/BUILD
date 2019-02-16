@@ -218,9 +218,9 @@ cc_test(
 
 
 cc_library(
-    name="assemble",
-    srcs=["assemble.cc"],
-    hdrs=["assemble.h"],
+    name="parse",
+    srcs=["parse.cc"],
+    hdrs=["parse.h"],
     deps=[
         ":directive",
         ":error",
@@ -231,10 +231,10 @@ cc_library(
 )
 
 cc_test(
-    name="assemble_test",
-    srcs=["assemble_test.cc"],
+    name="parse_test",
+    srcs=["parse_test.cc"],
     deps=[
-        ":assemble",
+        ":parse",
         "@gtest//:gtest_main",
     ],
 )

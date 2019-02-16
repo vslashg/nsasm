@@ -1,4 +1,4 @@
-#include "nsasm/assemble.h"
+#include "nsasm/parse.h"
 
 #include <tuple>
 
@@ -360,8 +360,8 @@ ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
 
 }  // namespace
 
-ErrorOr<std::vector<absl::variant<Instruction, Directive, std::string>>>
-Assemble(absl::Span<const Token> tokens) {
+ErrorOr<std::vector<absl::variant<Instruction, Directive, std::string>>> Parse(
+    absl::Span<const Token> tokens) {
   std::vector<absl::variant<Instruction, Directive, std::string>> result_vector;
 
   while (!tokens.empty()) {

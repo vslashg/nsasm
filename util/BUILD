@@ -20,10 +20,10 @@ cc_binary(
 )
 
 cc_binary(
-    name="interactive_assemble",
-    srcs=["interactive_assemble.cc"],
+    name="interactive_parse",
+    srcs=["interactive_parse.cc"],
     deps=[
-        "//nsasm:assemble",
+        "//nsasm:parse",
         "//nsasm:error",
         "//nsasm:token",
     ],

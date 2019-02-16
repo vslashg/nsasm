@@ -1,4 +1,4 @@
-#include "nsasm/assemble.h"
+#include "nsasm/parse.h"
 
 #include "gtest/gtest.h"
 #include "nsasm/expression.h"
@@ -7,7 +7,7 @@
 namespace nsasm {
 namespace {
 
-TEST(Assemble, round_trip) {
+TEST(Parse, round_trip) {
   // round trip every possible instruction through the assembler
   for (int i = 0; i < 256; ++i) {
     nsasm::Instruction ins = nsasm::DecodeOpcode(i);
@@ -27,12 +27,12 @@ TEST(Assemble, round_trip) {
     SCOPED_TRACE(line);
     auto tokens = Tokenize(line, Location());
     ASSERT_TRUE(tokens.ok());
-    auto assembled = Assemble(*tokens);
-    ASSERT_TRUE(assembled.ok());
-    ASSERT_EQ(assembled->size(), 1);
-    ASSERT_TRUE(absl::holds_alternative<Instruction>(assembled->front()));
+    auto parsed = Parse(*tokens);
+    ASSERT_TRUE(parsed.ok());
+    ASSERT_EQ(parsed->size(), 1);
+    ASSERT_TRUE(absl::holds_alternative<Instruction>(parsed->front()));
     const nsasm::Instruction& round_tripped =
-        absl::get<Instruction>(assembled->front());
+        absl::get<Instruction>(parsed->front());
 
     EXPECT_EQ(ins.mnemonic, round_tripped.mnemonic);
     EXPECT_EQ(ins.addressing_mode, round_tripped.addressing_mode);

@@ -1,5 +1,5 @@
-#ifndef NSASM_ASSEMBLE_H_
-#define NSASM_ASSEMBLE_H_
+#ifndef NSASM_PARSE_H_
+#define NSASM_PARSE_H_
 
 #include "nsasm/directive.h"
 #include "nsasm/error.h"
@@ -10,11 +10,11 @@
 
 namespace nsasm {
 
-// Assembles a sequence of instructions and labels from a sequence of tokens.
+// Parses a sequence of tokens into a sequence of instructions and labels.
 // These tokens are assumed to be from a single line of code.
-ErrorOr<std::vector<absl::variant<Instruction, Directive, std::string>>> Assemble(
+ErrorOr<std::vector<absl::variant<Instruction, Directive, std::string>>> Parse(
     absl::Span<const Token> tokens);
 
 }  // namespace nsasm
 
-#endif  // NSASM_ASSEMBLE_H_
+#endif  // NSASM_PARSE_H_

@@ -1,13 +1,13 @@
 #include <iostream>
 
-#include "nsasm/assemble.h"
 #include "nsasm/error.h"
+#include "nsasm/parse.h"
 #include "nsasm/token.h"
 
-using nsasm::Assemble;
 using nsasm::Directive;
 using nsasm::Instruction;
 using nsasm::Location;
+using nsasm::Parse;
 using nsasm::Tokenize;
 using nsasm::TokenSpan;
 
@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     }
 
     // try to assemble
-    auto assembly = Assemble(*tokens);
+    auto assembly = Parse(*tokens);
     if (!assembly.ok()) {
       std::cout << assembly.error().ToString() << "\n";
       continue;
