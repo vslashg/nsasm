@@ -360,9 +360,9 @@ ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
 
 }  // namespace
 
-ErrorOr<std::vector<absl::variant<Instruction, Directive, std::string>>> Parse(
+ErrorOr<std::vector<absl::variant<Statement, std::string>>> Parse(
     absl::Span<const Token> tokens) {
-  std::vector<absl::variant<Instruction, Directive, std::string>> result_vector;
+  std::vector<absl::variant<Statement, std::string>> result_vector;
 
   while (!tokens.empty()) {
     // An unexpected token at the beginning of the line is a label.
@@ -392,7 +392,7 @@ ErrorOr<std::vector<absl::variant<Instruction, Directive, std::string>>> Parse(
             "logic error: ParseDirective() did not read to a line end");
       }
       tokens.remove_prefix(1);
-      result_vector.push_back(std::move(*directive));
+      result_vector.push_back(Statement(std::move(*directive)));
       continue;
     }
 
@@ -410,7 +410,7 @@ ErrorOr<std::vector<absl::variant<Instruction, Directive, std::string>>> Parse(
           "logic error: ParseInstruction() did not read to a line end");
     }
     tokens.remove_prefix(1);
-    result_vector.push_back(std::move(*instruction));
+    result_vector.push_back(Statement(std::move(*instruction)));
   }
   return result_vector;
 }

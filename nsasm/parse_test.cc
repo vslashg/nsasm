@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include "nsasm/expression.h"
 #include "nsasm/opcode_map.h"
+#include "nsasm/statement.h"
 
 namespace nsasm {
 namespace {
@@ -30,16 +31,15 @@ TEST(Parse, round_trip) {
     auto parsed = Parse(*tokens);
     ASSERT_TRUE(parsed.ok());
     ASSERT_EQ(parsed->size(), 1);
-    ASSERT_TRUE(absl::holds_alternative<Instruction>(parsed->front()));
-    const nsasm::Instruction& round_tripped =
-        absl::get<Instruction>(parsed->front());
-
-    EXPECT_EQ(ins.mnemonic, round_tripped.mnemonic);
-    EXPECT_EQ(ins.addressing_mode, round_tripped.addressing_mode);
+    ASSERT_TRUE(absl::holds_alternative<Statement>(parsed->front()));
+    auto round_tripped = absl::get<Statement>(parsed->front()).Instruction();
+    ASSERT_TRUE(round_tripped);
+    EXPECT_EQ(ins.mnemonic, round_tripped->mnemonic);
+    EXPECT_EQ(ins.addressing_mode, round_tripped->addressing_mode);
     EXPECT_EQ(ins.arg1.Evaluate(Location()),
-              round_tripped.arg1.Evaluate(Location()));
+              round_tripped->arg1.Evaluate(Location()));
     EXPECT_EQ(ins.arg2.Evaluate(Location()),
-              round_tripped.arg2.Evaluate(Location()));
+              round_tripped->arg2.Evaluate(Location()));
   }
 }
 

@@ -4,10 +4,9 @@
 #include "nsasm/parse.h"
 #include "nsasm/token.h"
 
-using nsasm::Directive;
-using nsasm::Instruction;
 using nsasm::Location;
 using nsasm::Parse;
+using nsasm::Statement;
 using nsasm::Tokenize;
 using nsasm::TokenSpan;
 
@@ -35,13 +34,9 @@ int main(int argc, char** argv) {
       if (absl::holds_alternative<std::string>(line)) {
         std::cout << absl::get<std::string>(line) << ":\n";
       }
-      if (absl::holds_alternative<Instruction>(line)) {
-        const Instruction& ins = absl::get<Instruction>(line);
-        std::cout << "    " << ins.ToString() << "\n";
-      }
-      if (absl::holds_alternative<Directive>(line)) {
-        const Directive& dir = absl::get<Directive>(line);
-        std::cout << "    " << dir.ToString() << "\n";
+      if (absl::holds_alternative<Statement>(line)) {
+        const Statement& st = absl::get<Statement>(line);
+        std::cout << "    " << st.ToString() << "\n";
       }
     }
   }

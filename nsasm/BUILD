@@ -218,6 +218,17 @@ cc_test(
 
 
 cc_library(
+    name="statement",
+    srcs=["statement.cc"],
+    hdrs=["statement.h"],
+    deps=[
+        ":directive",
+        ":instruction",
+    ],
+)
+
+
+cc_library(
     name="parse",
     srcs=["parse.cc"],
     hdrs=["parse.h"],
@@ -226,6 +237,7 @@ cc_library(
         ":error",
         ":instruction",
         ":opcode_map",
+        ":statement",
         ":token",
     ],
 )
