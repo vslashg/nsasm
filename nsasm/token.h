@@ -38,57 +38,23 @@ class Token {
       : value_(punctuation), location_(loc) {}
   explicit Token(EndOfLine eol, Location loc) : value_(eol), location_(loc) {}
 
-  bool IsIdentifier() const {
-    return absl::holds_alternative<std::string>(value_);
+  const std::string* Identifier() const {
+    return absl::get_if<std::string>(&value_);
   }
-
-  bool IsLiteral() const { return absl::holds_alternative<int>(value_); }
-
-  bool IsMnemonic() const {
-    return absl::holds_alternative<nsasm::Mnemonic>(value_);
+  const int* Literal() const {
+    return absl::get_if<int>(&value_);
   }
-
-  bool IsDirectiveName() const {
-    return absl::holds_alternative<nsasm::DirectiveName>(value_);
+  const nsasm::Mnemonic* Mnemonic() const {
+    return absl::get_if<nsasm::Mnemonic>(&value_);
   }
-
-  bool IsPunctuation() const {
-    return absl::holds_alternative<nsasm::Punctuation>(value_);
+  const nsasm::DirectiveName* DirectiveName() const {
+    return absl::get_if<nsasm::DirectiveName>(&value_);
   }
-
-  bool IsEndOfLine() const {
-    return absl::holds_alternative<EndOfLine>(value_);
+  const nsasm::Punctuation* Punctuation() const {
+    return absl::get_if<nsasm::Punctuation>(&value_);
   }
-
-  absl::optional<std::string> Identifier() const {
-    if (!IsIdentifier()) {
-      return absl::nullopt;
-    }
-    return absl::get<std::string>(value_);
-  }
-  absl::optional<int> Literal() const {
-    if (!IsLiteral()) {
-      return absl::nullopt;
-    }
-    return absl::get<int>(value_);
-  }
-  absl::optional<nsasm::Mnemonic> Mnemonic() const {
-    if (!IsMnemonic()) {
-      return absl::nullopt;
-    }
-    return absl::get<nsasm::Mnemonic>(value_);
-  }
-  absl::optional<nsasm::DirectiveName> DirectiveName() const {
-    if (!IsDirectiveName()) {
-      return absl::nullopt;
-    }
-    return absl::get<nsasm::DirectiveName>(value_);
-  }
-  absl::optional<nsasm::Punctuation> Punctuation() const {
-    if (!IsPunctuation()) {
-      return absl::nullopt;
-    }
-    return absl::get<nsasm::Punctuation>(value_);
+  const nsasm::EndOfLine* EndOfLine() const {
+    return absl::get_if<nsasm::EndOfLine>(&value_);
   }
 
   NumericType Type() const { return type_; }
@@ -104,7 +70,7 @@ class Token {
 
  private:
   absl::variant<std::string, int, nsasm::Mnemonic, nsasm::DirectiveName,
-                nsasm::Punctuation, EndOfLine>
+                nsasm::Punctuation, nsasm::EndOfLine>
       value_;
   nsasm::Location location_;
   NumericType type_ = T_unknown;

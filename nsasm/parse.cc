@@ -19,7 +19,7 @@ ErrorOr<ExpressionOrNull> Factor(TokenSpan* pos);
 ErrorOr<ExpressionOrNull> Comp(TokenSpan* pos);
 
 bool AtEnd(const TokenSpan* pos) {
-  return pos->front().IsEndOfLine() || pos->front() == ':';
+  return pos->front().EndOfLine() || pos->front() == ':';
 }
 
 Location Loc(const TokenSpan* pos) { return pos->front().Location(); }
@@ -123,13 +123,13 @@ ErrorOr<ExpressionOrNull> Factor(TokenSpan* pos) {
 }
 
 ErrorOr<ExpressionOrNull> Comp(TokenSpan* pos) {
-  if (pos->front().IsLiteral()) {
+  if (pos->front().Literal()) {
     ExpressionOrNull literal = absl::make_unique<Literal>(
         *pos->front().Literal(), pos->front().Type());
     pos->remove_prefix(1);
     return std::move(literal);
   }
-  if (pos->front().IsIdentifier()) {
+  if (pos->front().Identifier()) {
     ExpressionOrNull identifier =
         absl::make_unique<Identifier>(*pos->front().Identifier());
     pos->remove_prefix(1);
@@ -161,7 +161,7 @@ ErrorOr<Instruction> CreateInstruction(
 }
 
 ErrorOr<Instruction> ParseInstruction(TokenSpan* pos) {
-  if (AtEnd(pos) || !pos->front().IsMnemonic()) {
+  if (AtEnd(pos) || !pos->front().Mnemonic()) {
     return Error("logic error: ParseInstruction() called on non-mnemonic");
   }
   Mnemonic mnemonic = *pos->front().Mnemonic();
@@ -309,7 +309,7 @@ ErrorOr<Instruction> ParseInstruction(TokenSpan* pos) {
 }
 
 ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
-  if (AtEnd(pos) || !pos->front().IsDirectiveName()) {
+  if (AtEnd(pos) || !pos->front().DirectiveName()) {
     return Error("logic error: ParseDirective() called on non-directive-name");
   }
   Directive directive;
@@ -340,7 +340,7 @@ ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
     }
     case DT_flag_arg: {
       Location loc = pos->front().Location();
-      if (!pos->front().IsIdentifier()) {
+      if (!pos->front().Identifier()) {
         return Error("Expected mode name, found %s", pos->front().ToString())
             .SetLocation(loc);
       }
@@ -371,7 +371,7 @@ ErrorOr<std::vector<absl::variant<Instruction, Directive, std::string>>> Parse(
     //   foo: adc #$12      ; okay
     //   foo bar adc #$12   ; unexpected 'bar'
     //   foo: bar adc #$12  ; okay
-    if (tokens.front().IsIdentifier()) {
+    if (tokens.front().Identifier()) {
       result_vector.push_back(*tokens.front().Identifier());
       tokens.remove_prefix(1);
       if (!tokens.empty() && tokens.front() == ':') {
@@ -384,7 +384,7 @@ ErrorOr<std::vector<absl::variant<Instruction, Directive, std::string>>> Parse(
       return result_vector;
     }
 
-    if (tokens.front().IsDirectiveName()) {
+    if (tokens.front().DirectiveName()) {
       auto directive = ParseDirective(&tokens);
       NSASM_RETURN_IF_ERROR(directive);
       if (!AtEnd(&tokens)) {

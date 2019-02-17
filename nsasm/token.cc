@@ -28,7 +28,7 @@ bool IsIdentifierChar(char ch) {
 }  // namespace
 
 std::string Token::ToString() const {
-  if (IsEndOfLine()) {
+  if (EndOfLine()) {
     return "end of line";
   }
   auto mnemonic = Mnemonic();
