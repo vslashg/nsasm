@@ -12,6 +12,7 @@ struct Instruction {
   AddressingMode addressing_mode;
   ExpressionOrNull arg1;
   ExpressionOrNull arg2;
+  Location location;
 
   std::string ToString() const;
 };

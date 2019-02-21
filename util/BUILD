@@ -20,6 +20,15 @@ cc_binary(
 )
 
 cc_binary(
+    name="quick_assemble",
+    srcs=["quick_assemble.cc"],
+    deps=[
+        "@absl//absl/strings:str_format",
+        "//nsasm:module",
+    ],
+)
+
+cc_binary(
     name="interactive_parse",
     srcs=["interactive_parse.cc"],
     deps=[

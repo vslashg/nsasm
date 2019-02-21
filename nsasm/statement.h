@@ -15,6 +15,9 @@ class Statement {
   Statement(const Statement&) = default;
   Statement(Statement&&) = default;
 
+  Statement& operator=(const Statement&) = delete;
+  Statement& operator=(Statement&&) = default;
+
   const nsasm::Instruction* Instruction() const {
     return absl::get_if<nsasm::Instruction>(&data_);
   }

@@ -250,3 +250,16 @@ cc_test(
         "@gtest//:gtest_main",
     ],
 )
+
+
+cc_library(
+    name="module",
+    srcs=["module.cc"],
+    hdrs=["module.h"],
+    deps=[
+        ":parse",
+        ":statement",
+        ":token",
+        "@absl//absl/container:flat_hash_map",
+    ],
+)

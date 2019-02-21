@@ -38,6 +38,7 @@ struct Directive {
   ExpressionOrNull argument;
   FlagState flag_state_argument;
   std::vector<ExpressionOrNull> list_argument;
+  Location location;
 
   std::string ToString() const;
 };

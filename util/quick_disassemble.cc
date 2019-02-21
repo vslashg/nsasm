@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <cstdio>
 
-// Test utility to exercise
+// Test utility to exercise disassembly
 
 void usage(char* path) {
   absl::PrintF(

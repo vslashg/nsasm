@@ -391,6 +391,7 @@ ErrorOr<std::vector<absl::variant<Statement, std::string>>> Parse(
         return Error(
             "logic error: ParseDirective() did not read to a line end");
       }
+      directive->location = tokens.front().Location();
       tokens.remove_prefix(1);
       result_vector.push_back(Statement(std::move(*directive)));
       continue;
@@ -409,6 +410,7 @@ ErrorOr<std::vector<absl::variant<Statement, std::string>>> Parse(
       return Error(
           "logic error: ParseInstruction() did not read to a line end");
     }
+    instruction->location = tokens.front().Location();
     tokens.remove_prefix(1);
     result_vector.push_back(Statement(std::move(*instruction)));
   }
