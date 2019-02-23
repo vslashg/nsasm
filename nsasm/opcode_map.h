@@ -3,12 +3,13 @@
 
 #include <cstdint>
 
+#include "nsasm/addressing_mode.h"
 #include "nsasm/flag_state.h"
-#include "nsasm/instruction.h"
+#include "nsasm/mnemonic.h"
 
 namespace nsasm {
 
-Instruction DecodeOpcode(uint8_t opcode);
+std::pair<Mnemonic, AddressingMode> DecodeOpcode(uint8_t opcode);
 
 // Returns true iff the given mnemonic takes an immediate argument whose size is
 // controlled by the M status bit.
@@ -25,9 +26,8 @@ bool TakesOffsetArgument(Mnemonic m);
 // Returns true iff this mnemonic takes a 16-bit offset.
 bool TakesLongOffsetArgument(Mnemonic m);
 
-// Returns true if the given instruction is consistent with the provided flag
-// state.
-bool IsConsistent(const Instruction& instruction, const FlagState& flag_state);
+// Returns true iff this mnemonic and addressing mode pair is valid.
+bool IsLegalCombination(Mnemonic m, AddressingMode a);
 
 }  // namespace nsasm
 

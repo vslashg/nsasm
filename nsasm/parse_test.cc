@@ -11,7 +11,8 @@ namespace {
 TEST(Parse, round_trip) {
   // round trip every possible instruction through the assembler
   for (int i = 0; i < 256; ++i) {
-    nsasm::Instruction ins = nsasm::DecodeOpcode(i);
+    nsasm::Instruction ins;
+    std::tie(ins.mnemonic, ins.addressing_mode) = nsasm::DecodeOpcode(i);
     if (ins.addressing_mode == A_rel8 || ins.addressing_mode == A_rel16) {
       ins.arg1 = absl::make_unique<Identifier>("label");
     } else if (ins.addressing_mode != A_imp && ins.addressing_mode != A_acc) {

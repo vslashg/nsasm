@@ -5,7 +5,8 @@
 
 int main() {
   for (int i = 0; i < 256; ++i) {
-    nsasm::Instruction op = nsasm::DecodeOpcode(i);
+    nsasm::Instruction op;
+    std::tie(op.mnemonic, op.addressing_mode) = nsasm::DecodeOpcode(i);
     std::string suffix = "";
     if (op.addressing_mode == nsasm::A_imm_fm ||
         op.addressing_mode == nsasm::A_imm_fx) {

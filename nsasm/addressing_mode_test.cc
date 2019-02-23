@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include "nsasm/expression.h"
 #include "nsasm/flag_state.h"
+#include "nsasm/instruction.h"
 #include "nsasm/numeric_type.h"
 #include "nsasm/opcode_map.h"
 
@@ -175,7 +176,7 @@ TEST(AddressingMode, simple_deduce_mode) {
               << "DeduceMode() returned a mode of " << ToString(*deduced)
               << " for mnemonic " << ToString(m) << " where "
               << ToString(addressing_mode) << " was expected";
-          EXPECT_TRUE(IsConsistent(instruction, dummy_flag_state))
+          EXPECT_TRUE(instruction.IsConsistent(dummy_flag_state))
               << "DeduceMode() returned a mode of " << ToString(*deduced)
               << " for mnemonic " << ToString(m)
               << ", but this is not a valid combination";
@@ -185,7 +186,7 @@ TEST(AddressingMode, simple_deduce_mode) {
           //   b) this addressing mode and type is invalid for the mnemonic.
           if (addressing_mode != none) {
             // not in case (a), check that we are in case (b)
-            EXPECT_FALSE(IsConsistent(instruction, dummy_flag_state))
+            EXPECT_FALSE(instruction.IsConsistent(dummy_flag_state))
                 << "DeduceMode() did not deduce " << ToString(addressing_mode)
                 << " argument for mnemonic " << ToString(m)
                 << ", but this combination is valid";
@@ -206,14 +207,14 @@ TEST(AddressingMode, deduce_no_arg_mode) {
     Instruction implied_instruction = {m, A_imp, null, null};
     Instruction accumulator_instruction = {m, A_acc, null, null};
 
-    if (IsConsistent(accumulator_instruction, dummy_flag_state)) {
+    if (accumulator_instruction.IsConsistent(dummy_flag_state)) {
       // For instructions that support accumulator mode (like DEC), we should
       // support syntactic forms `DEC A` and `DEC`.
       auto deduced_acc = DeduceMode(m, SA_acc, null, null);
       auto deduced_imp = DeduceMode(m, SA_imp, null, null);
       EXPECT_TRUE(deduced_acc.ok() && (*deduced_acc == A_acc));
       EXPECT_TRUE(deduced_imp.ok() && (*deduced_imp == A_acc));
-    } else if (IsConsistent(implied_instruction, dummy_flag_state)) {
+    } else if (implied_instruction.IsConsistent(dummy_flag_state)) {
       // For instructions that take no argumnet (like RTS), we should accept
       // `RTS` but not `RTS A`
       auto deduced_acc = DeduceMode(m, SA_acc, null, null);
@@ -242,7 +243,7 @@ TEST(AddressingMode, deduce_immediate_mode) {
 
       // Sanity-check ImmediateArgumentUsesMBit()
       Instruction instruction = {m, A_imm_fm, ExpressionOrNull(arg1), arg2};
-      EXPECT_TRUE(IsConsistent(instruction, flag_state));
+      EXPECT_TRUE(instruction.IsConsistent(flag_state));
 
       // We should deduce this as an instruction that cares about the m bit
       auto deduced = DeduceMode(m, SA_imm, arg1, arg2);
@@ -257,7 +258,7 @@ TEST(AddressingMode, deduce_immediate_mode) {
 
       // Sanity-check ImmediateArgumentUsesXBit()
       Instruction instruction = {m, A_imm_fx, ExpressionOrNull(arg1), arg2};
-      EXPECT_TRUE(IsConsistent(instruction, flag_state));
+      EXPECT_TRUE(instruction.IsConsistent(flag_state));
 
       // We should deduce this as an instruction that cares about the x bit
       auto deduced = DeduceMode(m, SA_imm, arg1, arg2);

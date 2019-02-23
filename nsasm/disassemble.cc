@@ -81,8 +81,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
       int instruction_bytes = InstructionLength(instruction->addressing_mode);
 
       int next_pc = AddToPC(pc, instruction_bytes);
-      const FlagState next_flag_state =
-          current_flag_state.Execute(*instruction);
+      const FlagState next_flag_state = instruction->Execute(current_flag_state);
 
       // If this instruction is relatively addressed, we need a label, and
       // need to add that address to code we should try to disassemble.
@@ -92,7 +91,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
         int target = AddToPC(next_pc, value);
         instruction->arg1.ApplyLabel(get_label(target));
         const FlagState branch_flag_state =
-            current_flag_state.ExecuteBranch(*instruction);
+            instruction->ExecuteBranch(current_flag_state);
         add_to_decode_stack(target, branch_flag_state);
       }
 
@@ -117,7 +116,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
       FlagState combined_flag_state =
           current_flag_state | di.current_flag_state;
       if (combined_flag_state != di.current_flag_state) {
-        if (!IsConsistent(di.instruction, combined_flag_state)) {
+        if (!di.instruction.IsConsistent(combined_flag_state)) {
           return Error(
                      "Instruction %s can be reached with inconsistent status "
                      "bits, and cannot be consistently decoded.",
@@ -125,7 +124,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
               .SetLocation(rom.path(), pc);
         }
         di.current_flag_state = combined_flag_state;
-        di.next_flag_state = combined_flag_state.Execute(di.instruction);
+        di.next_flag_state = di.instruction.Execute(combined_flag_state);
         int instruction_bytes =
             InstructionLength(di.instruction.addressing_mode);
         int next_pc = AddToPC(pc, instruction_bytes);
@@ -135,7 +134,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
           int value = *di.instruction.arg1.Evaluate();
           int target = AddToPC(next_pc, value);
           add_to_decode_stack(
-              target, combined_flag_state.ExecuteBranch(di.instruction));
+              target, di.instruction.ExecuteBranch(combined_flag_state));
         }
       }
     }

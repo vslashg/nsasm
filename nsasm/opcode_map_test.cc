@@ -264,9 +264,11 @@ TEST(OpcodeMap, decode) {
       SCOPED_TRACE(ToString(addressing_mode));
       SCOPED_TRACE(int(opcode));
 
-      Instruction decoded = DecodeOpcode(opcode);
-      EXPECT_EQ(ToString(decoded.mnemonic), ToString(mnemonic));
-      EXPECT_EQ(ToString(decoded.addressing_mode), ToString(addressing_mode));
+      Mnemonic decoded_mnemonic;
+      AddressingMode decoded_addressing_mode;
+      std::tie(decoded_mnemonic, decoded_addressing_mode) = DecodeOpcode(opcode);
+      EXPECT_EQ(ToString(decoded_mnemonic), ToString(mnemonic));
+      EXPECT_EQ(ToString(decoded_addressing_mode), ToString(addressing_mode));
     }
   }
   EXPECT_THAT(not_seen, IsEmpty());

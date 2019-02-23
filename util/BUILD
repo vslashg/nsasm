@@ -2,6 +2,7 @@ cc_binary(
     name="print_opcode_map",
     srcs=["print_opcode_map.cc"],
     deps=[
+        "//nsasm:instruction",
         "//nsasm:opcode_map",
         "@absl//absl/strings:str_format",
     ],

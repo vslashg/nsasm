@@ -294,11 +294,8 @@ const absl::flat_hash_map<DecodeMapEntry, uint8_t>& ReverseOpcodeMap() {
 
 }  // namespace
 
-Instruction DecodeOpcode(uint8_t opcode) {
-  Instruction ins;
-  ins.mnemonic = decode_map[opcode].first;
-  ins.addressing_mode = decode_map[opcode].second;
-  return ins;
+std::pair<Mnemonic, AddressingMode> DecodeOpcode(uint8_t opcode) {
+  return decode_map[opcode];
 }
 
 bool ImmediateArgumentUsesMBit(Mnemonic m) {
@@ -322,38 +319,9 @@ bool TakesLongOffsetArgument(Mnemonic m) {
   return ReverseOpcodeMap().contains(e16);
 }
 
-
-// TODO: This needs to be moved to instruction.h, and given argument type
-// smarts.  We've progressed a ways since this was introduced.
-bool IsConsistent(const Instruction& instruction, const FlagState& flag_state) {
-  if (instruction.mnemonic == PM_add || instruction.mnemonic == PM_sub) {
-    // ADD and SUB aren't real mnemonics, but follow the same addressing
-    // rules as ADC.
-    Instruction i_copy = instruction;
-    i_copy.mnemonic = M_adc;
-    return IsConsistent(i_copy, flag_state);
-  }
-
-  // Round trip through the opcode map to determine if this is a valid
-  // instruction, and if so, to undo flag-state-based addressing mode
-  // calculations.
-  auto opcode_it = ReverseOpcodeMap().find(
-      std::make_pair(instruction.mnemonic, instruction.addressing_mode));
-  if (opcode_it == ReverseOpcodeMap().end()) {
-    return false;
-  }
-  DecodeMapEntry round_tripped = decode_map[opcode_it->second];
-
-  if (round_tripped.second == A_imm_fm) {
-    // only legal if we know the state of the `m` bit
-    return flag_state.MBit() == B_on || flag_state.MBit() == B_off;
-  } else if (round_tripped.second == A_imm_fx) {
-    // as above, but for the `x` bit
-    return flag_state.XBit() == B_on || flag_state.XBit() == B_off;
-  } else {
-    // this instruction is consistent regardless of the flag state
-    return true;
-  }
+bool IsLegalCombination(Mnemonic m, AddressingMode a) {
+  auto opcode_it = ReverseOpcodeMap().find(std::make_pair(m, a));
+  return opcode_it != ReverseOpcodeMap().end();
 }
 
 }  // namespace nsasm

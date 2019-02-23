@@ -62,6 +62,7 @@ cc_test(
     deps=[
         ":addressing_mode",
         ":flag_state",
+        ":instruction",
         ":opcode_map",
         "@gtest//:gtest_main",
     ],
@@ -69,13 +70,23 @@ cc_test(
 
 
 cc_library(
-    name="instruction",
-    srcs=["instruction.cc"],
-    hdrs=["instruction.h"],
+    name="opcode_map",
+    srcs=["opcode_map.cc"],
+    hdrs=["opcode_map.h"],
     deps=[
         ":addressing_mode",
-        ":expression",
+        ":flag_state",
         ":mnemonic",
+        "@absl//absl/container:flat_hash_map",
+    ],
+)
+
+cc_test(
+    name="opcode_map_test",
+    srcs=["opcode_map_test.cc"],
+    deps=[
+        ":opcode_map",
+        "@gtest//:gtest_main",
     ],
 )
 
@@ -85,9 +96,9 @@ cc_library(
     srcs=["flag_state.cc"],
     hdrs=["flag_state.h"],
     deps=[
-        ":instruction",
         "@absl//absl/base:core_headers",
         "@absl//absl/strings",
+        "@absl//absl/types:optional",
     ],
 )
 
@@ -102,22 +113,15 @@ cc_test(
 
 
 cc_library(
-    name="opcode_map",
-    srcs=["opcode_map.cc"],
-    hdrs=["opcode_map.h"],
+    name="instruction",
+    srcs=["instruction.cc"],
+    hdrs=["instruction.h"],
     deps=[
+        ":addressing_mode",
+        ":expression",
         ":flag_state",
-        ":instruction",
-        "@absl//absl/container:flat_hash_map",
-    ],
-)
-
-cc_test(
-    name="opcode_map_test",
-    srcs=["opcode_map_test.cc"],
-    deps=[
+        ":mnemonic",
         ":opcode_map",
-        "@gtest//:gtest_main",
     ],
 )
 

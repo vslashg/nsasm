@@ -2,9 +2,11 @@
 #define NSASM_FLAG_STATE_H_
 
 #include <cstdint>
+#include <string>
 
 #include "absl/base/attributes.h"
-#include "nsasm/instruction.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
 
 // The flag state tracks whether the 65816 is in emulation mode or native mode,
 // and if in native mode, the value of the `m` and `x` status bits.  It also
@@ -105,6 +107,29 @@ class FlagState {
   BitState EBit() const { return e_bit_; }
   BitState MBit() const { return m_bit_; }
   BitState XBit() const { return x_bit_; }
+  BitState CBit() const { return c_bit_; }
+
+  void SetMBit(BitState state) { m_bit_ = ConstrainedForEBit(state, e_bit_); }
+  void SetXBit(BitState state) { x_bit_ = ConstrainedForEBit(state, e_bit_); }
+  void SetCBit(BitState state) { c_bit_ = state; }
+
+  void PushFlags() {
+    pushed_m_bit_ = m_bit_;
+    pushed_x_bit_ = x_bit_;
+  }
+
+  void PullFlags() {
+    m_bit_ = ConstrainedForEBit(pushed_m_bit_, e_bit_);
+    x_bit_ = ConstrainedForEBit(pushed_m_bit_, e_bit_);
+    pushed_m_bit_ = B_unknown;
+    pushed_x_bit_ = B_unknown;
+  }
+
+  void ExchangeCE() {
+    std::swap(c_bit_, e_bit_);
+    m_bit_ = ConstrainedForEBit(m_bit_, e_bit_);
+    x_bit_ = ConstrainedForEBit(x_bit_, e_bit_);
+  }
 
   // Returns the name of this flag state.
   std::string ToName() const;
@@ -136,18 +161,6 @@ class FlagState {
   }
 
   bool operator!=(const FlagState& rhs) const { return !(*this == rhs); }
-
-  // Returns the new state that results from executing the given instruction
-  // from the current state.
-  ABSL_MUST_USE_RESULT FlagState Execute(const Instruction& i) const;
-
-  // As above, but returns the state that results from a successful conditional
-  // branch from this instruction.
-  //
-  // This difference matters for BCC/BCS.  For example, after BCC (branch if
-  // carry clear), the C bit is set if we continue to the next instruction, and
-  // clear if set.
-  ABSL_MUST_USE_RESULT FlagState ExecuteBranch(const Instruction& i) const;
 
  private:
   BitState e_bit_;
