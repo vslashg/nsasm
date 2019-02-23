@@ -132,6 +132,7 @@ cc_library(
     hdrs=["error.h"],
     deps=[
         "@absl//absl/strings:str_format",
+        "@absl//absl/types:optional",
         "@absl//absl/types:variant",
     ]
 )

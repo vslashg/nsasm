@@ -28,28 +28,26 @@ bool IsRegister(const Token& tok) {
   return tok == 'A' || tok == 'S' || tok == 'X' || tok == 'Y';
 }
 
-struct Nothing {};
-ErrorOr<Nothing> Consume(TokenSpan* pos, char punct,
-                         absl::string_view message) {
+ErrorOr<void> Consume(TokenSpan* pos, char punct, absl::string_view message) {
   if (pos->front() != punct) {
     return Error("Expected %s, found %s", message, pos->front().ToString())
         .SetLocation(pos->front().Location());
   }
   pos->remove_prefix(1);
-  return Nothing();
+  return {};
 }
 
-ErrorOr<Nothing> ConfirmAtEnd(const TokenSpan* pos, absl::string_view message) {
+ErrorOr<void> ConfirmAtEnd(const TokenSpan* pos, absl::string_view message) {
   if (!AtEnd(pos)) {
     return Error("Unexpected %s %s", pos->front().ToString(), message)
         .SetLocation(pos->front().Location());
   }
-  return Nothing();
+  return {};
 }
 
-ErrorOr<Nothing> ConfirmLegalRegister(const TokenSpan* pos,
-                                      absl::string_view allowed,
-                                      absl::string_view message) {
+ErrorOr<void> ConfirmLegalRegister(const TokenSpan* pos,
+                                   absl::string_view allowed,
+                                   absl::string_view message) {
   if (IsRegister(pos->front())) {
     char reg = *pos->front().Punctuation();
     if (allowed.find(reg) == absl::string_view::npos) {
@@ -57,7 +55,7 @@ ErrorOr<Nothing> ConfirmLegalRegister(const TokenSpan* pos,
           .SetLocation(pos->front().Location());
     }
   }
-  return Nothing();
+  return {};
 }
 
 ErrorOr<ExpressionOrNull> Expr(TokenSpan* pos) {

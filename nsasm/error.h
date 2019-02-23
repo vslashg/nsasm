@@ -4,6 +4,7 @@
 #include <string>
 
 #include "absl/strings/str_format.h"
+#include "absl/types/optional.h"
 #include "absl/types/variant.h"
 
 namespace nsasm {
@@ -82,6 +83,28 @@ class ErrorOr {
   }
  private:
   absl::variant<Error, T> value;
+};
+
+template <>
+class ErrorOr<void> {
+ public:
+  ErrorOr() : value(absl::nullopt) {}
+  ErrorOr(Error&& e) : value(e) {}
+  ErrorOr(const Error& e) : value(e) {}
+
+  void operator*() const {}
+
+  Error error() const { return *value; }
+  bool ok() const { return !value; }
+
+  bool operator==(const ErrorOr<void>& rhs) const {
+    return value == rhs.value;
+  }
+  bool operator!=(const ErrorOr<void>& rhs) const {
+    return value != rhs.value;
+  }
+ private:
+  absl::optional<Error> value;
 };
 
 }  // namespace nsasm
