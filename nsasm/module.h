@@ -19,6 +19,8 @@ class Module {
   // from it, or an error.
   static ErrorOr<Module> LoadAsmFile(const std::string& path);
 
+  ErrorOr<void> RunFirstPass();
+
   // Output this module's contents to stdout
   void DebugPrint() const;
 
@@ -31,9 +33,11 @@ class Module {
         : statement(std::move(statement)), incoming_state() {}
     Statement statement;
     std::vector<std::string> labels;
+    bool reached = false;
     FlagState incoming_state;
   };
 
+  std::string path_;
   std::vector<Line> lines_;
   absl::flat_hash_map<std::string, int> label_map_;
 };

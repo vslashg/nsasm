@@ -25,11 +25,53 @@ class Statement {
     return absl::get_if<nsasm::Directive>(&data_);
   }
 
+  bool operator==(Mnemonic m) const {
+    auto* i = Instruction();
+    return i != nullptr && i->mnemonic == m;
+  }
+  bool operator==(DirectiveName dn) const {
+    auto* d = Directive();
+    return d != nullptr && d->name == dn;
+  }
+
+  nsasm::Location Location() const;
+
+  ErrorOr<FlagState> Execute(const FlagState& fs) const;
+
+  bool IsLocalBranch() const {
+    auto* ins = absl::get_if<nsasm::Instruction>(&data_);
+    return ins && ins->IsLocalBranch();
+  }
+
+  bool IsExitInstruction() const {
+    auto* ins = absl::get_if<nsasm::Instruction>(&data_);
+    return ins && ins->IsExitInstruction();
+  }
+
   std::string ToString() const;
 
  private:
   absl::variant<nsasm::Instruction, nsasm::Directive> data_;
 };
+
+inline bool operator==(Mnemonic m, const Statement& s) {
+  return s == m;
+}
+inline bool operator==(DirectiveName dn, const Statement& s) {
+  return s == dn;
+}
+inline bool operator!=(const Statement& s, Mnemonic m) {
+  return !(s == m);
+}
+inline bool operator!=(const Statement& s, DirectiveName dn) {
+  return !(s == dn);
+}
+inline bool operator!=(Mnemonic m, const Statement& s) {
+  return !(s == m);
+}
+inline bool operator!=(DirectiveName dn, const Statement& s) {
+  return !(s == dn);
+}
 
 }  // namespace nsasm
 

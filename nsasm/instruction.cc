@@ -10,32 +10,44 @@ std::string Instruction::ToString() const {
                          ArgsToString(addressing_mode, arg1, arg2));
 }
 
-bool Instruction::IsConsistent(const FlagState& flag_state) {
+ErrorOr<void> Instruction::CheckConsistency(const FlagState& flag_state) const {
+  Mnemonic effective_mnemonic = mnemonic;
   if (mnemonic == PM_add || mnemonic == PM_sub) {
     // ADD and SUB aren't real mnemonics, but follow the same addressing
     // rules as ADC.
-    Instruction copy = *this;
-    copy.mnemonic = M_adc;
-    return copy.IsConsistent(flag_state);
+    effective_mnemonic = M_adc;
   }
 
-  if (!IsLegalCombination(mnemonic, addressing_mode)) {
-    return false;
+  if (!IsLegalCombination(effective_mnemonic, addressing_mode)) {
+    return Error(
+        "logic error: instruction %s with addressing mode %s is inconsistent",
+        nsasm::ToString(mnemonic), nsasm::ToString(addressing_mode));
   }
 
   if (addressing_mode == A_imm_fm) {
     // only legal if we know the state of the `m` bit
-    return flag_state.MBit() == B_on || flag_state.MBit() == B_off;
+    if (flag_state.MBit() != B_on && flag_state.MBit() != B_off) {
+      return Error(
+          "instruction %s with immediate argument depends on `m` flag state, "
+          "which is unknown here",
+          nsasm::ToString(mnemonic));
+    }
   } else if (addressing_mode == A_imm_fx) {
     // as above, but for the `x` bit
-    return flag_state.XBit() == B_on || flag_state.XBit() == B_off;
-  } else {
-    // this instruction is consistent regardless of the flag state
-    return true;
+    if (flag_state.XBit() != B_on && flag_state.XBit() != B_off) {
+      return Error(
+          "instruction %s with immediate argument depends on `x` flag state, "
+          "which is unknown here",
+          nsasm::ToString(mnemonic));
+    }
   }
+  return {};
 }
 
-FlagState Instruction::Execute(FlagState flag_state) const {
+ErrorOr<FlagState> Instruction::Execute(const FlagState& flag_state_in) const {
+  NSASM_RETURN_IF_ERROR(CheckConsistency(flag_state_in));
+
+  FlagState flag_state = flag_state_in;
   const Mnemonic& m = mnemonic;
 
   // Instructions that clear or set carry bit (used to prime the XCE
@@ -128,12 +140,14 @@ FlagState Instruction::Execute(FlagState flag_state) const {
   return flag_state;
 }
 
-FlagState Instruction::ExecuteBranch(FlagState flag_state) const {
-  flag_state = Execute(flag_state);
+ErrorOr<FlagState> Instruction::ExecuteBranch(
+    const FlagState& flag_state_in) const {
+  auto flag_state = Execute(flag_state_in);
+  NSASM_RETURN_IF_ERROR(flag_state);
   if (mnemonic == M_bcc) {
-    flag_state.SetCBit(B_off);
+    flag_state->SetCBit(B_off);
   } else if (mnemonic == M_bcs) {
-    flag_state.SetCBit(B_on);
+    flag_state->SetCBit(B_on);
   }
   return flag_state;
 }

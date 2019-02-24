@@ -10,18 +10,6 @@
 
 namespace nsasm {
 
-namespace {
-
-// Returns true if executing this instruction means control does not contine to
-// the next.
-bool IsExitInstruction(const Instruction& ins) {
-  Mnemonic mnemonic = ins.mnemonic;
-  return mnemonic == M_jmp || mnemonic == M_rtl || mnemonic == M_rts ||
-         mnemonic == M_rti || mnemonic == M_stp || mnemonic == M_bra;
-};
-
-}  // namespace
-
 ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
                                  const FlagState& initial_flag_state) {
   // Mapping of instruction addresses to decoded instructions
@@ -81,31 +69,31 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
       int instruction_bytes = InstructionLength(instruction->addressing_mode);
 
       int next_pc = AddToPC(pc, instruction_bytes);
-      const FlagState next_flag_state = instruction->Execute(current_flag_state);
+      auto next_flag_state = instruction->Execute(current_flag_state);
+      NSASM_RETURN_IF_ERROR_WITH_LOCATION(next_flag_state, rom.path(), pc);
 
       // If this instruction is relatively addressed, we need a label, and
       // need to add that address to code we should try to disassemble.
-      if (instruction->addressing_mode == A_rel8 ||
-          instruction->addressing_mode == A_rel16) {
+      if (instruction->IsLocalBranch()) {
         int value = *instruction->arg1.Evaluate();
         int target = AddToPC(next_pc, value);
         instruction->arg1.ApplyLabel(get_label(target));
-        const FlagState branch_flag_state =
-            instruction->ExecuteBranch(current_flag_state);
-        add_to_decode_stack(target, branch_flag_state);
+        auto branch_flag_state = instruction->ExecuteBranch(current_flag_state);
+        NSASM_RETURN_IF_ERROR_WITH_LOCATION(branch_flag_state, rom.path(), pc);
+        add_to_decode_stack(target, *branch_flag_state);
       }
 
       // We've decoded an instruction!  Store it.
       DisassembledInstruction di;
       di.instruction = std::move(*instruction);
       di.current_flag_state = current_flag_state;
-      di.next_flag_state = next_flag_state;
+      di.next_flag_state = *next_flag_state;
       result[pc] = std::move(di);
 
       // If this instruction doesn't terminate the subroutine, we need to
       // execute the next line as well.
-      if (!IsExitInstruction(di.instruction)) {
-        add_to_decode_stack(next_pc, next_flag_state);
+      if (!di.instruction.IsExitInstruction()) {
+        add_to_decode_stack(next_pc, *next_flag_state);
       }
     } else {
       // We've been here before.  Weaken the incoming state bits for this
@@ -124,7 +112,9 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
               .SetLocation(rom.path(), pc);
         }
         di.current_flag_state = combined_flag_state;
-        di.next_flag_state = di.instruction.Execute(combined_flag_state);
+        auto next_flag_state = di.instruction.Execute(combined_flag_state);
+        NSASM_RETURN_IF_ERROR_WITH_LOCATION(next_flag_state, rom.path(), pc);
+        di.next_flag_state = *next_flag_state;
         int instruction_bytes =
             InstructionLength(di.instruction.addressing_mode);
         int next_pc = AddToPC(pc, instruction_bytes);
@@ -133,8 +123,11 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
             di.instruction.addressing_mode == A_rel16) {
           int value = *di.instruction.arg1.Evaluate();
           int target = AddToPC(next_pc, value);
-          add_to_decode_stack(
-              target, di.instruction.ExecuteBranch(combined_flag_state));
+          auto branch_flag_state =
+              di.instruction.ExecuteBranch(combined_flag_state);
+          NSASM_RETURN_IF_ERROR_WITH_LOCATION(branch_flag_state, rom.path(),
+                                              pc);
+          add_to_decode_stack(target, *branch_flag_state);
         }
       }
     }

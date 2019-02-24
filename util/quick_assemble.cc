@@ -17,7 +17,14 @@ int main(int argc, char** argv) {
   }
   auto assembled = nsasm::Module::LoadAsmFile(argv[1]);
   if (!assembled.ok()) {
-    absl::PrintF("%s\n", assembled.error().ToString());
+    absl::PrintF("Error assembling: %s\n", assembled.error().ToString());
+    return 0;
   }
+  auto first_pass = assembled->RunFirstPass();
+  if (!first_pass.ok()) {
+    absl::PrintF("Error in first pass: %s\n", first_pass.error().ToString());
+    return 0;
+  }
+
   assembled->DebugPrint();
 }

@@ -40,6 +40,8 @@ struct Directive {
   std::vector<ExpressionOrNull> list_argument;
   Location location;
 
+  ErrorOr<FlagState> Execute(const FlagState& state) const;
+
   std::string ToString() const;
 };
 

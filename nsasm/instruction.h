@@ -17,11 +17,21 @@ struct Instruction {
 
   // Returns true if this instruction's mnemonic and addressing mode are
   // consistent with the provided flag state.
-  bool IsConsistent(const FlagState& flag_state);
+  bool IsConsistent(const FlagState& flag_state) const {
+    return CheckConsistency(flag_state).ok();
+  }
+
+  // Returns true if executing this instruction means control does not contine
+  // to the next.
+  bool IsExitInstruction() const;
+
+  // Returns true if this is a relative branch instruction.
+  bool IsLocalBranch() const;
 
   // Returns the new state that results from executing the given instruction
   // from the current state.
-  ABSL_MUST_USE_RESULT FlagState Execute(FlagState flag_state) const;
+  ABSL_MUST_USE_RESULT ErrorOr<FlagState> Execute(
+      const FlagState& flag_state) const;
 
   // As above, but returns the state that results from a successful conditional
   // branch from this instruction.
@@ -29,10 +39,24 @@ struct Instruction {
   // This difference matters for BCC/BCS.  For example, after BCC (branch if
   // carry clear), the C bit is set if we continue to the next instruction, and
   // clear if set.
-  ABSL_MUST_USE_RESULT FlagState ExecuteBranch(FlagState flag_state) const;
+  ABSL_MUST_USE_RESULT ErrorOr<FlagState> ExecuteBranch(
+      const FlagState& flag_state) const;
 
   std::string ToString() const;
+ private:
+  ErrorOr<void> CheckConsistency(const FlagState& flag_state) const;
 };
+
+inline bool Instruction::IsExitInstruction() const {
+  return mnemonic == M_jmp || mnemonic == M_rtl || mnemonic == M_rts ||
+         mnemonic == M_rti || mnemonic == M_stp || mnemonic == M_bra;
+};
+
+inline bool Instruction::IsLocalBranch() const {
+  return (addressing_mode == A_rel8 || addressing_mode == A_rel16) &&
+         mnemonic != M_per;
+};
+
 
 }  // namespace nsasm
 

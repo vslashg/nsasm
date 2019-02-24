@@ -75,7 +75,6 @@ cc_library(
     hdrs=["opcode_map.h"],
     deps=[
         ":addressing_mode",
-        ":flag_state",
         ":mnemonic",
         "@absl//absl/container:flat_hash_map",
     ],
@@ -266,5 +265,6 @@ cc_library(
         ":statement",
         ":token",
         "@absl//absl/container:flat_hash_map",
+        "@absl//absl/strings:str_format",  # XXX
     ],
 )

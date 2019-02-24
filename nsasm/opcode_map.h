@@ -2,9 +2,9 @@
 #define NSASM_OPCODE_MAP_H_
 
 #include <cstdint>
+#include <algorithm>
 
 #include "nsasm/addressing_mode.h"
-#include "nsasm/flag_state.h"
 #include "nsasm/mnemonic.h"
 
 namespace nsasm {

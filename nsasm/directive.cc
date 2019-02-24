@@ -67,4 +67,18 @@ std::string Directive::ToString() const {
   }
 }
 
+ErrorOr<FlagState> Directive::Execute(const FlagState& state) const {
+  if (name == D_db || name == D_dl || name == D_dw || name == D_org) {
+    // Attempt to execute data or across .ORG gap
+    return Error("Execution continues into %s directive", nsasm::ToString(name));
+  }
+  if (name == D_mode) {
+    // The .mode directive forces static analysis to change its state to its
+    // argument
+    return flag_state_argument;
+  }
+  // .EQU and .ENTRY are no-ops in analysis
+  return state;
+}
+
 }  // namespace nsasm
