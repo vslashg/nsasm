@@ -104,13 +104,6 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
       FlagState combined_flag_state =
           current_flag_state | di.current_flag_state;
       if (combined_flag_state != di.current_flag_state) {
-        if (!di.instruction.IsConsistent(combined_flag_state)) {
-          return Error(
-                     "Instruction %s can be reached with inconsistent status "
-                     "bits, and cannot be consistently decoded.",
-                     di.instruction.ToString())
-              .SetLocation(rom.path(), pc);
-        }
         di.current_flag_state = combined_flag_state;
         auto next_flag_state = di.instruction.Execute(combined_flag_state);
         NSASM_RETURN_IF_ERROR_WITH_LOCATION(next_flag_state, rom.path(), pc);

@@ -15,11 +15,9 @@ struct Instruction {
   ExpressionOrNull arg2;
   Location location;
 
-  // Returns true if this instruction's mnemonic and addressing mode are
-  // consistent with the provided flag state.
-  bool IsConsistent(const FlagState& flag_state) const {
-    return CheckConsistency(flag_state).ok();
-  }
+  // Returns an error if this instruction's mnemonic and addressing mode are
+  // inconsistent with the provided flag state.
+  ErrorOr<void> CheckConsistency(const FlagState& flag_state) const;
 
   // If this instruction has a conditional addressing mode, change it to be
   // definite, based on the provided flag state.
@@ -47,8 +45,6 @@ struct Instruction {
       const FlagState& flag_state) const;
 
   std::string ToString() const;
- private:
-  ErrorOr<void> CheckConsistency(const FlagState& flag_state) const;
 };
 
 inline bool Instruction::IsExitInstruction() const {

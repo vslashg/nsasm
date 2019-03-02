@@ -40,6 +40,38 @@ ErrorOr<void> Instruction::CheckConsistency(const FlagState& flag_state) const {
           "which is unknown here",
           nsasm::ToString(mnemonic));
     }
+  } else if (addressing_mode == A_imm_b || addressing_mode == A_imm_w) {
+    BitState needed_bit = (addressing_mode == A_imm_b) ? B_off : B_on;
+    BitState actual_bit;
+    char target_flag;
+    if (ImmediateArgumentUsesMBit(mnemonic)) {
+      target_flag = 'm';
+      actual_bit = flag_state.MBit();
+    } else if (ImmediateArgumentUsesXBit(mnemonic)) {
+      target_flag = 'x';
+      actual_bit = flag_state.XBit();
+    } else {
+      // This instruction doesn't depend on the `m` or `x` flag states, so
+      // there's no flag state to check consistency against.
+      return {};
+    }
+
+    if (actual_bit == B_unknown || actual_bit == B_original) {
+      return Error(
+          "instruction %s with immediate argument depends on `%c` flag state, "
+          "which is unknown here",
+          nsasm::ToString(mnemonic), target_flag);
+    } else if (actual_bit == B_on && needed_bit == B_off) {
+      return Error(
+          "instruction %s has 16-bit immediate argument, but `%c` status flag "
+          "is on here (so an 8-bit argument is required)",
+          nsasm::ToString(mnemonic), target_flag);
+    } else if (actual_bit == B_off && needed_bit == B_on) {
+      return Error(
+          "instruction %s has 8-bit immediate argument, but `%c` status flag "
+          "is off here (so a 16-bit argument is required)",
+          nsasm::ToString(mnemonic), target_flag);
+    }
   }
   return {};
 }

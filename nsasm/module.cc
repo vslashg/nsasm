@@ -118,7 +118,7 @@ ErrorOr<void> Module::RunFirstPass() {
   }
 
   // Check that all lines are reachable, and choose their ultimate addressing
-  // modes
+  // modes.
   for (Line& line : lines_) {
     Instruction* ins = line.statement.Instruction();
     if (ins && !line.reached) {
