@@ -315,9 +315,15 @@ ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
   pos->remove_prefix(1);
   DirectiveType directive_type = DirectiveTypeByName(directive.name);
   switch (directive_type) {
-    case DT_single_arg: {
+    case DT_single_arg:
+    case DT_constant_arg: {
       auto arg1 = Expr(pos);
       NSASM_RETURN_IF_ERROR(arg1);
+      if (directive_type == DT_constant_arg && arg1->RequiresLookup()) {
+        return Error("%s directive requires a constant value argument",
+                     nsasm::ToString(directive.name))
+            .SetLocation(pos->front().Location());
+      }
       directive.argument = std::move(*arg1);
       NSASM_RETURN_IF_ERROR(ConfirmAtEnd(pos, "after directive argument"));
       return std::move(directive);

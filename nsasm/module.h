@@ -35,6 +35,7 @@ class Module {
     std::vector<std::string> labels;
     bool reached = false;
     FlagState incoming_state;
+    int address = -1;
   };
 
   std::string path_;

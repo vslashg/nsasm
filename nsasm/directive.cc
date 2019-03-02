@@ -40,7 +40,7 @@ DirectiveType DirectiveTypeByName(DirectiveName d) {
   static auto lookup = new absl::flat_hash_map<DirectiveName, DirectiveType>{
       {D_db, DT_list_arg},    {D_dl, DT_list_arg},    {D_dw, DT_list_arg},
       {D_entry, DT_flag_arg}, {D_equ, DT_single_arg}, {D_mode, DT_flag_arg},
-      {D_org, DT_single_arg},
+      {D_org, DT_constant_arg},
   };
   auto iter = lookup->find(d);
   if (iter == lookup->end()) {
@@ -53,6 +53,7 @@ std::string Directive::ToString() const {
   DirectiveType type = DirectiveTypeByName(name);
   switch (type) {
     case DT_single_arg:
+    case DT_constant_arg:
       return absl::StrCat(nsasm::ToString(name), " ", argument.ToString());
     case DT_flag_arg:
       return absl::StrCat(nsasm::ToString(name), " ",
@@ -79,6 +80,18 @@ ErrorOr<FlagState> Directive::Execute(const FlagState& state) const {
   }
   // .EQU and .ENTRY are no-ops in analysis
   return state;
+}
+
+int Directive::SerializedSize() const {
+  int bytes_per_entry = 0;
+  if (name == D_db) {
+    bytes_per_entry = 1;
+  } else if (name == D_dw) {
+    bytes_per_entry = 2;
+  } else if (name == D_dl) {
+    bytes_per_entry = 3;
+  }
+  return bytes_per_entry * list_argument.size();
 }
 
 }  // namespace nsasm

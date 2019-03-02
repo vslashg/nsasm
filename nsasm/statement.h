@@ -44,6 +44,8 @@ class Statement {
 
   ErrorOr<FlagState> Execute(const FlagState& fs) const;
 
+  int SerializedSize() const;
+
   bool IsLocalBranch() const {
     auto* ins = absl::get_if<nsasm::Instruction>(&data_);
     return ins && ins->IsLocalBranch();

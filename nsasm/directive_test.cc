@@ -38,9 +38,15 @@ TEST(Directive, directive_names) {
 
 TEST(Directive, directive_types) {
   // Directives that take single values
-  for (DirectiveName name : {D_equ, D_org}) {
+  for (DirectiveName name : {D_equ}) {
     SCOPED_TRACE(ToString(name));
     EXPECT_EQ(DirectiveTypeByName(name), DT_single_arg);
+  }
+
+  // Directives that take constant values
+  for (DirectiveName name : {D_org}) {
+    SCOPED_TRACE(ToString(name));
+    EXPECT_EQ(DirectiveTypeByName(name), DT_constant_arg);
   }
 
   // Directives that take lists of values

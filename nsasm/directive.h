@@ -22,6 +22,7 @@ enum DirectiveName {
 // The type of argument taken by a given directive
 enum DirectiveType {
   DT_single_arg,
+  DT_constant_arg,
   DT_flag_arg,
   DT_list_arg,
 };
@@ -42,6 +43,8 @@ struct Directive {
 
   ErrorOr<FlagState> Execute(const FlagState& state) const;
 
+  int SerializedSize() const;
+
   std::string ToString() const;
 };
 
@@ -58,6 +61,9 @@ inline void PrintTo(DirectiveType t, std::ostream* out) {
   switch (t) {
     case DT_single_arg:
       *out << "DT_single_arg";
+      return;
+    case DT_constant_arg:
+      *out << "DT_constant_arg";
       return;
     case DT_flag_arg:
       *out << "DT_flag_arg";

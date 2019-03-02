@@ -55,6 +55,9 @@ class Expression {
     return absl::nullopt;
   }
 
+  // Returns true if this expression requires a name lookup.
+  virtual bool RequiresLookup() const = 0;
+
   // Returns a human-readable stringized represenation of this argument, coerced
   // to the requested type if provided.
   virtual std::string ToString(NumericType type = T_unknown) const = 0;
@@ -108,6 +111,10 @@ class ExpressionOrNull : public Expression {
     return absl::nullopt;
   }
 
+  virtual bool RequiresLookup() const override {
+    return expr_ ? expr_->RequiresLookup() : false;
+  }
+
   std::string ToString(NumericType type = T_unknown) const override {
     return expr_ ? expr_->ToString(type) : "<NULL>";
   }
@@ -138,6 +145,7 @@ class Literal : public Expression {
 
   ErrorOr<int> Evaluate() const override { return value_; }
   NumericType Type() const override { return type_; }
+  virtual bool RequiresLookup() const override { return false; }
   std::string ToString(NumericType type) const override;
 
  private:
@@ -159,6 +167,7 @@ class Identifier : public Expression {
     return Error("can't resolve identifier %s", identifier_);
   }
   NumericType Type() const override { return T_unknown; }
+  virtual bool RequiresLookup() const override { return true; }
   std::string ToString(NumericType type) const override { return identifier_; }
   absl::optional<std::string> SimpleIdentifier() const override {
     return identifier_;
@@ -187,6 +196,9 @@ class BinaryExpression : public Expression {
   NumericType Type() const override {
     return ArtihmeticConversion(lhs_.Type(), rhs_.Type());
   }
+  virtual bool RequiresLookup() const override {
+    return lhs_.RequiresLookup() || rhs_.RequiresLookup();
+  }
   std::string ToString(NumericType type) const override {
     return absl::StrFormat("op%c(%s, %s)", op_.symbol, lhs_.ToString(type),
                            rhs_.ToString(type));
@@ -211,6 +223,7 @@ class UnaryExpression : public Expression {
     return op_.function(*value);
   }
   NumericType Type() const override { return Signed(arg_.Type()); }
+  virtual bool RequiresLookup() const override { return arg_.RequiresLookup(); }
   std::string ToString(NumericType type) const override {
     return absl::StrFormat("op%c(%s)", op_.symbol, arg_.ToString(type));
   }
@@ -233,6 +246,7 @@ class Label : public Expression {
     return held_value_->Evaluate();
   }
   NumericType Type() const override { return held_value_->Type(); }
+  virtual bool RequiresLookup() const override { return true; }
   std::string ToString(NumericType type) const override { return label_; }
 
  private:

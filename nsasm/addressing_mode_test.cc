@@ -114,8 +114,8 @@ TEST(AddressingMode, instruction_size) {
   EXPECT_EQ(InstructionLength(A_mov), 3);
   EXPECT_EQ(InstructionLength(A_rel8), 2);
   EXPECT_EQ(InstructionLength(A_rel16), 3);
-  EXPECT_EQ(InstructionLength(A_imm_fm), -1);
-  EXPECT_EQ(InstructionLength(A_imm_fx), -1);
+  EXPECT_EQ(InstructionLength(A_imm_fm), 0);
+  EXPECT_EQ(InstructionLength(A_imm_fx), 0);
 }
 
 struct SimpleDeductionCase {

@@ -14,4 +14,9 @@ nsasm::Location Statement::Location() const {
   return absl::visit([](const auto& v) { return v.location; }, data_);
 }
 
+int Statement::SerializedSize() const {
+  return absl::visit([](const auto& v) { return v.SerializedSize(); }, data_);
+}
+
+
 }  // namespace nsasm

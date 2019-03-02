@@ -44,6 +44,8 @@ struct Instruction {
   ABSL_MUST_USE_RESULT ErrorOr<FlagState> ExecuteBranch(
       const FlagState& flag_state) const;
 
+  int SerializedSize() const;
+
   std::string ToString() const;
 };
 

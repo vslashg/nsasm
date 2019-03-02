@@ -211,4 +211,8 @@ ErrorOr<FlagState> Instruction::ExecuteBranch(
   return flag_state;
 }
 
+int Instruction::SerializedSize() const {
+  return InstructionLength(addressing_mode);
+}
+
 }  // namespace nsasm

@@ -131,15 +131,34 @@ ErrorOr<void> Module::RunFirstPass() {
     }
   }
 
+  // Assign an address to each statement.
+  int pc = -1;
+  for (Line& line : lines_) {
+    Directive* dir = line.statement.Directive();
+    if (dir && dir->name == D_org) {
+      auto v = dir->argument.Evaluate();
+      NSASM_RETURN_IF_ERROR_WITH_LOCATION(v, dir->location);
+      pc = *v;
+    }
+    int statement_size = line.statement.SerializedSize();
+    if (statement_size > 0 && pc == -1) {
+      return Error("No address given for assembly")
+          .SetLocation(line.statement.Location());
+    }
+    line.address = pc;
+    pc += statement_size;
+  }
+
   return {};
 }
 
 void Module::DebugPrint() const {
   for (const auto& line : lines_) {
     for (const auto& label : line.labels) {
-      absl::PrintF("%s:\n", label);
+      absl::PrintF("       %s:\n", label);
     }
-    absl::PrintF("    %s\n", line.statement.ToString());
+    absl::PrintF("%06x     %s\n", std::max(0, line.address),
+                 line.statement.ToString());
   }
 }
 

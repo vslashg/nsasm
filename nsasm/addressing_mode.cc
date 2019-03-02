@@ -440,7 +440,7 @@ int InstructionLength(AddressingMode a) {
   if (a == A_dir_l || a == A_dir_lx) {
     return 4;
   }
-  return -1;
+  return 0;
 }
 
 std::string ToString(AddressingMode a) {
