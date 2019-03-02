@@ -37,6 +37,18 @@ struct UnaryOp {
 ABSL_CONST_INIT inline UnaryOp negate_op{
     [](int a) -> ErrorOr<int> { return -a; }, '-'};
 
+class LookupContext {
+ public:
+  virtual ErrorOr<int> Lookup(absl::string_view name) const = 0;
+};
+
+class NullLookupContext : public LookupContext {
+ public:
+  ErrorOr<int> Lookup(absl::string_view name) const {
+    return Error("Can't perform name lookup in this context");
+  }
+};
+
 // Virtual base class representing an argument value.  This can be a constant,
 // label, expression, etc.
 class Expression {
@@ -45,7 +57,7 @@ class Expression {
 
   // Returns the value of this expression, or an error if it can't be evaluated.
   // (For example, in the case of an unbound label.)
-  virtual ErrorOr<int> Evaluate() const = 0;
+  virtual ErrorOr<int> Evaluate(const LookupContext& context) const = 0;
 
   // Returns the type of this expression, if known.
   virtual NumericType Type() const = 0;
@@ -93,9 +105,9 @@ class ExpressionOrNull : public Expression {
 
   explicit operator bool() const { return static_cast<bool>(expr_); }
 
-  ErrorOr<int> Evaluate() const override {
+  ErrorOr<int> Evaluate(const LookupContext& context) const override {
     if (expr_) {
-      return expr_->Evaluate();
+      return expr_->Evaluate(context);
     }
     return Error("logic error: evaluating null expression");
   }
@@ -143,7 +155,9 @@ class Literal : public Expression {
   explicit Literal(int value, NumericType type = T_unknown)
       : value_(CastTo(type, value)), type_(type) {}
 
-  ErrorOr<int> Evaluate() const override { return value_; }
+  ErrorOr<int> Evaluate(const LookupContext& context) const override {
+    return value_;
+  }
   NumericType Type() const override { return type_; }
   virtual bool RequiresLookup() const override { return false; }
   std::string ToString(NumericType type) const override;
@@ -163,7 +177,7 @@ class Identifier : public Expression {
   explicit Identifier(std::string identifier)
       : identifier_(std::move(identifier)) {}
 
-  ErrorOr<int> Evaluate() const override {
+  ErrorOr<int> Evaluate(const LookupContext& context) const override {
     return Error("can't resolve identifier %s", identifier_);
   }
   NumericType Type() const override { return T_unknown; }
@@ -186,9 +200,9 @@ class BinaryExpression : public Expression {
   BinaryExpression(ExpressionOrNull lhs, ExpressionOrNull rhs, BinaryOp op)
       : lhs_(std::move(lhs)), rhs_(std::move(rhs)), op_(op) {}
 
-  ErrorOr<int> Evaluate() const override {
-    auto lhs_v = lhs_.Evaluate();
-    auto rhs_v = rhs_.Evaluate();
+  ErrorOr<int> Evaluate(const LookupContext& context) const override {
+    auto lhs_v = lhs_.Evaluate(context);
+    auto rhs_v = rhs_.Evaluate(context);
     NSASM_RETURN_IF_ERROR(lhs_v);
     NSASM_RETURN_IF_ERROR(rhs_v);
     return op_.function(*lhs_v, *rhs_v);
@@ -217,8 +231,8 @@ class UnaryExpression : public Expression {
  public:
   UnaryExpression(ExpressionOrNull arg, UnaryOp op)
       : arg_(std::move(arg)), op_(op) {}
-  ErrorOr<int> Evaluate() const override {
-    auto value = arg_.Evaluate();
+  ErrorOr<int> Evaluate(const LookupContext& context) const override {
+    auto value = arg_.Evaluate(context);
     NSASM_RETURN_IF_ERROR(value);
     return op_.function(*value);
   }
@@ -242,8 +256,8 @@ class Label : public Expression {
   explicit Label(std::string label, std::unique_ptr<Expression>&& expr)
       : label_(std::move(label)), held_value_(std::move(expr)) {}
 
-  ErrorOr<int> Evaluate() const override {
-    return held_value_->Evaluate();
+  ErrorOr<int> Evaluate(const LookupContext& context) const override {
+    return held_value_->Evaluate(context);
   }
   NumericType Type() const override { return held_value_->Type(); }
   virtual bool RequiresLookup() const override { return true; }

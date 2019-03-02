@@ -126,7 +126,7 @@ ErrorOr<FlagState> Instruction::Execute(const FlagState& flag_state_in) const {
   // Instructions that clear or set status bits explicitly
   if (m == M_rep || m == M_sep) {
     BitState target = (m == M_rep) ? B_off : B_on;
-    auto arg = arg1.Evaluate();
+    auto arg = arg1.Evaluate(NullLookupContext());
     if (!arg.ok()) {
       // If REP or SEP are invoked with an unknown argument (a constant pulled
       // from another module, say), we will have to account for the ambiguity.

@@ -136,7 +136,7 @@ ErrorOr<void> Module::RunFirstPass() {
   for (Line& line : lines_) {
     Directive* dir = line.statement.Directive();
     if (dir && dir->name == D_org) {
-      auto v = dir->argument.Evaluate();
+      auto v = dir->argument.Evaluate(NullLookupContext());
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(v, dir->location);
       pc = *v;
     }

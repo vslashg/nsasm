@@ -75,7 +75,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
       // If this instruction is relatively addressed, we need a label, and
       // need to add that address to code we should try to disassemble.
       if (instruction->IsLocalBranch()) {
-        int value = *instruction->arg1.Evaluate();
+        int value = *instruction->arg1.Evaluate(NullLookupContext());
         int target = AddToPC(next_pc, value);
         instruction->arg1.ApplyLabel(get_label(target));
         auto branch_flag_state = instruction->ExecuteBranch(current_flag_state);
@@ -114,7 +114,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
         add_to_decode_stack(next_pc, di.next_flag_state);
         if (di.instruction.addressing_mode == A_rel8 ||
             di.instruction.addressing_mode == A_rel16) {
-          int value = *di.instruction.arg1.Evaluate();
+          int value = *di.instruction.arg1.Evaluate(NullLookupContext());
           int target = AddToPC(next_pc, value);
           auto branch_flag_state =
               di.instruction.ExecuteBranch(combined_flag_state);

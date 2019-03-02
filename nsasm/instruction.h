@@ -30,6 +30,9 @@ struct Instruction {
   // Returns true if this is a relative branch instruction.
   bool IsLocalBranch() const;
 
+  // TODO: Should Execute() take an evaluation context to improve static
+  // analysis?  Maybe.  Revisit later to see if it proves necessary.
+
   // Returns the new state that results from executing the given instruction
   // from the current state.
   ABSL_MUST_USE_RESULT ErrorOr<FlagState> Execute(

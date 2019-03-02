@@ -141,7 +141,7 @@ ErrorOr<AddressingMode> CoerceByte(const Expression& arg, Mnemonic mnemonic,
   if (numeric_type == T_byte) return byte_mode;
   if (numeric_type == T_unknown) {
     // Does decimal value fit in a byte?
-    auto val = arg.Evaluate();
+    auto val = arg.Evaluate(NullLookupContext());
     if (val.ok() && (*val < 0x100 && *val >= -0x80)) {
       return byte_mode;
     }
@@ -179,7 +179,7 @@ ErrorOr<AddressingMode> CoerceWord(const Expression& arg, Mnemonic mnemonic,
   if (numeric_type == T_word) return word_mode;
   if (numeric_type == T_unknown) {
     // Does decimal value fit in a word?
-    auto val = arg.Evaluate();
+    auto val = arg.Evaluate(NullLookupContext());
     if (val.ok() && (*val < 0x10000 && *val >= -0x8000)) {
       return word_mode;
     }
