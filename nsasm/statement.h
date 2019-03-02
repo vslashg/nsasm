@@ -21,7 +21,13 @@ class Statement {
   const nsasm::Instruction* Instruction() const {
     return absl::get_if<nsasm::Instruction>(&data_);
   }
+  nsasm::Instruction* Instruction() {
+    return absl::get_if<nsasm::Instruction>(&data_);
+  }
   const nsasm::Directive* Directive() const {
+    return absl::get_if<nsasm::Directive>(&data_);
+  }
+  nsasm::Directive* Directive() {
     return absl::get_if<nsasm::Directive>(&data_);
   }
 
@@ -54,21 +60,13 @@ class Statement {
   absl::variant<nsasm::Instruction, nsasm::Directive> data_;
 };
 
-inline bool operator==(Mnemonic m, const Statement& s) {
-  return s == m;
-}
-inline bool operator==(DirectiveName dn, const Statement& s) {
-  return s == dn;
-}
-inline bool operator!=(const Statement& s, Mnemonic m) {
-  return !(s == m);
-}
+inline bool operator==(Mnemonic m, const Statement& s) { return s == m; }
+inline bool operator==(DirectiveName dn, const Statement& s) { return s == dn; }
+inline bool operator!=(const Statement& s, Mnemonic m) { return !(s == m); }
 inline bool operator!=(const Statement& s, DirectiveName dn) {
   return !(s == dn);
 }
-inline bool operator!=(Mnemonic m, const Statement& s) {
-  return !(s == m);
-}
+inline bool operator!=(Mnemonic m, const Statement& s) { return !(s == m); }
 inline bool operator!=(DirectiveName dn, const Statement& s) {
   return !(s == dn);
 }

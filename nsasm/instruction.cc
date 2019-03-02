@@ -44,6 +44,21 @@ ErrorOr<void> Instruction::CheckConsistency(const FlagState& flag_state) const {
   return {};
 }
 
+void Instruction::FixAddressingMode(const FlagState& flag_state) {
+  BitState bs = B_unknown;
+  if (addressing_mode == A_imm_fm) {
+    bs = flag_state.MBit();
+  } else if (addressing_mode == A_imm_fx) {
+    bs = flag_state.XBit();
+  }
+
+  if (bs == B_on) {
+    addressing_mode = A_imm_b;
+  } else if (bs == B_off) {
+    addressing_mode = A_imm_w;
+  }
+}
+
 ErrorOr<FlagState> Instruction::Execute(const FlagState& flag_state_in) const {
   NSASM_RETURN_IF_ERROR(CheckConsistency(flag_state_in));
 

@@ -117,11 +117,16 @@ ErrorOr<void> Module::RunFirstPass() {
     }
   }
 
-  // Check that all lines are reachable
-  for (const Line& line : lines_) {
-    if (line.statement.Instruction() && !line.reached) {
+  // Check that all lines are reachable, and choose their ultimate addressing
+  // modes
+  for (Line& line : lines_) {
+    Instruction* ins = line.statement.Instruction();
+    if (ins && !line.reached) {
       return Error("Line not reached during execution")
           .SetLocation(line.statement.Location());
+    }
+    if (ins) {
+      ins->FixAddressingMode(line.incoming_state);
     }
   }
 

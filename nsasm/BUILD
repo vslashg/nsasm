@@ -265,6 +265,6 @@ cc_library(
         ":statement",
         ":token",
         "@absl//absl/container:flat_hash_map",
-        "@absl//absl/strings:str_format",  # XXX
+        "@absl//absl/strings:str_format",
     ],
 )
