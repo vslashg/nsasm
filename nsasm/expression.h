@@ -45,7 +45,7 @@ class Expression {
 
   // Returns the value of this expression, or an error if it can't be evaluated.
   // (For example, in the case of an unbound label.)
-  virtual ErrorOr<int> Evaluate(Location loc = Location()) const = 0;
+  virtual ErrorOr<int> Evaluate() const = 0;
 
   // Returns the type of this expression, if known.
   virtual NumericType Type() const = 0;
@@ -90,11 +90,11 @@ class ExpressionOrNull : public Expression {
 
   explicit operator bool() const { return static_cast<bool>(expr_); }
 
-  ErrorOr<int> Evaluate(Location loc = Location()) const override {
+  ErrorOr<int> Evaluate() const override {
     if (expr_) {
-      return expr_->Evaluate(loc);
+      return expr_->Evaluate();
     }
-    return Error("Logic error: evaluating null expression").SetLocation(loc);
+    return Error("logic error: evaluating null expression");
   }
 
   NumericType Type() const override {
@@ -136,7 +136,7 @@ class Literal : public Expression {
   explicit Literal(int value, NumericType type = T_unknown)
       : value_(CastTo(type, value)), type_(type) {}
 
-  ErrorOr<int> Evaluate(Location loc) const override { return value_; }
+  ErrorOr<int> Evaluate() const override { return value_; }
   NumericType Type() const override { return type_; }
   std::string ToString(NumericType type) const override;
 
@@ -155,7 +155,7 @@ class Identifier : public Expression {
   explicit Identifier(std::string identifier)
       : identifier_(std::move(identifier)) {}
 
-  ErrorOr<int> Evaluate(Location loc) const override {
+  ErrorOr<int> Evaluate() const override {
     return Error("can't resolve identifier %s", identifier_);
   }
   NumericType Type() const override { return T_unknown; }
@@ -177,9 +177,9 @@ class BinaryExpression : public Expression {
   BinaryExpression(ExpressionOrNull lhs, ExpressionOrNull rhs, BinaryOp op)
       : lhs_(std::move(lhs)), rhs_(std::move(rhs)), op_(op) {}
 
-  ErrorOr<int> Evaluate(Location loc) const override {
-    auto lhs_v = lhs_.Evaluate(loc);
-    auto rhs_v = rhs_.Evaluate(loc);
+  ErrorOr<int> Evaluate() const override {
+    auto lhs_v = lhs_.Evaluate();
+    auto rhs_v = rhs_.Evaluate();
     NSASM_RETURN_IF_ERROR(lhs_v);
     NSASM_RETURN_IF_ERROR(rhs_v);
     return op_.function(*lhs_v, *rhs_v);
@@ -205,8 +205,8 @@ class UnaryExpression : public Expression {
  public:
   UnaryExpression(ExpressionOrNull arg, UnaryOp op)
       : arg_(std::move(arg)), op_(op) {}
-  ErrorOr<int> Evaluate(Location loc) const override {
-    auto value = arg_.Evaluate(loc);
+  ErrorOr<int> Evaluate() const override {
+    auto value = arg_.Evaluate();
     NSASM_RETURN_IF_ERROR(value);
     return op_.function(*value);
   }
@@ -229,8 +229,8 @@ class Label : public Expression {
   explicit Label(std::string label, std::unique_ptr<Expression>&& expr)
       : label_(std::move(label)), held_value_(std::move(expr)) {}
 
-  ErrorOr<int> Evaluate(Location loc) const override {
-    return held_value_->Evaluate(loc);
+  ErrorOr<int> Evaluate() const override {
+    return held_value_->Evaluate();
   }
   NumericType Type() const override { return held_value_->Type(); }
   std::string ToString(NumericType type) const override { return label_; }

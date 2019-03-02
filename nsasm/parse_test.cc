@@ -37,10 +37,8 @@ TEST(Parse, round_trip) {
     ASSERT_TRUE(round_tripped);
     EXPECT_EQ(ins.mnemonic, round_tripped->mnemonic);
     EXPECT_EQ(ins.addressing_mode, round_tripped->addressing_mode);
-    EXPECT_EQ(ins.arg1.Evaluate(Location()),
-              round_tripped->arg1.Evaluate(Location()));
-    EXPECT_EQ(ins.arg2.Evaluate(Location()),
-              round_tripped->arg2.Evaluate(Location()));
+    EXPECT_EQ(ins.arg1.Evaluate(), round_tripped->arg1.Evaluate());
+    EXPECT_EQ(ins.arg2.Evaluate(), round_tripped->arg2.Evaluate());
   }
 }
 
