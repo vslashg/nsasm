@@ -76,19 +76,31 @@ ErrorOr<void> Instruction::CheckConsistency(const FlagState& flag_state) const {
   return {};
 }
 
-void Instruction::FixAddressingMode(const FlagState& flag_state) {
+ErrorOr<void> Instruction::FixAddressingMode(const FlagState& flag_state) {
   BitState bs = B_unknown;
+  char target_flag;
   if (addressing_mode == A_imm_fm) {
+    target_flag = 'm';
     bs = flag_state.MBit();
   } else if (addressing_mode == A_imm_fx) {
+    target_flag = 'x';
     bs = flag_state.XBit();
+  } else {
+    return {};  // nothing to fix
   }
 
   if (bs == B_on) {
     addressing_mode = A_imm_b;
   } else if (bs == B_off) {
     addressing_mode = A_imm_w;
+  } else {
+    return Error(
+        "instruction %s with immediate argument depends on `%c` flag state, "
+        "which is unknown here",
+        nsasm::ToString(mnemonic), target_flag);
   }
+
+  return {};
 }
 
 ErrorOr<FlagState> Instruction::Execute(const FlagState& flag_state_in) const {

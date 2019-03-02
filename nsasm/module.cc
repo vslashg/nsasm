@@ -123,10 +123,11 @@ ErrorOr<void> Module::RunFirstPass() {
     Instruction* ins = line.statement.Instruction();
     if (ins && !line.reached) {
       return Error("Line not reached during execution")
-          .SetLocation(line.statement.Location());
+          .SetLocation(ins->location);
     }
     if (ins) {
-      ins->FixAddressingMode(line.incoming_state);
+      NSASM_RETURN_IF_ERROR_WITH_LOCATION(
+          ins->FixAddressingMode(line.incoming_state), ins->location);
     }
   }
 

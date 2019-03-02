@@ -21,7 +21,7 @@ struct Instruction {
 
   // If this instruction has a conditional addressing mode, change it to be
   // definite, based on the provided flag state.
-  void FixAddressingMode(const FlagState& flag_state);
+  ErrorOr<void> FixAddressingMode(const FlagState& flag_state);
 
   // Returns true if executing this instruction means control does not contine
   // to the next.
