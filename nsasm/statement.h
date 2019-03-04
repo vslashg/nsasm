@@ -46,6 +46,9 @@ class Statement {
 
   int SerializedSize() const;
 
+  ErrorOr<void> Assemble(int address, const LookupContext& context,
+                         OutputSink* sink) const;
+
   bool IsLocalBranch() const {
     auto* ins = absl::get_if<nsasm::Instruction>(&data_);
     return ins && ins->IsLocalBranch();

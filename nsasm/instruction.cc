@@ -41,7 +41,7 @@ ErrorOr<void> Instruction::CheckConsistency(const FlagState& flag_state) const {
           nsasm::ToString(mnemonic));
     }
   } else if (addressing_mode == A_imm_b || addressing_mode == A_imm_w) {
-    BitState needed_bit = (addressing_mode == A_imm_b) ? B_off : B_on;
+    BitState needed_bit = (addressing_mode == A_imm_b) ? B_on : B_off;
     BitState actual_bit;
     char target_flag;
     if (ImmediateArgumentUsesMBit(mnemonic)) {
@@ -213,6 +213,104 @@ ErrorOr<FlagState> Instruction::ExecuteBranch(
 
 int Instruction::SerializedSize() const {
   return InstructionLength(addressing_mode);
+}
+
+ErrorOr<void> Instruction::Assemble(int address, const LookupContext& context,
+                                    OutputSink* sink) const {
+  std::uint8_t output_buf[5];
+  std::uint8_t* output = output_buf;
+
+  Mnemonic true_mnemonic = mnemonic;
+  if (mnemonic == PM_add || mnemonic == PM_sub) {
+    // encode a CLC (clear carry) before encoding the real instruction.
+    *(output++) = 0x18;
+    true_mnemonic = (mnemonic == PM_add) ? M_adc : M_sbc;
+  }
+
+  auto opcode = EncodeOpcode(true_mnemonic, addressing_mode);
+  if (!opcode.has_value()) {
+    return Error("logic error: illegal mnemonic / addressing mode pair");
+  }
+  *(output++) = *opcode;
+
+  if (addressing_mode == A_imm_fm || addressing_mode == A_imm_fx) {
+    return Error("logic error: side of immediate argument not known");
+  }
+
+  // Zero arguments:
+  if (addressing_mode == A_imp || addressing_mode == A_acc) {
+    return sink->Write(address, absl::MakeConstSpan(output_buf, output));
+  }
+  // One byte arguments:
+  if (addressing_mode == A_imm_b || addressing_mode == A_dir_b ||
+      addressing_mode == A_dir_bx || addressing_mode == A_dir_by ||
+      addressing_mode == A_ind_b || addressing_mode == A_ind_bx ||
+      addressing_mode == A_ind_by || addressing_mode == A_lng_b ||
+      addressing_mode == A_lng_by || addressing_mode == A_stk ||
+      addressing_mode == A_stk_y) {
+    auto val = arg1.Evaluate(context);
+    NSASM_RETURN_IF_ERROR(val);
+    *(output++) = (*val & 0xff);
+    return sink->Write(address, absl::MakeConstSpan(output_buf, output));
+  }
+  // Two byte arguments:
+  if (addressing_mode == A_imm_w || addressing_mode == A_dir_w ||
+      addressing_mode == A_dir_wx || addressing_mode == A_dir_wy ||
+      addressing_mode == A_ind_w || addressing_mode == A_ind_wx ||
+      addressing_mode == A_lng_w) {
+    auto val = arg1.Evaluate(context);
+    NSASM_RETURN_IF_ERROR(val);
+    *(output++) = (*val & 0xff);
+    *(output++) = ((*val >> 8) & 0xff);
+    return sink->Write(address, absl::MakeConstSpan(output_buf, output));
+  }
+  // Three byte arguments
+  if (addressing_mode == A_dir_l || addressing_mode == A_dir_lx) {
+    auto val = arg1.Evaluate(context);
+    NSASM_RETURN_IF_ERROR(val);
+    *(output++) = (*val & 0xff);
+    *(output++) = ((*val >> 8) & 0xff);
+    *(output++) = ((*val >> 16) & 0xff);
+    return sink->Write(address, absl::MakeConstSpan(output_buf, output));
+  }
+  // source / destination
+  if (addressing_mode == A_mov) {
+    auto val1 = arg1.Evaluate(context);
+    NSASM_RETURN_IF_ERROR(val1);
+    auto val2 = arg2.Evaluate(context);
+    NSASM_RETURN_IF_ERROR(val2);
+    *(output++) = (*val1 & 0xff);
+    *(output++) = (*val2 & 0xff);
+    return sink->Write(address, absl::MakeConstSpan(output_buf, output));
+  }
+  // relative 8-bit addressing
+  if (addressing_mode == A_rel8) {
+    auto val1 = arg1.Evaluate(context);
+    NSASM_RETURN_IF_ERROR(val1);
+    int branch_base = address + 2;
+    int offset = *val1 - branch_base;
+    if (offset > 127 || offset < -128) {
+      return Error("Relative branch too far");
+    }
+    *(output++) = (offset & 0xff);
+    return sink->Write(address, absl::MakeConstSpan(output_buf, output));
+  }
+  // relative 16-bit addressing
+  if (addressing_mode == A_rel16) {
+    auto val1 = arg1.Evaluate(context);
+    NSASM_RETURN_IF_ERROR(val1);
+    int branch_base = address + 2;
+    int offset = *val1 - branch_base;
+    // TODO: This is not correct; relative branching can't overflow in this
+    // way.  Fix to handle wrapping on the high 8 bits.
+    if (offset > 32767 || offset < -32768) {
+      return Error("Relative branch too far");
+    }
+    *(output++) = (offset & 0xff);
+    *(output++) = ((offset >> 8) & 0xff);
+    return sink->Write(address, absl::MakeConstSpan(output_buf, output));
+  }
+  return Error("logic error: addressing mode not handled in Assemble()");
 }
 
 }  // namespace nsasm

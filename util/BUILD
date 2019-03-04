@@ -26,6 +26,7 @@ cc_binary(
     deps=[
         "@absl//absl/strings:str_format",
         "//nsasm:module",
+        "//nsasm:rom",
     ],
 )
 

@@ -81,6 +81,9 @@ int InstructionLength(AddressingMode a);
 std::string ToString(AddressingMode a);
 std::string ToString(SyntacticAddressingMode s);
 
+// Return all addressing modes, for test code
+const std::vector<AddressingMode>& AllAddressingModes();
+
 }  // namespace nsasm
 
 #endif  // NSASM_ADDRESSING_MODE_H_

@@ -109,7 +109,6 @@ std::map<AddressingMode, uint8_t> MakeCompareIndexOp(int offset) {
   return result;
 }
 
-
 InstructionMap MakeInstructionMap() {
   InstructionMap map;
   map[M_ora] = MakeALUOp(0x00);
@@ -234,8 +233,8 @@ InstructionMap MakeInstructionMap() {
   // Instructions that always take an immediate byte.
   //
   // Note that 6502 family assemblers traditionally treat the `BRK` instruction
-  // as an implied instruction, even though it clearly takes a one-byte argument.
-  // This is one convention I don't play along with.
+  // as an implied instruction, even though it clearly takes a one-byte
+  // argument. This is one convention I don't play along with.
   map[M_rep][A_imm_b] = 0xc2;
   map[M_sep][A_imm_b] = 0xe2;
   map[M_wdm][A_imm_b] = 0x42;
@@ -266,12 +265,56 @@ TEST(OpcodeMap, decode) {
 
       Mnemonic decoded_mnemonic;
       AddressingMode decoded_addressing_mode;
-      std::tie(decoded_mnemonic, decoded_addressing_mode) = DecodeOpcode(opcode);
+      std::tie(decoded_mnemonic, decoded_addressing_mode) =
+          DecodeOpcode(opcode);
       EXPECT_EQ(ToString(decoded_mnemonic), ToString(mnemonic));
       EXPECT_EQ(ToString(decoded_addressing_mode), ToString(addressing_mode));
     }
   }
   EXPECT_THAT(not_seen, IsEmpty());
+}
+
+TEST(OpcodeMap, encode) {
+  InstructionMap map = MakeInstructionMap();
+  for (Mnemonic m : AllMnemonics()) {
+    SCOPED_TRACE(ToString(m));
+    auto& mnemonic_map = map[m];
+    // True if this instruction takes variable-sized immediate arguments
+    const bool immediate_arg_uses_m_bit = ImmediateArgumentUsesMBit(m);
+    const bool immediate_arg_uses_x_bit = ImmediateArgumentUsesXBit(m);
+    const bool immediate_arg_uses_status_bits =
+        immediate_arg_uses_m_bit || immediate_arg_uses_x_bit;
+    for (AddressingMode a : AllAddressingModes()) {
+      SCOPED_TRACE(ToString(a));
+
+      auto encoded = EncodeOpcode(m, a);
+      if (m == PM_add || m == PM_sub) {
+        // pseudo-mnemonics don't have encodings
+        EXPECT_FALSE(encoded.has_value());
+        continue;
+      }
+
+      auto it = mnemonic_map.find(a);
+      if (immediate_arg_uses_status_bits && (a == A_imm_b || a == A_imm_w)) {
+        // A_imm_b and A_imm_w are valid flags modes for this instruction,
+        // but they appear in this test's InstructionMap under their variable-
+        // sized form.
+        if (immediate_arg_uses_m_bit) {
+          it = mnemonic_map.find(A_imm_fm);
+        } else if (immediate_arg_uses_x_bit) {
+          it = mnemonic_map.find(A_imm_fx);
+        }
+      }
+      if (it == mnemonic_map.end()) {
+        EXPECT_FALSE(encoded.has_value());
+      } else {
+        EXPECT_TRUE(encoded.has_value());
+        if (encoded.has_value()) {
+          EXPECT_EQ(*encoded, it->second);
+        }
+      }
+    }
+  }
 }
 
 }  // namespace nsasm

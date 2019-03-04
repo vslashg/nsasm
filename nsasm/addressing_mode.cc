@@ -443,6 +443,21 @@ int InstructionLength(AddressingMode a) {
   return 0;
 }
 
+namespace {
+std::vector<AddressingMode>* MakeAllAddressingModes() {
+  auto result = new std::vector<AddressingMode>;
+  for (int mode_index = A_imp; mode_index <= A_imm_fx; ++mode_index) {
+    result->push_back(static_cast<AddressingMode>(mode_index));
+  }
+  return result;
+}
+}  // namespace
+
+const std::vector<AddressingMode>& AllAddressingModes() {
+  static std::vector<AddressingMode>* all_mnemonics = MakeAllAddressingModes();
+  return *all_mnemonics;
+}
+
 std::string ToString(AddressingMode a) {
   if (a == A_imp) return "implied";
   if (a == A_acc) return "accumulator";

@@ -298,6 +298,15 @@ std::pair<Mnemonic, AddressingMode> DecodeOpcode(uint8_t opcode) {
   return decode_map[opcode];
 }
 
+absl::optional<std::uint8_t> EncodeOpcode(Mnemonic m, AddressingMode a) {
+  const auto& map = ReverseOpcodeMap();
+  auto it = map.find(std::make_pair(m, a));
+  if (it == map.end()) {
+    return absl::nullopt;
+  }
+  return it->second;
+}
+
 bool ImmediateArgumentUsesMBit(Mnemonic m) {
   DecodeMapEntry e(m, A_imm_fm);
   return ReverseOpcodeMap().contains(e) || m == PM_add || m == PM_sub;

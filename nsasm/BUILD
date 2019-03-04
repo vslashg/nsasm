@@ -112,6 +112,16 @@ cc_test(
 
 
 cc_library(
+    name="output_sink",
+    hdrs=["output_sink.h"],
+    deps=[
+        ":error",
+        "@absl//absl/types:span",
+    ]
+)
+
+
+cc_library(
     name="instruction",
     srcs=["instruction.cc"],
     hdrs=["instruction.h"],
@@ -121,6 +131,7 @@ cc_library(
         ":flag_state",
         ":mnemonic",
         ":opcode_map",
+        ":output_sink",
     ],
 )
 
@@ -143,6 +154,7 @@ cc_library(
     hdrs=["decode.h"],
     deps=[
         "@absl//absl/memory",
+        "@absl//absl/types:span",
         ":error",
         ":flag_state",
         ":instruction",
@@ -157,6 +169,7 @@ cc_library(
     hdrs=["rom.h"],
     deps=[
         ":error",
+        ":output_sink",
     ],
 )
 
@@ -182,6 +195,7 @@ cc_library(
     deps=[
         ":expression",
         ":flag_state",
+        ":output_sink",
         "@absl//absl/container:flat_hash_map",
         "@absl//absl/strings",
         "@absl//absl/types:optional",

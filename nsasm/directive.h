@@ -5,6 +5,7 @@
 #include "absl/types/optional.h"
 #include "nsasm/expression.h"
 #include "nsasm/flag_state.h"
+#include "nsasm/output_sink.h"
 
 namespace nsasm {
 
@@ -44,6 +45,13 @@ struct Directive {
   ErrorOr<FlagState> Execute(const FlagState& state) const;
 
   int SerializedSize() const;
+
+  // Attempt to assemble this instruction to the given address and given sink.
+  //
+  // Returns an error if the instruction cannot be assembled for some reason.
+  // Also forwards any error returned by the output sink.
+  ErrorOr<void> Assemble(int address, const LookupContext& context,
+                         OutputSink* sink) const;
 
   std::string ToString() const;
 };

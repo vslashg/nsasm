@@ -21,6 +21,8 @@ class Module {
 
   ErrorOr<void> RunFirstPass();
 
+  ErrorOr<void> Assemble(OutputSink* sink);
+
   // Output this module's contents to stdout
   void DebugPrint() const;
 

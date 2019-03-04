@@ -4,12 +4,15 @@
 #include <cstdint>
 #include <algorithm>
 
+#include "absl/types/optional.h"
 #include "nsasm/addressing_mode.h"
 #include "nsasm/mnemonic.h"
 
 namespace nsasm {
 
 std::pair<Mnemonic, AddressingMode> DecodeOpcode(uint8_t opcode);
+
+absl::optional<std::uint8_t> EncodeOpcode(Mnemonic m, AddressingMode a);
 
 // Returns true iff the given mnemonic takes an immediate argument whose size is
 // controlled by the M status bit.

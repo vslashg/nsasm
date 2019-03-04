@@ -4,6 +4,7 @@
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "nsasm/output_sink.h"
 
 namespace nsasm {
 namespace {
@@ -38,8 +39,8 @@ absl::optional<DirectiveName> ToDirectiveName(std::string s) {
 
 DirectiveType DirectiveTypeByName(DirectiveName d) {
   static auto lookup = new absl::flat_hash_map<DirectiveName, DirectiveType>{
-      {D_db, DT_list_arg},    {D_dl, DT_list_arg},    {D_dw, DT_list_arg},
-      {D_entry, DT_flag_arg}, {D_equ, DT_single_arg}, {D_mode, DT_flag_arg},
+      {D_db, DT_list_arg},      {D_dl, DT_list_arg},    {D_dw, DT_list_arg},
+      {D_entry, DT_flag_arg},   {D_equ, DT_single_arg}, {D_mode, DT_flag_arg},
       {D_org, DT_constant_arg},
   };
   auto iter = lookup->find(d);
@@ -71,7 +72,8 @@ std::string Directive::ToString() const {
 ErrorOr<FlagState> Directive::Execute(const FlagState& state) const {
   if (name == D_db || name == D_dl || name == D_dw || name == D_org) {
     // Attempt to execute data or across .ORG gap
-    return Error("Execution continues into %s directive", nsasm::ToString(name));
+    return Error("Execution continues into %s directive",
+                 nsasm::ToString(name));
   }
   if (name == D_mode) {
     // The .mode directive forces static analysis to change its state to its
@@ -92,6 +94,32 @@ int Directive::SerializedSize() const {
     bytes_per_entry = 3;
   }
   return bytes_per_entry * list_argument.size();
+}
+
+namespace {
+void EncodeValue(DirectiveName d, int value, std::vector<uint8_t> *buf) {
+  buf->push_back(value & 0xff);
+  if (d == D_dw || d == D_dl) {
+    buf->push_back((value >> 8) & 0xff);
+  }
+  if (d == D_dl) {
+    buf->push_back((value >> 16) & 0xff);
+  }
+}
+}
+
+ErrorOr<void> Directive::Assemble(int address, const LookupContext& context,
+                                  OutputSink* sink) const {
+  if (name != D_db && name != D_dw && name != D_dl) {
+    return {};
+  }
+  std::vector<uint8_t> bytes;
+  for (const ExpressionOrNull& expr : list_argument) {
+    auto value = expr.Evaluate(context);
+    NSASM_RETURN_IF_ERROR(value);
+    EncodeValue(name, *value, &bytes);
+  }
+  return sink->Write(address, bytes);
 }
 
 }  // namespace nsasm

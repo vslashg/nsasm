@@ -9,6 +9,28 @@
 
 namespace nsasm {
 
+namespace {
+
+using LookupMap = absl::flat_hash_map<std::string, int>;
+
+class SimpleLookupContext : public LookupContext {
+ public:
+  SimpleLookupContext(LookupMap map) : map_(std::move(map)) {}
+
+  ErrorOr<int> Lookup(absl::string_view name) const override {
+    auto it = map_.find(name);
+    if (it == map_.end()) {
+      return Error("Unable to resolve name `%s`", name);
+    }
+    return it->second;
+  }
+
+ private:
+  LookupMap map_;
+};
+
+}  // namespace
+
 ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
   std::ifstream fs(path);
   if (!fs.good()) {
@@ -149,6 +171,20 @@ ErrorOr<void> Module::RunFirstPass() {
     pc += statement_size;
   }
 
+  return {};
+}
+
+ErrorOr<void> Module::Assemble(OutputSink* sink) {
+  LookupMap lookup_map;
+  for (const auto& node : label_map_) {
+    lookup_map[node.first] = lines_[node.second].address;
+  }
+  SimpleLookupContext context(std::move(lookup_map));
+  for (Line& line : lines_) {
+    NSASM_RETURN_IF_ERROR_WITH_LOCATION(
+        line.statement.Assemble(line.address, context, sink),
+        line.statement.Location());
+  }
   return {};
 }
 

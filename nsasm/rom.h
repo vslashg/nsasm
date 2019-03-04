@@ -2,6 +2,7 @@
 #define NSASM_ROM_H_
 
 #include "nsasm/error.h"
+#include "nsasm/output_sink.h"
 
 #include <cstdint>
 #include <string>
@@ -56,6 +57,20 @@ class Rom {
 };
 
 ErrorOr<Rom> LoadRomFile(const std::string& path);
+
+// Wraps a SNES ROM and acts as an output sink.  Returns an error if any data
+// written does not match what already exists in a ROM.  This is intended for
+// testing and disassembly validation purposes.
+class RomIdentityTest : public OutputSink {
+ public:
+  RomIdentityTest(const Rom* rom) : rom_(rom) {}
+
+  ErrorOr<void> Write(int address,
+                      absl::Span<const std::uint8_t> data) override;
+
+ private:
+  const Rom* rom_;
+};
 
 }  // namespace nsasm
 

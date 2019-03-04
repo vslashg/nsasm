@@ -178,7 +178,7 @@ class Identifier : public Expression {
       : identifier_(std::move(identifier)) {}
 
   ErrorOr<int> Evaluate(const LookupContext& context) const override {
-    return Error("can't resolve identifier %s", identifier_);
+    return context.Lookup(identifier_);
   }
   NumericType Type() const override { return T_unknown; }
   virtual bool RequiresLookup() const override { return true; }
