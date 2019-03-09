@@ -63,7 +63,7 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
   std::vector<Token> result;
   while (true) {
     sv = absl::StripLeadingAsciiWhitespace(sv);
-    if (sv.empty()) {
+    if (sv.empty() || sv[0] == ';') {
       result.emplace_back(EndOfLine(), loc);
       return result;
     }

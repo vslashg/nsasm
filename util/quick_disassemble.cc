@@ -32,6 +32,7 @@ int main(int argc, char** argv) {
   }
 
   // Default to native mode, with one-byte A and X/Y.
+  absl::string_view initial_mode = "m8x8";
   nsasm::FlagState flag_state(nsasm::B_off, nsasm::B_on, nsasm::B_on);
   if (argc > 3) {
     auto parsed = nsasm::FlagState::FromName(argv[3]);
@@ -39,6 +40,7 @@ int main(int argc, char** argv) {
       absl::PrintF("%s does not name a processor mode\n", argv[3]);
       return 1;
     }
+    initial_mode = argv[3];
     flag_state = *parsed;
   }
 
@@ -58,22 +60,28 @@ int main(int argc, char** argv) {
     }
     rd_address = *indirect_address;
   }
-  int pc = rd_address;
-
-  auto disassembly = nsasm::Disassemble(*rom, pc, flag_state);
+  auto disassembly = nsasm::Disassemble(*rom, rd_address, flag_state);
   if (!disassembly.ok()) {
     absl::PrintF("%s\n", disassembly.error().ToString());
   } else {
-    absl::PrintF("Disassembled %d instructions.\n", disassembly->size());
-    absl::PrintF("%06x          .org $%06x\n", rd_address, rd_address);
+    int pc = rd_address;
+    absl::PrintF("; Disassembled %d instructions.\n", disassembly->size());
+    absl::PrintF("         .org $%06x\n", rd_address);
+    absl::PrintF("main     .entry %s\n", initial_mode);
     for (const auto& value : *disassembly) {
-      int pc = value.first;
+      if (value.first != pc) {
+        absl::PrintF("         .org $%06x\n", value.first);
+        pc = value.first;
+      }
       std::string label = value.second.label;
       const nsasm::Instruction& instruction = value.second.instruction;
 
       std::string text =
-          absl::StrFormat("%06x %-8s %s", pc, label, instruction.ToString());
-      absl::PrintF("%-30s ;%s\n", text, value.second.next_flag_state.ToString());
+          absl::StrFormat("%-8s %s", label, instruction.ToString());
+      absl::PrintF("%-25s ; %06x %s\n", text, pc,
+                   value.second.next_flag_state.ToString());
+
+      pc += value.second.instruction.SerializedSize();
     }
   }
 }
