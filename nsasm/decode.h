@@ -20,4 +20,4 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
 
 }  // namespace nsasm
 
-#endif  // NSASM_DECODE_H_
+#endif  // NSASM_DECODE_H_1

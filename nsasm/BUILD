@@ -162,6 +162,16 @@ cc_library(
     ],
 )
 
+cc_test(
+    name="decode_test",
+    srcs=["decode_test.cc"],
+    deps=[
+        ":decode",
+        ":opcode_map",
+        "@gtest//:gtest_main",
+    ],
+)
+
 
 cc_library(
     name="rom",
