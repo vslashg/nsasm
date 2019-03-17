@@ -6,6 +6,7 @@
 #include "nsasm/error.h"
 #include "nsasm/expression.h"
 #include "nsasm/mnemonic.h"
+#include "nsasm/numeric_type.h"
 
 namespace nsasm {
 
@@ -75,6 +76,10 @@ ErrorOr<AddressingMode> DeduceMode(Mnemonic m, SyntacticAddressingMode smode,
 //
 // Returns -1 on invalid input.
 int InstructionLength(AddressingMode a);
+
+// Returns the datatype of the first argument for the given addressing mode,
+// or T_unknown if this addressing mode does not take arguments.
+NumericType Arg1Type(AddressingMode a);
 
 // Stringize addressing mode names.  There is no reverse operation; this is
 // intended for test code

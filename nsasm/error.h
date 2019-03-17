@@ -129,5 +129,4 @@ class ErrorOr<void> {
 #define NSASM_ASSERT_OK(v, ...) \
   ASSERT_EQ(v.ok() ? "ok" : v.error().ToString(), "ok")
 
-
 #endif  // NSASM_ERROR_H_

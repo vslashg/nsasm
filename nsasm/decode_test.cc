@@ -39,14 +39,14 @@ TEST(Decode, mode_dependent_instructions) {
     EXPECT_FALSE(Decode(data, unknown_flags).ok());
 
     auto byte_ins = Decode(data, eight_bit_flags);
-    ASSERT_TRUE(byte_ins.ok());
+    NSASM_ASSERT_OK(byte_ins);
     EXPECT_EQ(byte_ins->mnemonic, mnemonic);
     EXPECT_EQ(byte_ins->addressing_mode, A_imm_b);
     EXPECT_EQ(byte_ins->SerializedSize(), 2);
     EXPECT_EQ(byte_ins->arg1.Evaluate(lookup_context), 0x21);
 
     auto word_ins = Decode(data, sixteen_bit_flags);
-    ASSERT_TRUE(word_ins.ok());
+    NSASM_ASSERT_OK(word_ins);
     EXPECT_EQ(word_ins->mnemonic, mnemonic);
     EXPECT_EQ(word_ins->addressing_mode, A_imm_w);
     EXPECT_EQ(word_ins->SerializedSize(), 3);
@@ -77,7 +77,7 @@ TEST(Decode, mode_independent_instructions) {
                     .ok());
 
     auto decoded = Decode(data, FlagState());
-    ASSERT_TRUE(decoded.ok());
+    NSASM_ASSERT_OK(decoded);
     EXPECT_EQ(decoded->mnemonic, mnemonic);
     EXPECT_EQ(decoded->addressing_mode, addressing_mode);
     EXPECT_EQ(decoded->SerializedSize(), InstructionLength(addressing_mode));

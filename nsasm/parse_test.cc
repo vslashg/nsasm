@@ -16,10 +16,10 @@ TEST(Parse, round_trip) {
     if (ins.addressing_mode == A_rel8 || ins.addressing_mode == A_rel16) {
       ins.arg1 = absl::make_unique<Identifier>("label");
     } else if (ins.addressing_mode != A_imp && ins.addressing_mode != A_acc) {
-      ins.arg1 = absl::make_unique<Literal>(0);
+      ins.arg1 = absl::make_unique<Literal>(0, Arg1Type(ins.addressing_mode));
     }
     if (ins.addressing_mode == A_mov) {
-      ins.arg2 = absl::make_unique<Literal>(0);
+      ins.arg2 = absl::make_unique<Literal>(0, T_byte);
     }
 
     std::string line = absl::StrCat(
@@ -28,9 +28,9 @@ TEST(Parse, round_trip) {
     SCOPED_TRACE(i);
     SCOPED_TRACE(line);
     auto tokens = Tokenize(line, Location());
-    ASSERT_TRUE(tokens.ok());
+    NSASM_ASSERT_OK(tokens);
     auto parsed = Parse(*tokens);
-    ASSERT_TRUE(parsed.ok());
+    NSASM_ASSERT_OK(parsed);
     ASSERT_EQ(parsed->size(), 1);
     ASSERT_TRUE(absl::holds_alternative<Statement>(parsed->front()));
     auto round_tripped = absl::get<Statement>(parsed->front()).Instruction();

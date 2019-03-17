@@ -82,8 +82,9 @@ TEST(AddressingMode, rendering) {
   int index = 0;
   for (const TestCase& test_case : test_cases) {
     SCOPED_TRACE(index++);
-    ExpressionOrNull arg1 = absl::make_unique<Literal>(test_case.arg1);
-    ExpressionOrNull arg2 = absl::make_unique<Literal>(test_case.arg2);
+    ExpressionOrNull arg1 =
+        absl::make_unique<Literal>(test_case.arg1, Arg1Type(test_case.mode));
+    ExpressionOrNull arg2 = absl::make_unique<Literal>(test_case.arg2, T_byte);
     EXPECT_EQ(ArgsToString(test_case.mode, arg1, arg2), test_case.expected);
   }
 }
@@ -116,6 +117,36 @@ TEST(AddressingMode, instruction_size) {
   EXPECT_EQ(InstructionLength(A_rel16), 3);
   EXPECT_EQ(InstructionLength(A_imm_fm), 0);
   EXPECT_EQ(InstructionLength(A_imm_fx), 0);
+}
+
+TEST(AddressingMode, arg_1_type) {
+  EXPECT_EQ(Arg1Type(A_imp), T_unknown);
+  EXPECT_EQ(Arg1Type(A_acc), T_unknown);
+  EXPECT_EQ(Arg1Type(A_imm_b), T_byte);
+  EXPECT_EQ(Arg1Type(A_imm_w), T_word);
+  EXPECT_EQ(Arg1Type(A_dir_b), T_byte);
+  EXPECT_EQ(Arg1Type(A_dir_w), T_word);
+  EXPECT_EQ(Arg1Type(A_dir_l), T_long);
+  EXPECT_EQ(Arg1Type(A_dir_bx), T_byte);
+  EXPECT_EQ(Arg1Type(A_dir_by), T_byte);
+  EXPECT_EQ(Arg1Type(A_dir_wx), T_word);
+  EXPECT_EQ(Arg1Type(A_dir_wy), T_word);
+  EXPECT_EQ(Arg1Type(A_dir_lx), T_long);
+  EXPECT_EQ(Arg1Type(A_ind_b), T_byte);
+  EXPECT_EQ(Arg1Type(A_ind_w), T_word);
+  EXPECT_EQ(Arg1Type(A_ind_bx), T_byte);
+  EXPECT_EQ(Arg1Type(A_ind_by), T_byte);
+  EXPECT_EQ(Arg1Type(A_ind_wx), T_word);
+  EXPECT_EQ(Arg1Type(A_lng_b), T_byte);
+  EXPECT_EQ(Arg1Type(A_lng_w), T_word);
+  EXPECT_EQ(Arg1Type(A_lng_by), T_byte);
+  EXPECT_EQ(Arg1Type(A_stk), T_byte);
+  EXPECT_EQ(Arg1Type(A_stk_y), T_byte);
+  EXPECT_EQ(Arg1Type(A_mov), T_byte);
+  EXPECT_EQ(Arg1Type(A_rel8), T_byte);
+  EXPECT_EQ(Arg1Type(A_rel16), T_word);
+  EXPECT_EQ(Arg1Type(A_imm_fm), T_unknown);
+  EXPECT_EQ(Arg1Type(A_imm_fx), T_unknown);
 }
 
 struct SimpleDeductionCase {

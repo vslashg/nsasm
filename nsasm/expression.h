@@ -72,7 +72,7 @@ class Expression {
 
   // Returns a human-readable stringized represenation of this argument, coerced
   // to the requested type if provided.
-  virtual std::string ToString(NumericType type = T_unknown) const = 0;
+  virtual std::string ToString() const = 0;
 
  protected:
   // Returns a copy of this expression.
@@ -127,8 +127,8 @@ class ExpressionOrNull : public Expression {
     return expr_ ? expr_->RequiresLookup() : false;
   }
 
-  std::string ToString(NumericType type = T_unknown) const override {
-    return expr_ ? expr_->ToString(type) : "<NULL>";
+  std::string ToString() const override {
+    return expr_ ? expr_->ToString() : "<NULL>";
   }
 
   bool IsLabel() const;
@@ -160,7 +160,7 @@ class Literal : public Expression {
   }
   NumericType Type() const override { return type_; }
   virtual bool RequiresLookup() const override { return false; }
-  std::string ToString(NumericType type) const override;
+  std::string ToString() const override;
 
  private:
   std::unique_ptr<Expression> Copy() const override {
@@ -182,7 +182,7 @@ class Identifier : public Expression {
   }
   NumericType Type() const override { return T_unknown; }
   virtual bool RequiresLookup() const override { return true; }
-  std::string ToString(NumericType type) const override { return identifier_; }
+  std::string ToString() const override { return identifier_; }
   absl::optional<std::string> SimpleIdentifier() const override {
     return identifier_;
   }
@@ -213,9 +213,9 @@ class BinaryExpression : public Expression {
   virtual bool RequiresLookup() const override {
     return lhs_.RequiresLookup() || rhs_.RequiresLookup();
   }
-  std::string ToString(NumericType type) const override {
-    return absl::StrFormat("op%c(%s, %s)", op_.symbol, lhs_.ToString(type),
-                           rhs_.ToString(type));
+  std::string ToString() const override {
+    return absl::StrFormat("op%c(%s, %s)", op_.symbol, lhs_.ToString(),
+                           rhs_.ToString());
   }
 
  private:
@@ -238,8 +238,8 @@ class UnaryExpression : public Expression {
   }
   NumericType Type() const override { return Signed(arg_.Type()); }
   virtual bool RequiresLookup() const override { return arg_.RequiresLookup(); }
-  std::string ToString(NumericType type) const override {
-    return absl::StrFormat("op%c(%s)", op_.symbol, arg_.ToString(type));
+  std::string ToString() const override {
+    return absl::StrFormat("op%c(%s)", op_.symbol, arg_.ToString());
   }
 
  private:
@@ -261,7 +261,7 @@ class Label : public Expression {
   }
   NumericType Type() const override { return held_value_->Type(); }
   virtual bool RequiresLookup() const override { return true; }
-  std::string ToString(NumericType type) const override { return label_; }
+  std::string ToString() const override { return label_; }
 
  private:
   friend class ExpressionOrNull;

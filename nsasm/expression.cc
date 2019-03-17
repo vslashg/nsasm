@@ -4,10 +4,9 @@
 
 namespace nsasm {
 
-std::string Literal::ToString(NumericType type = T_unknown) const {
-  NumericType output_type = (type == T_unknown) ? type_ : type;
-  int output_value = CastTo(output_type, value_);
-  switch (output_type) {
+std::string Literal::ToString() const {
+  int output_value = CastTo(type_, value_);
+  switch (type_) {
     case T_byte:
       return absl::StrFormat("$%02x", output_value);
     case T_word:
