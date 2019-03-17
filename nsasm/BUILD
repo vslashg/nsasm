@@ -43,6 +43,16 @@ cc_library(
     ],
 )
 
+cc_test(
+    name="expression_test",
+    srcs=["expression_test.cc"],
+    deps=[
+        ":expression",
+        ":parse",
+        "@gtest//:gtest_main",
+    ],
+)
+
 
 cc_library(
     name="addressing_mode",

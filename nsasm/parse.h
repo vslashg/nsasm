@@ -16,6 +16,9 @@ namespace nsasm {
 ErrorOr<std::vector<absl::variant<Statement, std::string>>> Parse(
     absl::Span<const Token> tokens);
 
+// Parse a string into an expression object.  Intended for testing purposes.
+ErrorOr<ExpressionOrNull> ParseExpression(absl::string_view);
+
 }  // namespace nsasm
 
 #endif  // NSASM_PARSE_H_

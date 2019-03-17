@@ -421,4 +421,14 @@ ErrorOr<std::vector<absl::variant<Statement, std::string>>> Parse(
   return result_vector;
 }
 
+ErrorOr<ExpressionOrNull> ParseExpression(absl::string_view s) {
+  auto tokens = Tokenize(s, Location());
+  NSASM_RETURN_IF_ERROR(tokens);
+  TokenSpan pos = *tokens;
+  auto expr = Expr(&pos);
+  NSASM_RETURN_IF_ERROR(expr);
+  NSASM_RETURN_IF_ERROR(ConfirmAtEnd(&pos, "after A operand"));
+  return *expr;
+}
+
 }  // namespace nsasm
