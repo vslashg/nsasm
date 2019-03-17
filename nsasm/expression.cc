@@ -1,5 +1,6 @@
 #include "nsasm/expression.h"
 
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 
 namespace nsasm {
@@ -15,6 +16,15 @@ std::string Literal::ToString() const {
       return absl::StrFormat("$%06x", output_value);
     default:
       return absl::StrFormat("%d", output_value);
+  }
+}
+
+std::string Identifier::ToString() const {
+  const char* prefix = (type_ == T_long) ? "@" : "";
+  if (module_.empty()) {
+    return absl::StrCat(prefix, identifier_);
+  } else {
+    return absl::StrCat(prefix, module_, "::", identifier_);
   }
 }
 

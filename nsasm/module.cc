@@ -17,7 +17,11 @@ class SimpleLookupContext : public LookupContext {
  public:
   SimpleLookupContext(LookupMap map) : map_(std::move(map)) {}
 
-  ErrorOr<int> Lookup(absl::string_view name) const override {
+  ErrorOr<int> Lookup(absl::string_view name,
+                      absl::string_view module) const override {
+    if (!module.empty()) {
+      return Error("Module-based lookup not yet supported");
+    }
     auto it = map_.find(name);
     if (it == map_.end()) {
       return Error("Unable to resolve name `%s`", name);

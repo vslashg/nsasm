@@ -27,4 +27,24 @@ TEST(Expression, order_of_operations) {
   EXPECT_EQ(Ex("foo+bar").ToString(), "op+(foo, bar)");
 }
 
+TEST(Expression, literal_type) {
+  EXPECT_EQ(Ex("0").Type(), T_unknown);
+  EXPECT_EQ(Ex("00000000").Type(), T_unknown);
+  EXPECT_EQ(Ex("$00").Type(), T_byte);
+  EXPECT_EQ(Ex("$0000").Type(), T_word);
+  EXPECT_EQ(Ex("$000000").Type(), T_long);
+}
+
+TEST(Expression, identifiers) {
+  EXPECT_EQ(Ex("foo").ToString(), "foo");
+  EXPECT_EQ(Ex("foo::bar").ToString(), "foo::bar");
+  EXPECT_EQ(Ex("@foo").ToString(), "@foo");
+  EXPECT_EQ(Ex("@foo::bar").ToString(), "@foo::bar");
+
+  EXPECT_EQ(Ex("foo").Type(), T_word);
+  EXPECT_EQ(Ex("foo::bar").Type(), T_word);
+  EXPECT_EQ(Ex("@foo").Type(), T_long);
+  EXPECT_EQ(Ex("@foo::bar").Type(), T_long);
+}
+
 }  // namespace nsasm

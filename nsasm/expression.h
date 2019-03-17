@@ -39,12 +39,13 @@ ABSL_CONST_INIT inline UnaryOp negate_op{
 
 class LookupContext {
  public:
-  virtual ErrorOr<int> Lookup(absl::string_view name) const = 0;
+  virtual ErrorOr<int> Lookup(absl::string_view name,
+                              absl::string_view module) const = 0;
 };
 
 class NullLookupContext : public LookupContext {
  public:
-  ErrorOr<int> Lookup(absl::string_view name) const {
+  ErrorOr<int> Lookup(absl::string_view name, absl::string_view module) const {
     return Error("Can't perform name lookup in this context");
   }
 };
@@ -68,6 +69,9 @@ class Expression {
   }
 
   // Returns true if this expression requires a name lookup.
+  //
+  // TODO(): this is not necessary.  We should just Evaluate() with a null
+  // context, and see if it succeeds.
   virtual bool RequiresLookup() const = 0;
 
   // Returns a human-readable stringized represenation of this argument, coerced
@@ -171,27 +175,34 @@ class Literal : public Expression {
   NumericType type_;
 };
 
-// Unresolved identifier
 class Identifier : public Expression {
  public:
-  explicit Identifier(std::string identifier)
-      : identifier_(std::move(identifier)) {}
+  explicit Identifier(std::string identifier, std::string module = "",
+                      NumericType type = T_word)
+      : type_(type),
+        module_(std::move(module)),
+        identifier_(std::move(identifier)) {}
 
   ErrorOr<int> Evaluate(const LookupContext& context) const override {
-    return context.Lookup(identifier_);
+    return context.Lookup(identifier_, module_);
   }
-  NumericType Type() const override { return T_unknown; }
+  NumericType Type() const override { return type_; }
   virtual bool RequiresLookup() const override { return true; }
-  std::string ToString() const override { return identifier_; }
+  std::string ToString() const override;
   absl::optional<std::string> SimpleIdentifier() const override {
-    return identifier_;
+    if (module_.empty()) {
+      return identifier_;
+    }
+    return absl::nullopt;
   }
 
  private:
   std::unique_ptr<Expression> Copy() const override {
-    return absl::make_unique<Identifier>(identifier_);
+    return absl::make_unique<Identifier>(identifier_, module_, type_);
   }
 
+  NumericType type_;
+  std::string module_;
   std::string identifier_;
 };
 

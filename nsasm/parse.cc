@@ -127,11 +127,33 @@ ErrorOr<ExpressionOrNull> Comp(TokenSpan* pos) {
     pos->remove_prefix(1);
     return std::move(literal);
   }
-  if (pos->front().Identifier()) {
-    ExpressionOrNull identifier =
-        absl::make_unique<Identifier>(*pos->front().Identifier());
+  bool long_identifier = false;
+  if (pos->front() == '@') {
     pos->remove_prefix(1);
-    return std::move(identifier);
+    if (!pos->front().Identifier()) {
+      return Error("Expected identifier after '@', found %s",
+                   pos->front().ToString())
+          .SetLocation(Loc(pos));
+    }
+    long_identifier = true;
+  }
+  if (pos->front().Identifier()) {
+    std::string s1 = *pos->front().Identifier();
+    pos->remove_prefix(1);
+    if (pos->front() == P_scope) {
+      pos->remove_prefix(1);
+      if (!pos->front().Identifier()) {
+        return Error("Expected identifier after '::', found %s",
+                     pos->front().ToString())
+            .SetLocation(Loc(pos));
+      }
+      const std::string s2 = *pos->front().Identifier();
+      pos->remove_prefix(1);
+      return {absl::make_unique<Identifier>(s2, s1,
+                                            long_identifier ? T_long : T_word)};
+    }
+    return {absl::make_unique<Identifier>(s1, "",
+                                          long_identifier ? T_long : T_word)};
   }
   if (pos->front() == '(') {
     pos->remove_prefix(1);
@@ -428,7 +450,7 @@ ErrorOr<ExpressionOrNull> ParseExpression(absl::string_view s) {
   auto expr = Expr(&pos);
   NSASM_RETURN_IF_ERROR(expr);
   NSASM_RETURN_IF_ERROR(ConfirmAtEnd(&pos, "after A operand"));
-  return *expr;
+  return {std::move(*expr)};
 }
 
 }  // namespace nsasm
