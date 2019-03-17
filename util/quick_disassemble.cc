@@ -12,7 +12,7 @@
 
 void usage(char* path) {
   absl::PrintF(
-      "Usage: %s <path-to-rom> [@]<snes-hex-address> [<mode name>]\n\n"
+      "Usage: %s <path-to-rom> ([@]<snes-hex-address> <mode name>)+\n\n"
       "Disassembles some code starting at the named offset.\n"
       "If the offset begins with @, dereference the 16-bit address at this "
       "location.\n",
@@ -31,54 +31,61 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  // Default to native mode, with one-byte A and X/Y.
-  absl::string_view initial_mode = "m8x8";
-  nsasm::FlagState flag_state(nsasm::B_off, nsasm::B_on, nsasm::B_on);
-  if (argc > 3) {
-    auto parsed = nsasm::FlagState::FromName(argv[3]);
-    if (!parsed) {
-      absl::PrintF("%s does not name a processor mode\n", argv[3]);
+  std::map<int, nsasm::FlagState> seeds;
+  for (int idx = 2; idx < argc - 1; idx += 2) {
+    auto parsed_flag = nsasm::FlagState::FromName(argv[idx + 1]);
+    if (!parsed_flag) {
+      absl::PrintF("%s does not name a processor mode\n", argv[idx + 1]);
       return 1;
     }
-    initial_mode = argv[3];
-    flag_state = *parsed;
+    unsigned rd_address;
+    const char* address = argv[idx];
+    bool indirect = (address[0] == '@');
+    if (indirect) ++address;
+    if (!sscanf(address, "%x", &rd_address)) {
+      usage(argv[0]);
+      return 1;
+    }
+    if (indirect) {
+      auto indirect_address = rom->ReadWord(rd_address);
+      if (!indirect_address.ok()) {
+        absl::PrintF("%s\n", indirect_address.error().ToString());
+        return 1;
+      }
+      rd_address = *indirect_address;
+    }
+    seeds.emplace(rd_address, *parsed_flag);
   }
 
-  unsigned rd_address;
-  const char* address = argv[2];
-  bool indirect = (address[0] == '@');
-  if (indirect) ++address;
-  if (!sscanf(address, "%x", &rd_address)) {
-    usage(argv[0]);
-    return 1;
-  }
-  if (indirect) {
-    auto indirect_address = rom->ReadWord(rd_address);
-    if (!indirect_address.ok()) {
-      absl::PrintF("%s\n", indirect_address.error().ToString());
-      return 1;
-    }
-    rd_address = *indirect_address;
-  }
-  auto disassembly = nsasm::Disassemble(*rom, rd_address, flag_state);
+  auto disassembly = nsasm::Disassemble(*rom, seeds);
   if (!disassembly.ok()) {
     absl::PrintF("%s\n", disassembly.error().ToString());
+  } else if (disassembly->empty()) {
+    absl::PrintF("; Disassembled no instructions.\n");
   } else {
-    int pc = rd_address;
+    int pc = disassembly->begin()->first;
+    int entry_count = 0;
     absl::PrintF("; Disassembled %d instructions.\n", disassembly->size());
-    absl::PrintF("         .org $%06x\n", rd_address);
-    absl::PrintF("main     .entry %s\n", initial_mode);
+    absl::PrintF("         .org $%06x\n", pc);
     for (const auto& value : *disassembly) {
       if (value.first != pc) {
         absl::PrintF("         .org $%06x\n", value.first);
         pc = value.first;
       }
+      auto it = seeds.find(pc);
+      if (it != seeds.end()) {
+        std::string entry_label = absl::StrCat("entry", ++entry_count, ":");
+        absl::PrintF("%-8s .entry %s\n", entry_label, it->second.ToString());
+      }
       std::string label = value.second.label;
       const nsasm::Instruction& instruction = value.second.instruction;
 
+      if (!label.empty()) {
+        label += ':';
+      }
       std::string text =
           absl::StrFormat("%-8s %s", label, instruction.ToString());
-      absl::PrintF("%-25s ; %06x %s\n", text, pc,
+      absl::PrintF("%-35s ; %06x %s\n", text, pc,
                    value.second.next_flag_state.ToString());
 
       pc += value.second.instruction.SerializedSize();

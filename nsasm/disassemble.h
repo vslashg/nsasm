@@ -20,9 +20,14 @@ struct DisassembledInstruction {
 
 using Disassembly = std::map<int, DisassembledInstruction>;
 
-ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
-                                 const FlagState& initial_flag_state);
+ErrorOr<Disassembly> Disassemble(const Rom& rom,
+                                 const std::map<int, FlagState>& seed_map);
 
-};
+inline ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
+                                        const FlagState& initial_flag_state) {
+  std::map<int, FlagState> seed_map = {{starting_address, initial_flag_state}};
+  return Disassemble(rom, seed_map);
+}
+};  // namespace nsasm
 
 #endif  // NSASM_DISASSEMBLE_H_

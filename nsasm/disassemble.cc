@@ -10,8 +10,8 @@
 
 namespace nsasm {
 
-ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
-                                 const FlagState& initial_flag_state) {
+ErrorOr<Disassembly> Disassemble(const Rom& rom,
+                                 const std::map<int, FlagState>& seed_map) {
   // Mapping of instruction addresses to decoded instructions
   Disassembly result;
 
@@ -37,7 +37,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
 
   // Map of locations to consider next, and the flag state to use
   // when considering it.
-  std::map<int, FlagState> decode_stack;
+  std::map<int, FlagState> decode_stack = seed_map;
   auto add_to_decode_stack = [&decode_stack](int address,
                                              const FlagState& state) {
     auto it = decode_stack.find(address);
@@ -47,7 +47,6 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom, int starting_address,
       it->second |= state;
     }
   };
-  decode_stack[starting_address] = initial_flag_state;
 
   while (!decode_stack.empty()) {
     // service the lowest instruction we haven't considered
