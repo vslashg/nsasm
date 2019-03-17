@@ -49,6 +49,7 @@ cc_test(
     deps=[
         ":expression",
         ":parse",
+        "@gtest//:gtest",
         "@gtest//:gtest_main",
     ],
 )

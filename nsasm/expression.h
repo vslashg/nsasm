@@ -1,12 +1,13 @@
 #ifndef NSASM_VALUE_H_
 #define NSASM_VALUE_H_
 
-#include "nsasm/error.h"
-#include "nsasm/numeric_type.h"
+#include <set>
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
+#include "nsasm/error.h"
+#include "nsasm/numeric_type.h"
 
 namespace nsasm {
 
@@ -74,6 +75,9 @@ class Expression {
   // context, and see if it succeeds.
   virtual bool RequiresLookup() const = 0;
 
+  // Returns the set of modules referenced by this expression.
+  virtual std::set<std::string> ModuleNamesReferenced() const = 0;
+
   // Returns a human-readable stringized represenation of this argument, coerced
   // to the requested type if provided.
   virtual std::string ToString() const = 0;
@@ -131,6 +135,10 @@ class ExpressionOrNull : public Expression {
     return expr_ ? expr_->RequiresLookup() : false;
   }
 
+  virtual std::set<std::string> ModuleNamesReferenced() const override {
+    return expr_ ? expr_->ModuleNamesReferenced() : std::set<std::string>();
+  }
+
   std::string ToString() const override {
     return expr_ ? expr_->ToString() : "<NULL>";
   }
@@ -164,6 +172,9 @@ class Literal : public Expression {
   }
   NumericType Type() const override { return type_; }
   virtual bool RequiresLookup() const override { return false; }
+  virtual std::set<std::string> ModuleNamesReferenced() const override {
+    return {};
+  }
   std::string ToString() const override;
 
  private:
@@ -188,6 +199,13 @@ class Identifier : public Expression {
   }
   NumericType Type() const override { return type_; }
   virtual bool RequiresLookup() const override { return true; }
+  virtual std::set<std::string> ModuleNamesReferenced() const override {
+    std::set<std::string> result;
+    if (!module_.empty()) {
+      result.insert(module_);
+    }
+    return result;
+  }
   std::string ToString() const override;
   absl::optional<std::string> SimpleIdentifier() const override {
     if (module_.empty()) {
@@ -224,6 +242,12 @@ class BinaryExpression : public Expression {
   virtual bool RequiresLookup() const override {
     return lhs_.RequiresLookup() || rhs_.RequiresLookup();
   }
+  virtual std::set<std::string> ModuleNamesReferenced() const override {
+    auto result = lhs_.ModuleNamesReferenced();
+    auto rhs_modules = rhs_.ModuleNamesReferenced();
+    result.insert(rhs_modules.begin(), rhs_modules.end());
+    return result;
+  }
   std::string ToString() const override {
     return absl::StrFormat("op%c(%s, %s)", op_.symbol, lhs_.ToString(),
                            rhs_.ToString());
@@ -249,6 +273,9 @@ class UnaryExpression : public Expression {
   }
   NumericType Type() const override { return Signed(arg_.Type()); }
   virtual bool RequiresLookup() const override { return arg_.RequiresLookup(); }
+  virtual std::set<std::string> ModuleNamesReferenced() const override {
+    return arg_.ModuleNamesReferenced();
+  }
   std::string ToString() const override {
     return absl::StrFormat("op%c(%s)", op_.symbol, arg_.ToString());
   }
@@ -272,6 +299,9 @@ class Label : public Expression {
   }
   NumericType Type() const override { return held_value_->Type(); }
   virtual bool RequiresLookup() const override { return true; }
+  virtual std::set<std::string> ModuleNamesReferenced() const override {
+    return {};
+  }
   std::string ToString() const override { return label_; }
 
  private:

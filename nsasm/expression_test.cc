@@ -1,9 +1,13 @@
 #include "nsasm/expression.h"
 
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "nsasm/parse.h"
 
 namespace nsasm {
+
+using ::testing::ElementsAre;
+using ::testing::IsEmpty;
 
 namespace {
 ExpressionOrNull Ex(absl::string_view sv) {
@@ -11,7 +15,7 @@ ExpressionOrNull Ex(absl::string_view sv) {
   NSASM_EXPECT_OK(expr);
   return expr.ok() ? *expr : ExpressionOrNull();
 }
-}
+}  // namespace
 
 TEST(Expression, order_of_operations) {
   EXPECT_EQ(Ex("1+2*3").ToString(), "op+(1, op*(2, 3))");
@@ -45,6 +49,20 @@ TEST(Expression, identifiers) {
   EXPECT_EQ(Ex("foo::bar").Type(), T_word);
   EXPECT_EQ(Ex("@foo").Type(), T_long);
   EXPECT_EQ(Ex("@foo::bar").Type(), T_long);
+
+  EXPECT_EQ(Ex("foo + 1").Type(), T_word);
+  EXPECT_EQ(Ex("foo::bar + 1").Type(), T_word);
+  EXPECT_EQ(Ex("@foo + 1").Type(), T_long);
+  EXPECT_EQ(Ex("@foo::bar + 1").Type(), T_long);
+}
+
+TEST(Expression, namespaces) {
+  EXPECT_THAT(Ex("foo::bar + foo::baz").ModuleNamesReferenced(),
+              ElementsAre("foo"));
+  EXPECT_THAT(Ex("foo::bar + baz::blat").ModuleNamesReferenced(),
+              ElementsAre("baz", "foo"));
+  EXPECT_THAT(Ex("foo + bar + baz").ModuleNamesReferenced(),
+              IsEmpty());
 }
 
 }  // namespace nsasm

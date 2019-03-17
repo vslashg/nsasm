@@ -71,6 +71,25 @@ ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
         }
         m.lines_.back().labels = std::move(pending_labels);
         pending_labels.clear();
+        const Directive* directive = m.lines_.back().statement.Directive();
+        if (directive) {
+          if (directive->name == D_module) {
+            if (!m.module_name_.empty()) {
+              return Error("Duplicate %s directive", ToString(directive->name))
+                  .SetLocation(loc);
+            }
+            auto id = directive->argument.SimpleIdentifier();
+            if (!id) {
+              return Error("logic error: %s directive with complex expression",
+                           ToString(directive->name))
+                  .SetLocation(loc);
+            }
+            m.module_name_ = *id;
+          } else if (directive->name == D_equ) {
+            auto dependencies = directive->argument.ModuleNamesReferenced();
+            m.dependencies_.insert(dependencies.begin(), dependencies.end());
+          }
+        }
       } else {
         return Error("logic error: unknown entity type");
       }

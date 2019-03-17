@@ -17,6 +17,7 @@ enum DirectiveName {
   D_entry,
   D_equ,
   D_mode,
+  D_module,
   D_org,
 };
 
@@ -26,6 +27,7 @@ enum DirectiveType {
   DT_constant_arg,
   DT_flag_arg,
   DT_list_arg,
+  DT_name_arg,
 };
 
 // Conversions between DirectiveName values, and the matching strings.
@@ -78,6 +80,9 @@ inline void PrintTo(DirectiveType t, std::ostream* out) {
       return;
     case DT_list_arg:
       *out << "DT_list_arg";
+      return;
+    case DT_name_arg:
+      *out << "DT_name_arg";
       return;
     default:
       *out << "???";

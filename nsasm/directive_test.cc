@@ -29,6 +29,7 @@ TEST(Directive, directive_names) {
   CHECK_DIRECTIVE_NAME(entry);
   CHECK_DIRECTIVE_NAME(equ);
   CHECK_DIRECTIVE_NAME(mode);
+  CHECK_DIRECTIVE_NAME(module);
   CHECK_DIRECTIVE_NAME(org);
 
   // Invalid strings should not be converted
@@ -59,6 +60,12 @@ TEST(Directive, directive_types) {
   for (DirectiveName name : {D_entry, D_mode}) {
     SCOPED_TRACE(ToString(name));
     EXPECT_EQ(DirectiveTypeByName(name), DT_flag_arg);
+  }
+
+  // Directives that take a simple name
+  for (DirectiveName name : {D_module}) {
+    SCOPED_TRACE(ToString(name));
+    EXPECT_EQ(DirectiveTypeByName(name), DT_name_arg);
   }
 }
 

@@ -338,11 +338,17 @@ ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
   DirectiveType directive_type = DirectiveTypeByName(directive.name);
   switch (directive_type) {
     case DT_single_arg:
-    case DT_constant_arg: {
+    case DT_constant_arg:
+    case DT_name_arg: {
       auto arg1 = Expr(pos);
       NSASM_RETURN_IF_ERROR(arg1);
       if (directive_type == DT_constant_arg && arg1->RequiresLookup()) {
         return Error("%s directive requires a constant value argument",
+                     nsasm::ToString(directive.name))
+            .SetLocation(pos->front().Location());
+      }
+      if (directive_type == DT_name_arg && !arg1->SimpleIdentifier()) {
+        return Error("%s directive requires a simple name argument",
                      nsasm::ToString(directive.name))
             .SetLocation(pos->front().Location());
       }

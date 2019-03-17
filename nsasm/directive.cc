@@ -10,7 +10,7 @@ namespace nsasm {
 namespace {
 
 constexpr absl::string_view directive_names[] = {
-    ".DB", ".DL", ".DW", ".ENTRY", ".EQU", ".MODE", ".ORG",
+    ".DB", ".DL", ".DW", ".ENTRY", ".EQU", ".MODE", ".MODULE", ".ORG",
 };
 
 }  // namespace
@@ -25,9 +25,9 @@ absl::string_view ToString(DirectiveName d) {
 absl::optional<DirectiveName> ToDirectiveName(std::string s) {
   static auto lookup =
       new absl::flat_hash_map<absl::string_view, DirectiveName>{
-          {".DB", D_db},       {".DL", D_dl},   {".DW", D_dw},
-          {".ENTRY", D_entry}, {".EQU", D_equ}, {".MODE", D_mode},
-          {".ORG", D_org},
+          {".DB", D_db},         {".DL", D_dl},   {".DW", D_dw},
+          {".ENTRY", D_entry},   {".EQU", D_equ}, {".MODE", D_mode},
+          {".MODULE", D_module}, {".ORG", D_org},
       };
   absl::AsciiStrToUpper(&s);
   auto iter = lookup->find(s);
@@ -39,9 +39,9 @@ absl::optional<DirectiveName> ToDirectiveName(std::string s) {
 
 DirectiveType DirectiveTypeByName(DirectiveName d) {
   static auto lookup = new absl::flat_hash_map<DirectiveName, DirectiveType>{
-      {D_db, DT_list_arg},      {D_dl, DT_list_arg},    {D_dw, DT_list_arg},
-      {D_entry, DT_flag_arg},   {D_equ, DT_single_arg}, {D_mode, DT_flag_arg},
-      {D_org, DT_constant_arg},
+      {D_db, DT_list_arg},     {D_dl, DT_list_arg},      {D_dw, DT_list_arg},
+      {D_entry, DT_flag_arg},  {D_equ, DT_single_arg},   {D_mode, DT_flag_arg},
+      {D_module, DT_name_arg}, {D_org, DT_constant_arg},
   };
   auto iter = lookup->find(d);
   if (iter == lookup->end()) {
@@ -55,6 +55,7 @@ std::string Directive::ToString() const {
   switch (type) {
     case DT_single_arg:
     case DT_constant_arg:
+    case DT_name_arg:
       return absl::StrCat(nsasm::ToString(name), " ", argument.ToString());
     case DT_flag_arg:
       return absl::StrCat(nsasm::ToString(name), " ",
@@ -67,6 +68,7 @@ std::string Directive::ToString() const {
                           out->append(v.ToString());
                         }));
   }
+  return "???";
 }
 
 ErrorOr<FlagState> Directive::Execute(const FlagState& state) const {
@@ -97,7 +99,7 @@ int Directive::SerializedSize() const {
 }
 
 namespace {
-void EncodeValue(DirectiveName d, int value, std::vector<uint8_t> *buf) {
+void EncodeValue(DirectiveName d, int value, std::vector<uint8_t>* buf) {
   buf->push_back(value & 0xff);
   if (d == D_dw || d == D_dl) {
     buf->push_back((value >> 8) & 0xff);
@@ -106,7 +108,7 @@ void EncodeValue(DirectiveName d, int value, std::vector<uint8_t> *buf) {
     buf->push_back((value >> 16) & 0xff);
   }
 }
-}
+}  // namespace
 
 ErrorOr<void> Directive::Assemble(int address, const LookupContext& context,
                                   OutputSink* sink) const {

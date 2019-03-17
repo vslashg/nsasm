@@ -19,6 +19,13 @@ class Module {
   // from it, or an error.
   static ErrorOr<Module> LoadAsmFile(const std::string& path);
 
+  std::string ModuleName() const { return module_name_; }
+
+  // Returns the set of module names that this module depends on.  (This is
+  // not every reference, but only for references that require early evaluation,
+  // i.e., .EQU arguments.)
+  const std::set<std::string> Dependencies() const { return dependencies_; }
+
   ErrorOr<void> RunFirstPass();
 
   ErrorOr<void> Assemble(OutputSink* sink);
@@ -41,7 +48,9 @@ class Module {
   };
 
   std::string path_;
+  std::string module_name_;
   std::vector<Line> lines_;
+  std::set<std::string> dependencies_;
   absl::flat_hash_map<std::string, int> label_map_;
 };
 
