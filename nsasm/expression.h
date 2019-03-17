@@ -250,14 +250,14 @@ class UnaryExpression : public Expression {
   UnaryOp op_;
 };
 
-// Named label.
+// Named label.  Used as a placeholder expression type for disassembly only.
 class Label : public Expression {
  public:
   explicit Label(std::string label, std::unique_ptr<Expression>&& expr)
       : label_(std::move(label)), held_value_(std::move(expr)) {}
 
   ErrorOr<int> Evaluate(const LookupContext& context) const override {
-    return held_value_->Evaluate(context);
+    return Error("Can't evaluate labels");
   }
   NumericType Type() const override { return held_value_->Type(); }
   virtual bool RequiresLookup() const override { return true; }
