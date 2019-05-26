@@ -25,7 +25,7 @@ cc_binary(
     srcs=["quick_assemble.cc"],
     deps=[
         "@absl//absl/strings:str_format",
-        "//nsasm:module",
+        "//nsasm:assembler",
         "//nsasm:rom",
     ],
 )

@@ -1,18 +1,18 @@
 #include "absl/strings/str_format.h"
-#include "nsasm/module.h"
+#include "nsasm/assembler.h"
 #include "nsasm/rom.h"
 
 // Test utility to exercise assembly
 
 void usage(char* path) {
   absl::PrintF(
-      "Usage: %s <path-to-rom-file> <path-to-asm-file>\n\n"
-      "\"Assembles\" a single ASM file, or returns an error message.\n",
+      "Usage: %s <path-to-rom-file> {<path-to-asm-file> ...}\n\n"
+      "\"Assembles\" one or more ASM files, or returns an error message.\n",
       path);
 }
 
 int main(int argc, char** argv) {
-  if (argc != 3) {
+  if (argc < 3) {
     usage(argv[0]);
     return 0;
   }
@@ -21,23 +21,20 @@ int main(int argc, char** argv) {
     absl::PrintF("Error loading ROM: %s\n", rom.error().ToString());
     return 1;
   }
-  auto module = nsasm::Module::LoadAsmFile(argv[2]);
-  if (!module.ok()) {
-    absl::PrintF("Error assembling: %s\n", module.error().ToString());
-    return 0;
+  nsasm::Assembler assembler;
+  for (int arg_index = 2; arg_index < argc; ++arg_index) {
+    auto result = assembler.AddAsmFile(argv[arg_index]);
+    if (!result.ok()) {
+      absl::PrintF("Error assembling: %s\n", result.error().ToString());
+    }
   }
-  auto first_pass = module->RunFirstPass();
-  if (!first_pass.ok()) {
-    absl::PrintF("Error in first pass: %s\n", first_pass.error().ToString());
-    return 0;
-  }
-
-  module->DebugPrint();
 
   nsasm::RomIdentityTest rom_identity(&*rom);
-  auto status = module->Assemble(&rom_identity);
+  auto status = assembler.Assemble(&rom_identity);
   if (!status.ok()) {
     absl::PrintF("Error in assembly: %s\n", status.error().ToString());
     return 0;
   }
+
+  assembler.DebugPrint();
 }

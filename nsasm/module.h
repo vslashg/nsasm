@@ -9,6 +9,8 @@
 
 namespace nsasm {
 
+class ModuleLookupContext;
+
 class Module {
  public:
   // movable but not copiable
@@ -28,20 +30,34 @@ class Module {
   // i.e., .EQU arguments.)
   const std::set<std::string> Dependencies() const { return dependencies_; }
 
+  // Run the first pass of this module.  This determines the size of each
+  // instruction and assigns an address to each non-.equ label, but will not
+  // evaluate any expressions.
   ErrorOr<void> RunFirstPass();
+
+  // Run the .equ evaluation pass.  This determines the value of each .equ
+  // expression.  Evaluation of other expressions in the module aren't performed
+  // this pass.
+  ErrorOr<void> RunSecondPass(const LookupContext& lookup_context);
 
   // Returns the value for the given name, or nullopt if that name is not
   // defined by this module.  Call this only after RunFirstPass() has
   // successfully returned.
-  absl::optional<int> ValueForName(absl::string_view sv) const;
+  ErrorOr<int> ValueForName(absl::string_view sv) const;
 
-  ErrorOr<void> Assemble(OutputSink* sink);
+  ErrorOr<void> Assemble(OutputSink* sink, const LookupContext& lookup_context);
 
   // Output this module's contents to stdout
   void DebugPrint() const;
 
  private:
   Module() = default;
+
+  // Perform an internal lookup for a given label.  Returns an error if the
+  // name does not exist.
+  ErrorOr<int> LocalLookup(absl::string_view sv) const;
+
+  friend class nsasm::ModuleLookupContext;
 
   // A line of code (an instruction or directive) inside an .asm module.
   struct Line {

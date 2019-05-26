@@ -9,31 +9,25 @@
 
 namespace nsasm {
 
-namespace {
-
-using LookupMap = absl::flat_hash_map<std::string, int>;
-
-class SimpleLookupContext : public LookupContext {
+class ModuleLookupContext : public LookupContext {
  public:
-  SimpleLookupContext(LookupMap map) : map_(std::move(map)) {}
+  ModuleLookupContext(Module* module, const LookupContext& extern_vars)
+      : module_(module),
+        externs_(extern_vars) {}
 
   ErrorOr<int> Lookup(absl::string_view name,
                       absl::string_view module) const override {
-    if (!module.empty()) {
-      return Error("Module-based lookup not yet supported");
+    if (module.empty() || module == module_->Name()) {
+      return module_->LocalLookup(name);
+    } else {
+      return externs_.Lookup(name, module);
     }
-    auto it = map_.find(name);
-    if (it == map_.end()) {
-      return Error("Unable to resolve name `%s`", name);
-    }
-    return it->second;
   }
 
  private:
-  LookupMap map_;
+  Module* module_;
+  const LookupContext& externs_;
 };
-
-}  // namespace
 
 ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
   std::ifstream fs(path);
@@ -198,16 +192,39 @@ ErrorOr<void> Module::RunFirstPass() {
   return {};
 }
 
-ErrorOr<void> Module::Assemble(OutputSink* sink) {
-  LookupMap lookup_map;
-  for (const auto& node : label_map_) {
-    if (lines_[node.second].address.has_value() == false) {
-      return Error("logic error: No value at label %s", node.first)
-          .SetLocation(lines_[node.second].statement.Location());
-    }
-    lookup_map[node.first] = *lines_[node.second].address;
+ErrorOr<int> Module::LocalLookup(absl::string_view sv) const {
+  auto line_it = label_map_.find(sv);
+  if (line_it == label_map_.end()) {
+    return Error("Local name '%s' not defined", sv);
   }
-  SimpleLookupContext context(std::move(lookup_map));
+  const Line& line = lines_[line_it->second];
+  if (line.address.has_value()) {
+    return *line.address;
+  }
+  const Directive* dir = line.statement.Directive();
+  if (dir && dir->name == D_org) {
+    return Error(".equ value '%s' accessed before definition", sv);
+  }
+  return Error("logic error: No value for '%s'", sv);
+}
+
+ErrorOr<void> Module::RunSecondPass(const LookupContext& lookup_context) {
+  // Second pass is for evaluating .equ expressions only.
+  ModuleLookupContext context(this, lookup_context);
+  for (Line& line : lines_) {
+    const Directive* dir = line.statement.Directive();
+    if (dir && dir->name == D_equ && !line.address.has_value()) {
+      auto value = dir->argument.Evaluate(context);
+      NSASM_RETURN_IF_ERROR_WITH_LOCATION(value, line.statement.Location());
+      line.address = *value;
+    }
+  }
+  return {};
+}
+
+ErrorOr<void> Module::Assemble(OutputSink* sink,
+                               const LookupContext& lookup_context) {
+  ModuleLookupContext context(this, lookup_context);
   for (Line& line : lines_) {
     if (line.statement.SerializedSize() > 0) {
       if (!line.address.has_value()) {
@@ -235,6 +252,16 @@ void Module::DebugPrint() const {
   }
 }
 
-// absl::optional<int> ValueForName(absl::string_view sv) const {}
+ErrorOr<int> Module::ValueForName(absl::string_view sv) const {
+  auto line_loc = label_map_.find(sv);
+  if (line_loc == label_map_.end()) {
+    return Error("No label named %s in module %s", sv, module_name_);
+  }
+  const absl::optional<int>& value = lines_[line_loc->second].address;
+  if (value.has_value()) {
+    return *value;
+  }
+  return Error("logic error: No value at label %s::%s", module_name_, sv);
+}
 
 }  // namespace nsasm
