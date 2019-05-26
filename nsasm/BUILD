@@ -303,3 +303,15 @@ cc_library(
         "@absl//absl/strings:str_format",
     ],
 )
+
+
+cc_library(
+    name="assembler",
+    srcs=["assembler.cc"],
+    hdrs=["assembler.h"],
+    deps=[
+        ":error",
+        ":module",
+        "@absl//absl/container:flat_hash_map",
+    ],
+)

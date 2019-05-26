@@ -17,9 +17,11 @@ class Module {
 
   // Opens the .asm file at the given path, and either returns a Module loaded
   // from it, or an error.
+  //
+  // path_, module_name_, and dependencies_ are set on the removed module.
   static ErrorOr<Module> LoadAsmFile(const std::string& path);
 
-  std::string ModuleName() const { return module_name_; }
+  std::string Name() const { return module_name_; }
 
   // Returns the set of module names that this module depends on.  (This is
   // not every reference, but only for references that require early evaluation,
@@ -27,6 +29,11 @@ class Module {
   const std::set<std::string> Dependencies() const { return dependencies_; }
 
   ErrorOr<void> RunFirstPass();
+
+  // Returns the value for the given name, or nullopt if that name is not
+  // defined by this module.  Call this only after RunFirstPass() has
+  // successfully returned.
+  absl::optional<int> ValueForName(absl::string_view sv) const;
 
   ErrorOr<void> Assemble(OutputSink* sink);
 
@@ -44,7 +51,7 @@ class Module {
     std::vector<std::string> labels;
     bool reached = false;
     FlagState incoming_state;
-    int address = -1;
+    absl::optional<int> address;
   };
 
   std::string path_;

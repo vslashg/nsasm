@@ -103,8 +103,7 @@ ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
 ErrorOr<void> Module::RunFirstPass() {
   // Map of lines to evaluate next, and the flag state on entry
   std::map<int, FlagState> decode_stack;
-  auto add_to_decode_stack = [&decode_stack](int line,
-                                             const FlagState& state) {
+  auto add_to_decode_stack = [&decode_stack](int line, const FlagState& state) {
     auto it = decode_stack.find(line);
     if (it == decode_stack.end()) {
       decode_stack[line] = state;
@@ -190,7 +189,9 @@ ErrorOr<void> Module::RunFirstPass() {
       return Error("No address given for assembly")
           .SetLocation(line.statement.Location());
     }
-    line.address = pc;
+    if (!dir || dir->name != D_equ) {
+      line.address = pc;
+    }
     pc += statement_size;
   }
 
@@ -200,13 +201,23 @@ ErrorOr<void> Module::RunFirstPass() {
 ErrorOr<void> Module::Assemble(OutputSink* sink) {
   LookupMap lookup_map;
   for (const auto& node : label_map_) {
-    lookup_map[node.first] = lines_[node.second].address;
+    if (lines_[node.second].address.has_value() == false) {
+      return Error("logic error: No value at label %s", node.first)
+          .SetLocation(lines_[node.second].statement.Location());
+    }
+    lookup_map[node.first] = *lines_[node.second].address;
   }
   SimpleLookupContext context(std::move(lookup_map));
   for (Line& line : lines_) {
-    NSASM_RETURN_IF_ERROR_WITH_LOCATION(
-        line.statement.Assemble(line.address, context, sink),
-        line.statement.Location());
+    if (line.statement.SerializedSize() > 0) {
+      if (!line.address.has_value()) {
+        return Error("logic error: no address for statement")
+            .SetLocation(line.statement.Location());
+      }
+      NSASM_RETURN_IF_ERROR_WITH_LOCATION(
+          line.statement.Assemble(*line.address, context, sink),
+          line.statement.Location());
+    }
   }
   return {};
 }
@@ -216,9 +227,14 @@ void Module::DebugPrint() const {
     for (const auto& label : line.labels) {
       absl::PrintF("       %s:\n", label);
     }
-    absl::PrintF("%06x     %s\n", std::max(0, line.address),
-                 line.statement.ToString());
+    if (line.address.has_value()) {
+      absl::PrintF("%06x     %s\n", *line.address, line.statement.ToString());
+    } else {
+      absl::PrintF("           %s\n", line.statement.ToString());
+    }
   }
 }
 
-}  // namespace
+// absl::optional<int> ValueForName(absl::string_view sv) const {}
+
+}  // namespace nsasm
