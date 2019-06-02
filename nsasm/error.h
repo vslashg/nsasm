@@ -111,22 +111,30 @@ class ErrorOr<void> {
 
 #define NSASM_RETURN_IF_ERROR(v) \
   do {                           \
-    if (!v.ok()) {               \
-      return v.error();          \
+    const auto& eval = v;        \
+    if (!eval.ok()) {            \
+      return eval.error();       \
     }                            \
   } while (0)
 
 #define NSASM_RETURN_IF_ERROR_WITH_LOCATION(v, ...) \
   do {                                              \
-    if (!v.ok()) {                                  \
-      return v.error().SetLocation(__VA_ARGS__);    \
+    const auto& eval = v;                           \
+    if (!eval.ok()) {                               \
+      return eval.error().SetLocation(__VA_ARGS__); \
     }                                               \
   } while (0)
 
-#define NSASM_EXPECT_OK(v, ...) \
-  EXPECT_EQ(v.ok() ? "ok" : v.error().ToString(), "ok")
+#define NSASM_EXPECT_OK(v, ...)                                  \
+  do {                                                           \
+    const auto& eval = v;                                        \
+    EXPECT_EQ(eval.ok() ? "ok" : eval.error().ToString(), "ok"); \
+  } while (0)
 
-#define NSASM_ASSERT_OK(v, ...) \
-  ASSERT_EQ(v.ok() ? "ok" : v.error().ToString(), "ok")
+#define NSASM_ASSERT_OK(v, ...)                                  \
+  do {                                                           \
+    const auto& eval = v;                                        \
+    ASSERT_EQ(eval.ok() ? "ok" : eval.error().ToString(), "ok"); \
+  } while (0)
 
 #endif  // NSASM_ERROR_H_
