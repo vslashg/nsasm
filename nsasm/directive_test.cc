@@ -23,9 +23,11 @@ void CheckToString(DirectiveName d, std::string s) {
 #define CHECK_DIRECTIVE_NAME(name) CheckToString(D_##name, "." #name)
 
 TEST(Directive, directive_names) {
+  CHECK_DIRECTIVE_NAME(begin);
   CHECK_DIRECTIVE_NAME(db);
   CHECK_DIRECTIVE_NAME(dw);
   CHECK_DIRECTIVE_NAME(dl);
+  CHECK_DIRECTIVE_NAME(end);
   CHECK_DIRECTIVE_NAME(entry);
   CHECK_DIRECTIVE_NAME(equ);
   CHECK_DIRECTIVE_NAME(mode);

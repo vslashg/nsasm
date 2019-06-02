@@ -11,14 +11,14 @@ namespace nsasm {
 
 class ModuleLookupContext : public LookupContext {
  public:
-  ModuleLookupContext(Module* module, const LookupContext& extern_vars)
-      : module_(module),
-        externs_(extern_vars) {}
+  ModuleLookupContext(Module* module, const std::vector<int>& active_scopes,
+                      const LookupContext& extern_vars)
+      : module_(module), active_scopes_(active_scopes), externs_(extern_vars) {}
 
   ErrorOr<int> Lookup(absl::string_view name,
                       absl::string_view module) const override {
     if (module.empty() || module == module_->Name()) {
-      return module_->LocalLookup(name);
+      return module_->LocalLookup(name, active_scopes_);
     } else {
       return externs_.Lookup(name, module);
     }
@@ -26,6 +26,7 @@ class ModuleLookupContext : public LookupContext {
 
  private:
   Module* module_;
+  const std::vector<int>& active_scopes_;
   const LookupContext& externs_;
 };
 
@@ -44,6 +45,24 @@ ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
   std::string line;
 
   std::vector<std::string> pending_labels;
+  std::vector<int> active_scopes;
+
+  auto add_label = [&m, &active_scopes](
+                       const std::string& label,
+                       int target_line) -> nsasm::ErrorOr<void> {
+    absl::flat_hash_map<std::string, int>* scope;
+    if (active_scopes.empty()) {
+      scope = &m.globals_;
+    } else {
+      scope = &m.lines_[active_scopes.back()].scoped_locals;
+    }
+    if (scope->contains(label)) {
+      return Error("Duplicate label definition for '%s'", label);
+    }
+    (*scope)[label] = target_line;
+    return {};
+  };
+
   while (std::getline(fs, line)) {
     ++loc.offset;
     auto tokens = nsasm::Tokenize(line, loc);
@@ -57,13 +76,11 @@ ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
       } else if (auto* statement = absl::get_if<Statement>(&entity)) {
         m.lines_.emplace_back(std::move(*statement));
         for (const std::string& pending_label : pending_labels) {
-          if (m.label_map_.contains(pending_label)) {
-            return Error("Duplicate label definition for '%s'", pending_label)
-                .SetLocation(loc);
-          }
-          m.label_map_[pending_label] = m.lines_.size() - 1;
+          NSASM_RETURN_IF_ERROR_WITH_LOCATION(
+              add_label(pending_label, m.lines_.size() - 1), loc);
         }
         m.lines_.back().labels = std::move(pending_labels);
+        m.lines_.back().active_scopes = active_scopes;
         pending_labels.clear();
         const Directive* directive = m.lines_.back().statement.Directive();
         if (directive) {
@@ -82,6 +99,14 @@ ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
           } else if (directive->name == D_equ) {
             auto dependencies = directive->argument.ModuleNamesReferenced();
             m.dependencies_.insert(dependencies.begin(), dependencies.end());
+          } else if (directive->name == D_begin) {
+            active_scopes.push_back(m.lines_.size() - 1);
+          } else if (directive->name == D_end) {
+            if (active_scopes.empty()) {
+              return Error("Scope close without matching open")
+                  .SetLocation(loc);
+            }
+            active_scopes.pop_back();
           }
         }
       } else {
@@ -89,11 +114,13 @@ ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
       }
     }
   }
+  if (!active_scopes.empty()) {
+    return Error("Scope open without matching close")
+        .SetLocation(m.lines_[active_scopes.back()].statement.Location());
+  }
   return m;
 }
 
-// Note: we will probably have to one day change this to run over sub-ranges
-// of lines_, to support local labels in subroutines, etc.
 ErrorOr<void> Module::RunFirstPass() {
   // Map of lines to evaluate next, and the flag state on entry
   std::map<int, FlagState> decode_stack;
@@ -105,7 +132,6 @@ ErrorOr<void> Module::RunFirstPass() {
       it->second |= state;
     }
   };
-
   // Find all .entry points in the module to begin static analysis.
   for (int i = 0; i < lines_.size(); ++i) {
     Line& line = lines_[i];
@@ -143,15 +169,15 @@ ErrorOr<void> Module::RunFirstPass() {
       if (!target) {
         return Error("logic error: branch instruction argument missing?");
       }
-      auto dest_iter = label_map_.find(*target);
-      if (dest_iter == label_map_.end()) {
-        return Error("Target for local %s branch not found",
-                     nsasm::ToString(ins.mnemonic))
+      auto target_index = LocalIndex(*target, line.active_scopes);
+      if (!target_index.ok()) {
+        return Error("Target for `%s %s` not found",
+                     nsasm::ToString(ins.mnemonic), *target)
             .SetLocation(ins.location);
       }
       auto branch_state = ins.ExecuteBranch(current_state);
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(branch_state, ins.location);
-      add_to_decode_stack(dest_iter->second, *branch_state);
+      add_to_decode_stack(*target_index, *branch_state);
     }
   }
 
@@ -192,28 +218,40 @@ ErrorOr<void> Module::RunFirstPass() {
   return {};
 }
 
-ErrorOr<int> Module::LocalLookup(absl::string_view sv) const {
-  auto line_it = label_map_.find(sv);
-  if (line_it == label_map_.end()) {
-    return Error("Local name '%s' not defined", sv);
+ErrorOr<int> Module::LocalIndex(absl::string_view sv,
+                                const std::vector<int>& active_scopes) const {
+  std::vector<const absl::flat_hash_map<std::string, int>*> scopes;
+  for (auto it = active_scopes.rbegin(); it != active_scopes.rend(); ++it) {
+    scopes.push_back(&lines_[*it].scoped_locals);
   }
-  const Line& line = lines_[line_it->second];
+  scopes.push_back(&globals_);
+  for (auto scope : scopes) {
+    auto line_it = scope->find(sv);
+    if (line_it == scope->end()) {
+      continue;
+    }
+    return line_it->second;
+  }
+  return Error("Reference to undefined name '%s'", sv);
+}
+
+ErrorOr<int> Module::LocalLookup(absl::string_view sv,
+                                const std::vector<int>& active_scopes) const {
+  auto index = LocalIndex(sv, active_scopes);
+  NSASM_RETURN_IF_ERROR(index);
+  const Line& line = lines_[*index];
   if (line.address.has_value()) {
     return *line.address;
   }
-  const Directive* dir = line.statement.Directive();
-  if (dir && dir->name == D_org) {
-    return Error(".equ value '%s' accessed before definition", sv);
-  }
-  return Error("logic error: No value for '%s'", sv);
+  return Error("Value '%s' accessed before definition", sv);
 }
 
 ErrorOr<void> Module::RunSecondPass(const LookupContext& lookup_context) {
   // Second pass is for evaluating .equ expressions only.
-  ModuleLookupContext context(this, lookup_context);
   for (Line& line : lines_) {
     const Directive* dir = line.statement.Directive();
     if (dir && dir->name == D_equ && !line.address.has_value()) {
+      ModuleLookupContext context(this, line.active_scopes, lookup_context);
       auto value = dir->argument.Evaluate(context);
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(value, line.statement.Location());
       line.address = *value;
@@ -224,13 +262,13 @@ ErrorOr<void> Module::RunSecondPass(const LookupContext& lookup_context) {
 
 ErrorOr<void> Module::Assemble(OutputSink* sink,
                                const LookupContext& lookup_context) {
-  ModuleLookupContext context(this, lookup_context);
   for (Line& line : lines_) {
     if (line.statement.SerializedSize() > 0) {
       if (!line.address.has_value()) {
         return Error("logic error: no address for statement")
             .SetLocation(line.statement.Location());
       }
+      ModuleLookupContext context(this, line.active_scopes, lookup_context);
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(
           line.statement.Assemble(*line.address, context, sink),
           line.statement.Location());
@@ -253,8 +291,8 @@ void Module::DebugPrint() const {
 }
 
 ErrorOr<int> Module::ValueForName(absl::string_view sv) const {
-  auto line_loc = label_map_.find(sv);
-  if (line_loc == label_map_.end()) {
+  auto line_loc = globals_.find(sv);
+  if (line_loc == globals_.end()) {
     return Error("No label named %s in module %s", sv, module_name_);
   }
   const absl::optional<int>& value = lines_[line_loc->second].address;

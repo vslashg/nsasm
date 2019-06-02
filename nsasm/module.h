@@ -54,8 +54,15 @@ class Module {
   Module() = default;
 
   // Perform an internal lookup for a given label.  Returns an error if the
-  // name does not exist.
-  ErrorOr<int> LocalLookup(absl::string_view sv) const;
+  // name does not exist.  Otherwise returns the index into lines_ where this
+  // label points.
+  ErrorOr<int> LocalIndex(absl::string_view sv,
+                          const std::vector<int>& active_scopes) const;
+
+  // Perform an internal lookup for a given label.  As above, but returns the
+  // value associated with the label, rather than an index.
+  ErrorOr<int> LocalLookup(absl::string_view sv,
+                           const std::vector<int>& active_scopes) const;
 
   friend class nsasm::ModuleLookupContext;
 
@@ -68,13 +75,15 @@ class Module {
     bool reached = false;
     FlagState incoming_state;
     absl::optional<int> address;
+    std::vector<int> active_scopes;
+    absl::flat_hash_map<std::string, int> scoped_locals;
   };
 
   std::string path_;
   std::string module_name_;
   std::vector<Line> lines_;
   std::set<std::string> dependencies_;
-  absl::flat_hash_map<std::string, int> label_map_;
+  absl::flat_hash_map<std::string, int> globals_;
 };
 
 }  // namespace nsasm

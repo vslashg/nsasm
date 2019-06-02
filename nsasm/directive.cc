@@ -10,13 +10,14 @@ namespace nsasm {
 namespace {
 
 constexpr absl::string_view directive_names[] = {
-    ".DB", ".DL", ".DW", ".ENTRY", ".EQU", ".MODE", ".MODULE", ".ORG",
+    ".BEGIN", ".DB",  ".DL",   ".DW",     ".END",
+    ".ENTRY", ".EQU", ".MODE", ".MODULE", ".ORG",
 };
 
 }  // namespace
 
 absl::string_view ToString(DirectiveName d) {
-  if (d < D_db || d > D_org) {
+  if (d < D_begin || d > D_org) {
     return "";
   }
   return directive_names[d];
@@ -25,9 +26,10 @@ absl::string_view ToString(DirectiveName d) {
 absl::optional<DirectiveName> ToDirectiveName(std::string s) {
   static auto lookup =
       new absl::flat_hash_map<absl::string_view, DirectiveName>{
-          {".DB", D_db},         {".DL", D_dl},   {".DW", D_dw},
-          {".ENTRY", D_entry},   {".EQU", D_equ}, {".MODE", D_mode},
-          {".MODULE", D_module}, {".ORG", D_org},
+          {".BEGIN", D_begin}, {".DB", D_db},     {".DL", D_dl},
+          {".DW", D_dw},       {".END", D_end},   {".ENTRY", D_entry},
+          {".EQU", D_equ},     {".MODE", D_mode}, {".MODULE", D_module},
+          {".ORG", D_org},
       };
   absl::AsciiStrToUpper(&s);
   auto iter = lookup->find(s);
@@ -39,9 +41,10 @@ absl::optional<DirectiveName> ToDirectiveName(std::string s) {
 
 DirectiveType DirectiveTypeByName(DirectiveName d) {
   static auto lookup = new absl::flat_hash_map<DirectiveName, DirectiveType>{
-      {D_db, DT_list_arg},     {D_dl, DT_list_arg},      {D_dw, DT_list_arg},
-      {D_entry, DT_flag_arg},  {D_equ, DT_single_arg},   {D_mode, DT_flag_arg},
-      {D_module, DT_name_arg}, {D_org, DT_constant_arg},
+      {D_begin, DT_no_arg},     {D_db, DT_list_arg},   {D_dl, DT_list_arg},
+      {D_dw, DT_list_arg},      {D_end, DT_no_arg},    {D_entry, DT_flag_arg},
+      {D_equ, DT_single_arg},   {D_mode, DT_flag_arg}, {D_module, DT_name_arg},
+      {D_org, DT_constant_arg},
   };
   auto iter = lookup->find(d);
   if (iter == lookup->end()) {
@@ -53,6 +56,8 @@ DirectiveType DirectiveTypeByName(DirectiveName d) {
 std::string Directive::ToString() const {
   DirectiveType type = DirectiveTypeByName(name);
   switch (type) {
+    case DT_no_arg:
+      return absl::StrCat(nsasm::ToString(name));
     case DT_single_arg:
     case DT_constant_arg:
     case DT_name_arg:
@@ -82,7 +87,7 @@ ErrorOr<FlagState> Directive::Execute(const FlagState& state) const {
     // argument
     return flag_state_argument;
   }
-  // .EQU and .ENTRY are no-ops in analysis
+  // Other directives are no-ops in analysis
   return state;
 }
 

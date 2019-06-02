@@ -11,9 +11,11 @@ namespace nsasm {
 
 // All assembler directives understood by nsasm
 enum DirectiveName {
+  D_begin,
   D_db,
   D_dl,
   D_dw,
+  D_end,
   D_entry,
   D_equ,
   D_mode,
@@ -23,6 +25,7 @@ enum DirectiveName {
 
 // The type of argument taken by a given directive
 enum DirectiveType {
+  DT_no_arg,
   DT_single_arg,
   DT_constant_arg,
   DT_flag_arg,
@@ -69,6 +72,9 @@ inline void PrintTo(DirectiveName d, std::ostream* out) {
 
 inline void PrintTo(DirectiveType t, std::ostream* out) {
   switch (t) {
+    case DT_no_arg:
+      *out << "DT_no_arg";
+      return;
     case DT_single_arg:
       *out << "DT_single_arg";
       return;

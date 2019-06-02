@@ -86,7 +86,7 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
     if (next == '(' || next == ')' || next == '[' || next == ']' ||
         next == ',' || next == ':' || next == ',' || next == '#' ||
         next == '+' || next == '-' || next == '*' || next == '/' ||
-        next == '@') {
+        next == '@' || next == '{' || next == '}') {
       sv.remove_prefix(1);
       result.emplace_back(next, loc);
       continue;

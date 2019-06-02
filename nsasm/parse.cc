@@ -337,6 +337,10 @@ ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
   pos->remove_prefix(1);
   DirectiveType directive_type = DirectiveTypeByName(directive.name);
   switch (directive_type) {
+    case DT_no_arg: {
+      NSASM_RETURN_IF_ERROR(ConfirmAtEnd(pos, "after no-arg directive"));
+      return std::move(directive);
+    }
     case DT_single_arg:
     case DT_constant_arg:
     case DT_name_arg: {
@@ -414,6 +418,16 @@ ErrorOr<std::vector<absl::variant<Statement, std::string>>> Parse(
 
     if (AtEnd(&tokens)) {
       return result_vector;
+    }
+
+    // pseudo scope operators
+    if (tokens.front() == '{' || tokens.front() == '}') {
+      Directive directive;
+      directive.name = (tokens.front() == '{') ? D_begin : D_end;
+      directive.location = tokens.front().Location();
+      tokens.remove_prefix(1);
+      result_vector.push_back(Statement(std::move(directive)));
+      continue;
     }
 
     if (tokens.front().DirectiveName()) {
