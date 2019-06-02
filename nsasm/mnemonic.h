@@ -111,7 +111,7 @@ enum Mnemonic {
   // END REAL MNEMONICS.  PSEUDO-OPS BEYOND THIS POINT
 
   PM_add,  // ADD is add without carry -- CLC followed by ADC
-  PM_sub,  // SUB is subtract without carry - CLC followed by SBC
+  PM_sub,  // SUB is subtract without borrow - SEC followed by SBC
 };
 
 // Returns all mnemonics, for test code

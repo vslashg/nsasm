@@ -222,8 +222,9 @@ ErrorOr<void> Instruction::Assemble(int address, const LookupContext& context,
 
   Mnemonic true_mnemonic = mnemonic;
   if (mnemonic == PM_add || mnemonic == PM_sub) {
-    // encode a CLC (clear carry) before encoding the real instruction.
-    *(output++) = 0x18;
+    // encode a CLC (resp. SEC) before the ADC (resp. SBC) before encoding the
+    // real instruction.
+    *(output++) = (mnemonic == PM_add) ? 0x18 : 0x38;
     true_mnemonic = (mnemonic == PM_add) ? M_adc : M_sbc;
   }
 

@@ -163,7 +163,7 @@ ErrorOr<Disassembly> Disassemble(const Rom& rom,
       result.erase(next_iter);
       continue;
     }
-    if (iter->second.instruction.mnemonic == M_clc &&
+    if (iter->second.instruction.mnemonic == M_sec &&
         next_iter->second.instruction.mnemonic == M_sbc &&
         next_iter->second.label.empty()) {
       iter->second.instruction = std::move(next_iter->second.instruction);
