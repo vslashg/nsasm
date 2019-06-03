@@ -21,6 +21,17 @@ cc_binary(
 )
 
 cc_binary(
+    name="quick_dump",
+    srcs=["quick_dump.cc"],
+    deps=[
+        "@absl//absl/strings",
+        "@absl//absl/strings:str_format",
+        "//nsasm:rom",
+    ],
+)
+
+
+cc_binary(
     name="quick_assemble",
     srcs=["quick_assemble.cc"],
     deps=[

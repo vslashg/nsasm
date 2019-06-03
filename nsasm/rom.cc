@@ -72,10 +72,22 @@ ErrorOr<std::vector<uint8_t>> Rom::Read(int address, int length) const {
   }
 }
 
+ErrorOr<int> Rom::ReadByte(int address) const {
+  auto read = Read(address, 1);
+  NSASM_RETURN_IF_ERROR(read);
+  return (*read)[0];
+}
+
 ErrorOr<int> Rom::ReadWord(int address) const {
   auto read = Read(address, 2);
   NSASM_RETURN_IF_ERROR(read);
   return (*read)[0] + ((*read)[1] * 256);
+}
+
+ErrorOr<int> Rom::ReadLong(int address) const {
+  auto read = Read(address, 3);
+  NSASM_RETURN_IF_ERROR(read);
+  return (*read)[0] + ((*read)[1] * 256) + ((*read)[2] * 256 * 256);
 }
 
 namespace {
