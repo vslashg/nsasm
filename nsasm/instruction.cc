@@ -212,7 +212,11 @@ ErrorOr<FlagState> Instruction::ExecuteBranch(
 }
 
 int Instruction::SerializedSize() const {
-  return InstructionLength(addressing_mode);
+  int overhead = 0;
+  if (mnemonic == PM_add || mnemonic == PM_sub) {
+    overhead = 1;
+  }
+  return InstructionLength(addressing_mode) + overhead;
 }
 
 ErrorOr<void> Instruction::Assemble(int address, const LookupContext& context,
