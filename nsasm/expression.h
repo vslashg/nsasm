@@ -32,11 +32,22 @@ ABSL_CONST_INIT inline BinaryOp divide_op{[](int a, int b) -> ErrorOr<int> {
 
 struct UnaryOp {
   ErrorOr<int> (*function)(int) = nullptr;
+  NumericType (*result_type)(NumericType);
   char symbol;
   explicit operator bool() const { return static_cast<bool>(function); }
 };
 ABSL_CONST_INIT inline UnaryOp negate_op{
-    [](int a) -> ErrorOr<int> { return -a; }, '-'};
+    [](int a) -> ErrorOr<int> { return -a; },
+    [](NumericType t) { return Signed(t); }, '-'};
+ABSL_CONST_INIT inline UnaryOp lowbyte_op{
+    [](int a) -> ErrorOr<int> { return a & 0xff; },
+    [](NumericType) { return T_byte; }, '<'};
+ABSL_CONST_INIT inline UnaryOp highbyte_op{
+    [](int a) -> ErrorOr<int> { return (a >> 8) & 0xff; },
+    [](NumericType) { return T_byte; }, '>'};
+ABSL_CONST_INIT inline UnaryOp bankbyte_op{
+    [](int a) -> ErrorOr<int> { return (a >> 16) & 0xff; },
+    [](NumericType) { return T_byte; }, '^'};
 
 class LookupContext {
  public:
@@ -271,7 +282,9 @@ class UnaryExpression : public Expression {
     NSASM_RETURN_IF_ERROR(value);
     return op_.function(*value);
   }
-  NumericType Type() const override { return Signed(arg_.Type()); }
+  NumericType Type() const override {
+    return op_.result_type(arg_.Type());
+  }
   virtual bool RequiresLookup() const override { return arg_.RequiresLookup(); }
   virtual std::set<std::string> ModuleNamesReferenced() const override {
     return arg_.ModuleNamesReferenced();

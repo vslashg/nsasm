@@ -10,7 +10,7 @@ namespace {
 
 // expr   -> term +- term +- term...
 // term   -> factor */ factor */ factor...
-// factor -> comp | -factor
+// factor -> comp | -factor | >factor | <factor | ^factor
 // comp   -> literal | identifier | (expr)
 
 ErrorOr<ExpressionOrNull> Expr(TokenSpan* pos);
@@ -110,6 +110,12 @@ ErrorOr<ExpressionOrNull> Factor(TokenSpan* pos) {
   UnaryOp oper;
   if (pos->front() == '-') {
     oper = negate_op;
+  } else if (pos->front() == '<') {
+    oper = lowbyte_op;
+  } else if (pos->front() == '>') {
+    oper = highbyte_op;
+  } else if (pos->front() == '^') {
+    oper = bankbyte_op;
   }
   if (oper) {
     pos->remove_prefix(1);

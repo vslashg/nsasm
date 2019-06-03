@@ -15,6 +15,12 @@ ExpressionOrNull Ex(absl::string_view sv) {
   NSASM_EXPECT_OK(expr);
   return expr.ok() ? *expr : ExpressionOrNull();
 }
+
+int Eval(absl::string_view sv) {
+  auto val = Ex(sv).Evaluate(NullLookupContext());
+  NSASM_EXPECT_OK(val);
+  return val.ok() ? *val : -999;
+}
 }  // namespace
 
 TEST(Expression, order_of_operations) {
@@ -24,11 +30,31 @@ TEST(Expression, order_of_operations) {
   EXPECT_EQ(Ex("1*2+3").ToString(), "op+(op*(1, 2), 3)");
   EXPECT_EQ(Ex("5-2-1").ToString(), "op-(op-(5, 2), 1)");
 
+  EXPECT_EQ(Eval("1+2*3"), 7);
+  EXPECT_EQ(Eval("1+(2*3)"), 7);
+  EXPECT_EQ(Eval("(1+2)*3"), 9);
+  EXPECT_EQ(Eval("1*2+3"), 5);
+  EXPECT_EQ(Eval("5-2-1"), 2);
+
   EXPECT_EQ(Ex("-1-2").ToString(), "op-(op-(1), 2)");
   EXPECT_EQ(Ex("-(1-2)").ToString(), "op-(op-(1, 2))");
   EXPECT_EQ(Ex("1--2").ToString(), "op-(1, op-(2))");
 
+  EXPECT_EQ(Eval("-1-2"), -3);
+  EXPECT_EQ(Eval("-(1-2)"), 1);
+  EXPECT_EQ(Eval("1--2"), 3);
+
   EXPECT_EQ(Ex("foo+bar").ToString(), "op+(foo, bar)");
+}
+
+TEST(Expression, byte_expressions) {
+  EXPECT_EQ(Ex("<$123456").ToString(), "op<($123456)");
+  EXPECT_EQ(Ex(">$123456").ToString(), "op>($123456)");
+  EXPECT_EQ(Ex("^$123456").ToString(), "op^($123456)");
+
+  EXPECT_EQ(Eval("<$123456"), 0x56);
+  EXPECT_EQ(Eval(">$123456"), 0x34);
+  EXPECT_EQ(Eval("^$123456"), 0x12);
 }
 
 TEST(Expression, literal_type) {
