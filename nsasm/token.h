@@ -1,7 +1,7 @@
 #ifndef NSASM_TOKEN_H_
 #define NSASM_TOKEN_H_
 
-#include <ostream>
+#include <iostream>
 #include <string>
 
 #include "absl/types/variant.h"

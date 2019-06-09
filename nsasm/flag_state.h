@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string>
+#include <iostream>
 
 #include "absl/base/attributes.h"
 #include "absl/strings/string_view.h"

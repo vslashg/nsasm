@@ -7,6 +7,8 @@
 #include "nsasm/flag_state.h"
 #include "nsasm/output_sink.h"
 
+#include <iostream>
+
 namespace nsasm {
 
 // All assembler directives understood by nsasm
