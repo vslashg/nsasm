@@ -57,31 +57,44 @@ int main(int argc, char** argv) {
     seeds.emplace(rd_address, *parsed_flag);
   }
 
-  auto disassembly = nsasm::Disassemble(*rom, seeds);
-  if (!disassembly.ok()) {
-    absl::PrintF("%s\n", disassembly.error().ToString());
-  } else if (disassembly->empty()) {
+  nsasm::Disassembler disassembler(*std::move(rom));
+  nsasm::ErrorOr<void> status;
+  for (const auto& node : seeds) {
+    status = disassembler.Disassemble(node.first, node.second);
+    if (!status.ok()) {
+      break;
+    }
+  }
+  if (status.ok()) {
+    status = disassembler.Cleanup();
+  }
+  if (!status.ok()) {
+    absl::PrintF("%s\n", status.error().ToString());
+    return 1;
+  }
+
+  const nsasm::DisassemblyMap& disassembly = disassembler.Result();
+  if (disassembly.empty()) {
     absl::PrintF("; Disassembled no instructions.\n");
   } else {
-    int pc = disassembly->begin()->first;
-    int entry_count = 0;
-    absl::PrintF("; Disassembled %d instructions.\n", disassembly->size());
+    int pc = disassembly.begin()->first;
+    absl::PrintF("; Disassembled %d instructions.\n", disassembly.size());
     absl::PrintF("         .org $%06x\n", pc);
-    for (const auto& value : *disassembly) {
+    for (const auto& value : disassembly) {
       if (value.first != pc) {
         absl::PrintF("         .org $%06x\n", value.first);
         pc = value.first;
-      }
-      auto it = seeds.find(pc);
-      if (it != seeds.end()) {
-        std::string entry_label = absl::StrCat("entry", ++entry_count, ":");
-        absl::PrintF("%-8s .entry %s\n", entry_label, it->second.ToString());
       }
       std::string label = value.second.label;
       const nsasm::Instruction& instruction = value.second.instruction;
 
       if (!label.empty()) {
         label += ':';
+      }
+      if (value.second.is_entry) {
+        absl::PrintF("%-8s .entry %s\n", label,
+                     value.second.current_flag_state.ToString());
+        label.clear();
       }
       std::string text =
           absl::StrFormat("%-8s %s", label, instruction.ToString());
