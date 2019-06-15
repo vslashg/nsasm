@@ -106,7 +106,7 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
 
       auto far_branch_address = instruction->FarBranchTarget(pc);
       if (far_branch_address.has_value()) {
-        add_far_branch(*far_branch_address, current_flag_state);
+        add_far_branch(*far_branch_address, *next_flag_state);
       }
 
       // If this instruction is relatively addressed, we need a label, and
@@ -141,6 +141,14 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
       FlagState combined_flag_state =
           current_flag_state | di.current_flag_state;
       if (combined_flag_state != di.current_flag_state) {
+        // Check that the instruction still decodes with the new flag state.
+        // (We can throw the answer away if so, since we've already disassembled
+        // this instruction before.)
+        auto instruction_data = rom_.Read(pc, 4);
+        NSASM_RETURN_IF_ERROR_WITH_LOCATION(
+            Decode(*instruction_data, combined_flag_state), rom_.path(), pc);
+
+        // Update the flag state on this instruction
         di.current_flag_state = combined_flag_state;
         auto next_flag_state = di.instruction.Execute(combined_flag_state);
         NSASM_RETURN_IF_ERROR_WITH_LOCATION(next_flag_state, rom_.path(), pc);
@@ -148,13 +156,22 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
         int instruction_bytes =
             InstructionLength(di.instruction.addressing_mode);
         int next_pc = AddToPC(pc, instruction_bytes);
-        add_to_decode_stack(next_pc, di.next_flag_state);
-        if (di.instruction.addressing_mode == A_rel8 ||
-            di.instruction.addressing_mode == A_rel16) {
+
+        // Propagate the changed state forward to the next instruction...
+        if (!di.instruction.IsExitInstruction()) {
+          add_to_decode_stack(next_pc, *next_flag_state);
+        }
+        // ... the far branch target ...
+        auto far_branch_address = di.instruction.FarBranchTarget(pc);
+        if (far_branch_address.has_value()) {
+          add_far_branch(*far_branch_address, *next_flag_state);
+        }
+        // ... and the local branch target.
+        if (di.instruction.IsLocalBranch()) {
+          auto branch_flag_state =
+              di.instruction.ExecuteBranch(current_flag_state);
           int value = *di.instruction.arg1.Evaluate(NullLookupContext());
           int target = AddToPC(next_pc, value);
-          auto branch_flag_state =
-              di.instruction.ExecuteBranch(combined_flag_state);
           NSASM_RETURN_IF_ERROR_WITH_LOCATION(branch_flag_state, rom_.path(),
                                               pc);
           add_to_decode_stack(target, *branch_flag_state);
