@@ -19,6 +19,18 @@ void usage(char* path) {
       path);
 }
 
+void CombineStates(std::map<int, nsasm::FlagState>* targets,
+                   const std::map<int, nsasm::FlagState>& new_targets) {
+  for (const auto& node : new_targets) {
+    auto it = targets->find(node.first);
+    if (it == targets->end()) {
+      (*targets)[node.first] = node.second;
+    } else {
+      it->second |= node.second;
+    }
+  }
+}
+
 int main(int argc, char** argv) {
   if (argc < 4) {
     usage(argv[0]);
@@ -58,16 +70,20 @@ int main(int argc, char** argv) {
   }
 
   nsasm::Disassembler disassembler(*std::move(rom));
-  nsasm::ErrorOr<void> status;
-  for (const auto& node : seeds) {
-    status = disassembler.Disassemble(node.first, node.second);
-    if (!status.ok()) {
-      break;
+
+  for (int pass = 0; pass < 100; ++pass) {
+    std::map<int, nsasm::FlagState> new_seeds;
+    for (const auto& node : seeds) {
+      auto branch_targets = disassembler.Disassemble(node.first, node.second);
+      if (!branch_targets.ok()) {
+        absl::PrintF("%s\n", branch_targets.error().ToString());
+        return 1;
+      }
+      CombineStates(&new_seeds, *branch_targets);
     }
+    seeds = std::move(new_seeds);
   }
-  if (status.ok()) {
-    status = disassembler.Cleanup();
-  }
+  auto status = disassembler.Cleanup();
   if (!status.ok()) {
     absl::PrintF("%s\n", status.error().ToString());
     return 1;

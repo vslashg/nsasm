@@ -31,6 +31,14 @@ struct Instruction {
   // Returns true if this is a relative branch instruction.
   bool IsLocalBranch() const;
 
+  // If this is a far branch, and the address can be determined, return the
+  // target.  Else return nullopt.
+  //
+  // `source_address` is the address where this instruction resides in memory.
+  // This is used to calculate the target bank address for jumps encoded with
+  // only two bytes.
+  absl::optional<int> FarBranchTarget(int source_address) const;
+
   // TODO: Should Execute() take an evaluation context to improve static
   // analysis?  Maybe.  Revisit later to see if it proves necessary.
 

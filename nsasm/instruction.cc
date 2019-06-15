@@ -318,4 +318,24 @@ ErrorOr<void> Instruction::Assemble(int address, const LookupContext& context,
   return Error("logic error: addressing mode not handled in Assemble()");
 }
 
+absl::optional<int> Instruction::FarBranchTarget(int source_address) const {
+  if (addressing_mode == A_dir_l && (mnemonic == M_jmp || mnemonic == M_jsl)) {
+    auto target = arg1.Evaluate(NullLookupContext());
+    if (target.ok()) {
+      return *target;
+    }
+    return absl::nullopt;
+  }
+
+  if (addressing_mode == A_dir_w && (mnemonic == M_jmp || mnemonic == M_jsr)) {
+    auto target = arg1.Evaluate(NullLookupContext());
+    if (target.ok()) {
+      return (source_address & 0xff0000) | (*target & 0x00ffff);
+    }
+    return absl::nullopt;
+  }
+
+  return absl::nullopt;
+}
+
 }  // namespace nsasm

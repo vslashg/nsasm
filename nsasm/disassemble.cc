@@ -10,8 +10,8 @@
 
 namespace nsasm {
 
-ErrorOr<void> Disassembler::Disassemble(int starting_address,
-                                       const FlagState& initial_flag_state) {
+ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
+    int starting_address, const FlagState& initial_flag_state) {
   // Mapping of instruction addresses to jump target label name
   std::map<int, std::string> label_names;
   auto get_label = [this, &label_names](int address) {
@@ -32,12 +32,23 @@ ErrorOr<void> Disassembler::Disassemble(int starting_address,
   // Map of locations to consider next, and the flag state to use
   // when considering it.
   std::map<int, FlagState> decode_stack;
-
   auto add_to_decode_stack = [&decode_stack](int address,
                                              const FlagState& state) {
     auto it = decode_stack.find(address);
     if (it == decode_stack.end()) {
       decode_stack[address] = state;
+    } else {
+      it->second |= state;
+    }
+  };
+
+  // Map of far branch targets to incoming states
+  std::map<int, FlagState> far_branch_targets;
+  auto add_far_branch = [&far_branch_targets](int address,
+                                              const FlagState& state) {
+    auto it = far_branch_targets.find(address);
+    if (it == far_branch_targets.end()) {
+      far_branch_targets[address] = state;
     } else {
       it->second |= state;
     }
@@ -70,6 +81,11 @@ ErrorOr<void> Disassembler::Disassemble(int starting_address,
       int next_pc = AddToPC(pc, instruction_bytes);
       auto next_flag_state = instruction->Execute(current_flag_state);
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(next_flag_state, rom_.path(), pc);
+
+      auto far_branch_address = instruction->FarBranchTarget(pc);
+      if (far_branch_address.has_value()) {
+        add_far_branch(*far_branch_address, current_flag_state);
+      }
 
       // If this instruction is relatively addressed, we need a label, and
       // need to add that address to code we should try to disassemble.
@@ -130,7 +146,7 @@ ErrorOr<void> Disassembler::Disassemble(int starting_address,
     disassembly_[label_name.first].label = label_name.second;
   }
 
-  return {};
+  return far_branch_targets;
 }
 
 ErrorOr<void> Disassembler::Cleanup() {

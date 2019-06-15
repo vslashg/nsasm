@@ -31,8 +31,13 @@ class Disassembler {
   Disassembler(Disassembler&&) = default;
   Disassembler& operator=(Disassembler&&) = default;
 
-  ErrorOr<void> Disassemble(int starting_address,
-                            const FlagState& initial_flag_state);
+  // Disassemble code starting at the given address and state, and store
+  // the results in the internal disassembly map.
+  //
+  // Returns an error, or else a mapping of all far jump targets found in
+  // this disassembly.
+  ErrorOr<std::map<int, FlagState>> Disassemble(
+      int starting_address, const FlagState& initial_flag_state);
   ErrorOr<void> Cleanup();
 
   const DisassemblyMap& Result() const { return disassembly_; }
