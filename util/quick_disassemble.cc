@@ -76,10 +76,12 @@ int main(int argc, char** argv) {
     for (const auto& node : seeds) {
       auto branch_targets = disassembler.Disassemble(node.first, node.second);
       if (!branch_targets.ok()) {
-        absl::PrintF("%s\n", branch_targets.error().ToString());
-        return 1;
+        absl::PrintF("; ERROR branching to $%06x with mode %s\n",
+          node.first, node.second.ToString());
+        absl::PrintF(";   %s\n", branch_targets.error().ToString());
+      } else {
+        CombineStates(&new_seeds, *branch_targets);
       }
-      CombineStates(&new_seeds, *branch_targets);
     }
     seeds = std::move(new_seeds);
   }
