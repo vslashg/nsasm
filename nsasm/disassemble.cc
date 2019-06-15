@@ -12,6 +12,28 @@ namespace nsasm {
 
 ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
     int starting_address, const FlagState& initial_flag_state) {
+  // Map of newly decoded, or locally modified, instructions.  This is
+  // written to disassembly_ at the end of this function, assuming we did not
+  // exit with an error.
+  std::map<int, DisassembledInstruction> new_disassembly;
+  auto get_instruction =
+      [this, &new_disassembly](int address) -> DisassembledInstruction* {
+    // return the instruction if it already is in the new map
+    auto new_disassembly_it = new_disassembly.find(address);
+    if (new_disassembly_it != new_disassembly.end()) {
+      return &new_disassembly_it->second;
+    };
+    // otherwise, if it's in this class's state, copy it over into the new map
+    // and return the copy
+    auto old_disassembly_it = disassembly_.find(address);
+    if (old_disassembly_it != disassembly_.end()) {
+      DisassembledInstruction& copy = new_disassembly[address];
+      copy = old_disassembly_it->second;
+      return &copy;
+    }
+    return nullptr;
+  };
+
   // Mapping of instruction addresses to jump target label name
   std::map<int, std::string> label_names;
   auto get_label = [this, &label_names](int address) {
@@ -67,8 +89,8 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
     int pc = next.first;
     const FlagState& current_flag_state = next.second;
 
-    auto existing_instruction_iter = disassembly_.find(pc);
-    if (existing_instruction_iter == disassembly_.end()) {
+    DisassembledInstruction* existing_instruction = get_instruction(pc);
+    if (!existing_instruction) {
       // This is the first time we've seen this address.  Try to disassemble
       // it.
       auto instruction_data = rom_.Read(pc, 4);
@@ -103,7 +125,7 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
       di.instruction = std::move(*instruction);
       di.current_flag_state = current_flag_state;
       di.next_flag_state = *next_flag_state;
-      disassembly_[pc] = std::move(di);
+      new_disassembly[pc] = std::move(di);
 
       // If this instruction doesn't terminate the subroutine, we need to
       // execute the next line as well.
@@ -115,7 +137,7 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
       // instruction to allow for the new input flag state.  If this represents
       // a change, check that the resulting state is still consistent, and
       // propagate the changed flag state bits forward.
-      DisassembledInstruction& di = existing_instruction_iter->second;
+      DisassembledInstruction& di = *existing_instruction;
       FlagState combined_flag_state =
           current_flag_state | di.current_flag_state;
       if (combined_flag_state != di.current_flag_state) {
@@ -139,6 +161,12 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
         }
       }
     }
+  }
+
+  // If we got here, disassembly was a success.  Copy the entries from the
+  // temporary map to the permanent state.
+  for (const auto& node : new_disassembly) {
+    disassembly_[node.first] = node.second;
   }
 
   // Apply labels to all instructions.

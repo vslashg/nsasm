@@ -23,7 +23,7 @@ using DisassemblyMap = std::map<int, DisassembledInstruction>;
 
 class Disassembler {
  public:
-  Disassembler(Rom&& rom) : rom_(rom), status_{}, current_sym_(0) {}
+  Disassembler(Rom&& rom) : rom_(rom), current_sym_(0) {}
 
   // movable but not copiable
   Disassembler(const Disassembler&) = delete;
@@ -46,7 +46,6 @@ class Disassembler {
   std::string GenSym() { return absl::StrCat("gensym", ++current_sym_); }
 
   Rom rom_;
-  ErrorOr<void> status_;
   std::set<int> entry_points_;
   std::map<int, DisassembledInstruction> disassembly_;
   int current_sym_;
