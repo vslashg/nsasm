@@ -20,6 +20,7 @@ struct EndOfLine {
 enum Punctuation {
   P_none = 0,
   P_scope = 257,
+  P_export = 258,
 };
 
 class Token {

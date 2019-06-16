@@ -25,6 +25,13 @@ TEST(Token, names) {
     EXPECT_EQ(*x, TokenVector(PM_add, "mul", M_sbc, "div"));
   }
   {
+    // And for keywords
+    auto x = Tokenize("import/export IMPORT/EXPORT", Location());
+    NSASM_ASSERT_OK(x);
+    EXPECT_EQ(*x,
+              TokenVector("import", '/', P_export, "IMPORT", '/', P_export));
+  }
+  {
     // Test that numbers are read correctly and type is inferred from value
     auto x = Tokenize("$12 $0012 $000012 0x12 0x0012 0x000012 12 000012",
                       Location());

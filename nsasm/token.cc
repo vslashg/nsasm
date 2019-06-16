@@ -48,6 +48,8 @@ std::string Token::ToString() const {
     switch (*punctuation) {
     case P_scope:
       return "symbol `::`";
+    case P_export:
+      return "keyword `export`";
     default:
       char v = *punctuation;
       if (v == 'A' || v == 'S' || v == 'X' || v == 'Y') {
@@ -165,6 +167,11 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
           result.emplace_back(next, loc);
           continue;
         }
+      }
+      // keyword?
+      if (absl::AsciiStrToLower(identifier) == "export") {
+        result.emplace_back(P_export, loc);
+        continue;
       }
       // Not a reserved word, so it's an identifier
       result.emplace_back(identifier, loc);
