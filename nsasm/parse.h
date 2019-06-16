@@ -8,12 +8,19 @@
 
 namespace nsasm {
 
+struct ParsedLabel {
+  ParsedLabel() : name(), exported(false) {}
+  ParsedLabel(std::string n, bool e) : name(std::move(n)), exported(e) {};
+  std::string name;
+  bool exported;
+};
+
 // Parses a sequence of tokens into a sequence of statements and labels.
 // These tokens are assumed to be from a single line of code.
 //
 // TODO: Label should be its own type (rather than std::string), so that
 // we can attach a location to it.
-ErrorOr<std::vector<absl::variant<Statement, std::string>>> Parse(
+ErrorOr<std::vector<absl::variant<Statement, ParsedLabel>>> Parse(
     absl::Span<const Token> tokens);
 
 // Parse a string into an expression object.  Intended for testing purposes.

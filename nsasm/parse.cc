@@ -402,9 +402,9 @@ ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
 
 }  // namespace
 
-ErrorOr<std::vector<absl::variant<Statement, std::string>>> Parse(
+ErrorOr<std::vector<absl::variant<Statement, ParsedLabel>>> Parse(
     absl::Span<const Token> tokens) {
-  std::vector<absl::variant<Statement, std::string>> result_vector;
+  std::vector<absl::variant<Statement, ParsedLabel>> result_vector;
 
   while (!tokens.empty()) {
     // An unexpected token at the beginning of the line is a label.
@@ -413,8 +413,19 @@ ErrorOr<std::vector<absl::variant<Statement, std::string>>> Parse(
     //   foo: adc #$12      ; okay
     //   foo bar adc #$12   ; unexpected 'bar'
     //   foo: bar adc #$12  ; okay
+    bool exported = false;
+    if (tokens.front() == P_export) {
+      tokens.remove_prefix(1);
+      exported = true;
+      if (!tokens.front().Identifier()) {
+        return Error("Expected label name after `export` keyword but found %s",
+                     tokens.front().ToString())
+            .SetLocation(tokens.front().Location());
+      }
+    }
     if (tokens.front().Identifier()) {
-      result_vector.push_back(*tokens.front().Identifier());
+      result_vector.push_back(
+          ParsedLabel(*tokens.front().Identifier(), exported));
       tokens.remove_prefix(1);
       if (!tokens.empty() && tokens.front() == ':') {
         tokens.remove_prefix(1);

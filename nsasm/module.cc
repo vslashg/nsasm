@@ -44,22 +44,22 @@ ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
 
   std::string line;
 
-  std::vector<std::string> pending_labels;
+  std::vector<ParsedLabel> pending_labels;
   std::vector<int> active_scopes;
 
   auto add_label = [&m, &active_scopes](
-                       const std::string& label,
+                       const ParsedLabel& label,
                        int target_line) -> nsasm::ErrorOr<void> {
     absl::flat_hash_map<std::string, int>* scope;
-    if (active_scopes.empty()) {
+    if (active_scopes.empty() || label.exported) {
       scope = &m.globals_;
     } else {
       scope = &m.lines_[active_scopes.back()].scoped_locals;
     }
-    if (scope->contains(label)) {
-      return Error("Duplicate label definition for '%s'", label);
+    if (scope->contains(label.name)) {
+      return Error("Duplicate label definition for '%s'", label.name);
     }
-    (*scope)[label] = target_line;
+    (*scope)[label.name] = target_line;
     return {};
   };
 
@@ -71,15 +71,15 @@ ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
     NSASM_RETURN_IF_ERROR(entities);
 
     for (auto& entity : *entities) {
-      if (auto* label = absl::get_if<std::string>(&entity)) {
+      if (auto* label = absl::get_if<ParsedLabel>(&entity)) {
         pending_labels.push_back(std::move(*label));
       } else if (auto* statement = absl::get_if<Statement>(&entity)) {
         m.lines_.emplace_back(std::move(*statement));
-        for (const std::string& pending_label : pending_labels) {
+        for (const ParsedLabel& pending_label : pending_labels) {
           NSASM_RETURN_IF_ERROR_WITH_LOCATION(
               add_label(pending_label, m.lines_.size() - 1), loc);
+          m.lines_.back().labels.push_back(pending_label.name);
         }
-        m.lines_.back().labels = std::move(pending_labels);
         m.lines_.back().active_scopes = active_scopes;
         pending_labels.clear();
         const Directive* directive = m.lines_.back().statement.Directive();
