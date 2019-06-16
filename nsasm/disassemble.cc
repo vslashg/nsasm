@@ -219,7 +219,23 @@ ErrorOr<void> Disassembler::Cleanup() {
     }
   }
 
-  // Now add labels to all our disassembled instructions.
+  // Refer to far jump targets by name.
+  for (auto& node : disassembly_) {
+    Instruction& instruction = node.second.instruction;
+    auto jump_target = instruction.FarBranchTarget(node.first);
+    if (jump_target) {
+      auto target_name = NameForAddress(*jump_target);
+      if (target_name) {
+        if (instruction.addressing_mode == A_dir_l) {
+          instruction.arg1 =
+              absl::make_unique<Identifier>(*target_name, "", T_long);
+        } else if (instruction.addressing_mode == A_dir_w) {
+          instruction.arg1 =
+              absl::make_unique<Identifier>(*target_name, "", T_word);
+        }
+      }
+    }
+  }
 
   // Pseudo-op folding.  Merge CLC/ADC and CLC/SBC into ADD and SUB,
   // respectively.
@@ -251,6 +267,17 @@ ErrorOr<void> Disassembler::Cleanup() {
   }
 
   return {};
+}
+
+absl::optional<std::string> Disassembler::NameForAddress(int address) {
+  if (entry_points_.count(address) == 0) {
+    return absl::nullopt;
+  }
+  auto it = disassembly_.find(address);
+  if (it != disassembly_.end() && !it->second.label.empty()) {
+    return it->second.label;
+  }
+  return absl::nullopt;
 }
 
 }  // namespace nsasm

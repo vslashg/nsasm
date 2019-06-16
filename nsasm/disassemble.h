@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 
+#include "absl/types/optional.h"
 #include "nsasm/error.h"
 #include "nsasm/flag_state.h"
 #include "nsasm/instruction.h"
@@ -43,6 +44,8 @@ class Disassembler {
   const DisassemblyMap& Result() const { return disassembly_; }
 
  private:
+  absl::optional<std::string> NameForAddress(int address);
+
   std::string GenSym() { return absl::StrCat("gensym", ++current_sym_); }
 
   Rom rom_;
