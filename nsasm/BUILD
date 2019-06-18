@@ -49,7 +49,6 @@ cc_test(
     deps=[
         ":expression",
         ":parse",
-        "@gtest//:gtest",
         "@gtest//:gtest_main",
     ],
 )
@@ -314,5 +313,21 @@ cc_library(
         ":module",
         "@absl//absl/container:flat_hash_map",
         "@absl//absl/container:flat_hash_set",
+    ],
+)
+
+cc_library(
+    name="ranges",
+    srcs=["ranges.cc"],
+    hdrs=["ranges.h"],
+    deps=[],
+)
+
+cc_test(
+    name="ranges_test",
+    srcs=["ranges_test.cc"],
+    deps=[
+        ":ranges",
+        "@gtest//:gtest_main",
     ],
 )
