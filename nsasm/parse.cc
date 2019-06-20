@@ -398,6 +398,7 @@ ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
       return std::move(directive);
     }
   }
+  return Error("unknown directive_type: %d", directive_type);
 }
 
 }  // namespace
