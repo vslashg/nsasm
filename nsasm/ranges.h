@@ -19,7 +19,7 @@ class DataRange {
   bool ClaimBytes(int location, int length);
 
   // Returns true if the given byte is inside this range.
-  bool Contains(int address);
+  bool Contains(int address) const;
 
   // Get the underlying chunks of this data range.
   const std::vector<Chunk>& Chunks() const { return ranges_; }

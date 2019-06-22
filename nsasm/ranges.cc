@@ -33,6 +33,19 @@ bool DataRange::ClaimBytes(int location, int length) {
   return success;
 }
 
+bool DataRange::Contains(int location) const {
+  if (ranges_.empty()) {
+    return false;
+  }
+  auto it = std::upper_bound(ranges_.begin(), ranges_.end(), location,
+                             LeftSideSearch());
+  if (it == ranges_.begin()) {
+    return false;
+  }
+  --it;
+  return location >= it->first && location < it->second;
+}
+
 bool DataRange::DoClaimBytes(Chunk new_chunk) {
   if (ranges_.empty()) {
     ranges_.push_back(new_chunk);

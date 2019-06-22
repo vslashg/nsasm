@@ -12,6 +12,22 @@ namespace {
 using testing::ElementsAre;
 using Ch = std::pair<int, int>;
 
+TEST(Ranges, Contains) {
+  // simple check of containment functionality
+  DataRange data_range;
+  for (int start : {20, 40, 60}) {
+    EXPECT_TRUE(data_range.ClaimBytes(start, 10));
+  }
+  DataRange empty;
+  for (int i = 0; i < 80; ++i) {
+    // The point is in data_range if the 10s place digit is 2, 4, or 6
+    int digit = i / 10;
+    bool expected = (digit == 2 || digit == 4 || digit == 6);
+    EXPECT_EQ(data_range.Contains(i), expected);
+    EXPECT_FALSE(empty.Contains(i));
+  }
+}
+
 TEST(Ranges, MergeNeighbors) {
   // check that writing adjacent chunks in any order works.
   {
