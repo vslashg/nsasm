@@ -263,7 +263,8 @@ ErrorOr<void> Module::RunSecondPass(const LookupContext& lookup_context) {
 ErrorOr<void> Module::Assemble(OutputSink* sink,
                                const LookupContext& lookup_context) {
   for (Line& line : lines_) {
-    if (line.statement.SerializedSize() > 0) {
+    const int size = line.statement.SerializedSize();
+    if (size > 0) {
       if (!line.address.has_value()) {
         return Error("logic error: no address for statement")
             .SetLocation(line.statement.Location());
@@ -272,6 +273,11 @@ ErrorOr<void> Module::Assemble(OutputSink* sink,
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(
           line.statement.Assemble(*line.address, context, sink),
           line.statement.Location());
+      if (!owned_bytes_.ClaimBytes(*line.address, size)) {
+        return Error("Second write to same address $%06x in module",
+                     *line.address)
+            .SetLocation(line.statement.Location());
+      }
     }
   }
   return {};

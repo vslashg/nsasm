@@ -6,6 +6,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "nsasm/error.h"
 #include "nsasm/statement.h"
+#include "nsasm/ranges.h"
 
 namespace nsasm {
 
@@ -47,6 +48,8 @@ class Module {
 
   ErrorOr<void> Assemble(OutputSink* sink, const LookupContext& lookup_context);
 
+  const DataRange& OwnedBytes() const { return owned_bytes_; }
+
   // Output this module's contents to stdout
   void DebugPrint() const;
 
@@ -84,6 +87,7 @@ class Module {
   std::vector<Line> lines_;
   std::set<std::string> dependencies_;
   absl::flat_hash_map<std::string, int> globals_;
+  DataRange owned_bytes_;
 };
 
 }  // namespace nsasm

@@ -291,11 +291,29 @@ cc_test(
 
 
 cc_library(
+    name="ranges",
+    srcs=["ranges.cc"],
+    hdrs=["ranges.h"],
+    deps=[],
+)
+
+cc_test(
+    name="ranges_test",
+    srcs=["ranges_test.cc"],
+    deps=[
+        ":ranges",
+        "@gtest//:gtest_main",
+    ],
+)
+
+
+cc_library(
     name="module",
     srcs=["module.cc"],
     hdrs=["module.h"],
     deps=[
         ":parse",
+        ":ranges",
         ":statement",
         ":token",
         "@absl//absl/container:flat_hash_map",
@@ -313,21 +331,5 @@ cc_library(
         ":module",
         "@absl//absl/container:flat_hash_map",
         "@absl//absl/container:flat_hash_set",
-    ],
-)
-
-cc_library(
-    name="ranges",
-    srcs=["ranges.cc"],
-    hdrs=["ranges.h"],
-    deps=[],
-)
-
-cc_test(
-    name="ranges_test",
-    srcs=["ranges_test.cc"],
-    deps=[
-        ":ranges",
-        "@gtest//:gtest_main",
     ],
 )
