@@ -8,14 +8,9 @@ namespace {
 
 // Less-than comparator that will compare Chunks with integers,
 // using the lower bound of the chunk as the comparison basis.
-struct LeftSideSearch {
-  bool operator()(const DataRange::Chunk& lhs, int rhs) {
-    return lhs.first < rhs;
-  }
-  bool operator()(int lhs, const DataRange::Chunk& rhs) {
-    return lhs < rhs.first;
-  }
-};
+bool LeftSideSearch(int lhs, const DataRange::Chunk& rhs) {
+  return lhs < rhs.first;
+}
 
 }  // namespace
 
@@ -38,7 +33,7 @@ bool DataRange::Contains(int location) const {
     return false;
   }
   auto it = std::upper_bound(ranges_.begin(), ranges_.end(), location,
-                             LeftSideSearch());
+                             LeftSideSearch);
   if (it == ranges_.begin()) {
     return false;
   }
@@ -59,7 +54,7 @@ bool DataRange::DoClaimBytes(Chunk new_chunk) {
   // This finds the first chunk whose left boundary is strictly greater
   // than new_chunk's left boundary.  This can return a past-the-end iterator.
   auto insertion_point = std::upper_bound(ranges_.begin(), ranges_.end(),
-                                          new_chunk.first, LeftSideSearch());
+                                          new_chunk.first, LeftSideSearch);
 
   // If there's a neighbor to the left, see if we can merge with it.
   if (insertion_point != ranges_.begin() &&
