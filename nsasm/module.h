@@ -86,8 +86,11 @@ class Module {
   std::string module_name_;
   std::vector<Line> lines_;
   std::set<std::string> dependencies_;
-  absl::flat_hash_map<std::string, int> globals_;
+  absl::flat_hash_map<std::string, int> global_to_line_;
+
   DataRange owned_bytes_;
+  absl::flat_hash_map<int, std::string> value_to_global_;
+  std::map<int, FlagState> unnamed_targets_;
 };
 
 }  // namespace nsasm

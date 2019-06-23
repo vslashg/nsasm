@@ -52,7 +52,7 @@ ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
                        int target_line) -> nsasm::ErrorOr<void> {
     absl::flat_hash_map<std::string, int>* scope;
     if (active_scopes.empty() || label.exported) {
-      scope = &m.globals_;
+      scope = &m.global_to_line_;
     } else {
       scope = &m.lines_[active_scopes.back()].scoped_locals;
     }
@@ -224,7 +224,7 @@ ErrorOr<int> Module::LocalIndex(absl::string_view sv,
   for (auto it = active_scopes.rbegin(); it != active_scopes.rend(); ++it) {
     scopes.push_back(&lines_[*it].scoped_locals);
   }
-  scopes.push_back(&globals_);
+  scopes.push_back(&global_to_line_);
   for (auto scope : scopes) {
     auto line_it = scope->find(sv);
     if (line_it == scope->end()) {
@@ -263,13 +263,15 @@ ErrorOr<void> Module::RunSecondPass(const LookupContext& lookup_context) {
 ErrorOr<void> Module::Assemble(OutputSink* sink,
                                const LookupContext& lookup_context) {
   for (Line& line : lines_) {
+    auto* directive = line.statement.Directive();
+    auto* instruction = line.statement.Instruction();
     const int size = line.statement.SerializedSize();
+    ModuleLookupContext context(this, line.active_scopes, lookup_context);
     if (size > 0) {
       if (!line.address.has_value()) {
         return Error("logic error: no address for statement")
             .SetLocation(line.statement.Location());
       }
-      ModuleLookupContext context(this, line.active_scopes, lookup_context);
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(
           line.statement.Assemble(*line.address, context, sink),
           line.statement.Location());
@@ -278,6 +280,40 @@ ErrorOr<void> Module::Assemble(OutputSink* sink,
                      *line.address)
             .SetLocation(line.statement.Location());
       }
+    } else if (directive && directive->name == D_remote) {
+      auto address = directive->argument.Evaluate(context);
+      NSASM_RETURN_IF_ERROR_WITH_LOCATION(address, directive->location);
+      auto it = unnamed_targets_.find(*address);
+      if (it == unnamed_targets_.end()) {
+        unnamed_targets_[*address] = directive->flag_state_argument;
+      } else {
+        it->second |= directive->flag_state_argument;
+      }
+    }
+    if (instruction) {
+      // We know line.address has a value, or we wouldn't have gotten this far
+      auto branch_target = instruction->FarBranchTarget(*line.address);
+      if (branch_target.has_value()) {
+        // FarBranchTarget() does not perform lookup, so if we have a value,
+        // this is our branch target.
+        auto it = unnamed_targets_.find(*branch_target);
+        if (it == unnamed_targets_.end()) {
+          unnamed_targets_[*branch_target] = directive->flag_state_argument;
+        } else {
+          it->second |= directive->flag_state_argument;
+        }
+      }
+    }
+  }
+  for (const auto& node : global_to_line_) {
+    const Line& line = lines_[node.second];
+    if (!line.address.has_value()) {
+      return Error("Label missing a value")
+          .SetLocation(line.statement.Location());
+    }
+    int value = *line.address;
+    if (!value_to_global_.contains(value)) {
+      value_to_global_[value] = node.first;
     }
   }
   return {};
@@ -297,8 +333,8 @@ void Module::DebugPrint() const {
 }
 
 ErrorOr<int> Module::ValueForName(absl::string_view sv) const {
-  auto line_loc = globals_.find(sv);
-  if (line_loc == globals_.end()) {
+  auto line_loc = global_to_line_.find(sv);
+  if (line_loc == global_to_line_.end()) {
     return Error("No label named %s in module %s", sv, module_name_);
   }
   const absl::optional<int>& value = lines_[line_loc->second].address;
