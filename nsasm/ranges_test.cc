@@ -274,6 +274,7 @@ TEST(RangeMap, SanityTest) {
       expected = 2;
     }
     EXPECT_EQ(map.Lookup(i), expected);
+    EXPECT_EQ(map.Contains(i), expected.has_value());
   }
 }
 

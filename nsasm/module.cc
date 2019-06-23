@@ -344,4 +344,15 @@ ErrorOr<int> Module::ValueForName(absl::string_view sv) const {
   return Error("logic error: No value at label %s::%s", module_name_, sv);
 }
 
+absl::optional<std::string> Module::NameForAddress(int address) const {
+  if (module_name_.empty()) {
+    return absl::nullopt;
+  }
+  auto it = value_to_global_.find(address);
+  if (it == value_to_global_.end()) {
+    return absl::nullopt;
+  }
+  return absl::StrCat(module_name_, "::", it->second);
+}
+
 }  // namespace nsasm

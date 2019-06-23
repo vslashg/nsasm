@@ -14,7 +14,7 @@ nsasm::ErrorOr<void> Assembler::AddModule(Module&& module) {
       return nsasm::Error("Multiple files have the same module name \"%s\"",
                           name);
     }
-    named_modules_.emplace(name, std::move(module));
+    named_modules_[name] = absl::make_unique<Module>(std::move(module));
   }
   return {};
 }
@@ -36,7 +36,7 @@ nsasm::ErrorOr<std::vector<std::string>> Assembler::FindAssemblyOrder() {
         continue;
       }
       bool all_dependencies_met = true;
-      for (const std::string& dependency : module.second.Dependencies()) {
+      for (const std::string& dependency : module.second->Dependencies()) {
         if (!already_inserted.contains(dependency)) {
           all_dependencies_met = false;
           break;
@@ -67,7 +67,7 @@ class AssemblerLookupContext : public LookupContext {
       return Error("No such module '%s' (resolving '%s::%s')", module, module,
                    name);
     }
-    return module_it->second.ValueForName(name);
+    return module_it->second->ValueForName(name);
   }
 
  private:
@@ -82,7 +82,7 @@ nsasm::ErrorOr<void> Assembler::Assemble(OutputSink* sink) {
   std::vector<Module*> module_order;
   for (const std::string& name : *module_name_order) {
     auto module_iter = named_modules_.find(name);
-    module_order.push_back(&module_iter->second);
+    module_order.push_back(module_iter->second.get());
   }
   for (Module& module : unnamed_modules_) {
     module_order.push_back(&module);
@@ -103,15 +103,30 @@ nsasm::ErrorOr<void> Assembler::Assemble(OutputSink* sink) {
   // Final pass: assembly
   for (Module* module : module_order) {
     NSASM_RETURN_IF_ERROR(module->Assemble(sink, context));
+    if (!memory_module_map_.Insert(module->OwnedBytes(), module)) {
+      // TODO: this could convey a lot more info...
+      return nsasm::Error("Module `%s` writing to previously claimed memory",
+                          module->Name());
+    }
   }
 
   return {};
 }
 
+absl::optional<std::string> Assembler::NameForAddress(int address) const {
+  for (const auto& node : named_modules_) {
+    auto v = node.second->NameForAddress(address);
+    if (v.has_value()) {
+      return v;
+    }
+  }
+  return absl::nullopt;
+}
+
 void Assembler::DebugPrint() const {
   for (const auto& node : named_modules_) {
-    absl::PrintF("  === debug info for %s\n", node.second.Name());
-    node.second.DebugPrint();
+    absl::PrintF("  === debug info for %s\n", node.second->Name());
+    node.second->DebugPrint();
   }
 }
 

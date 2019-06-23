@@ -51,6 +51,11 @@ class RangeMap {
   // Return the T associated with the given address, or nullopt if there is
   // none.
   absl::optional<T> Lookup(int address) const;
+
+  // Returns true if the given byte is inside this range.  Like Lookup, but
+  // is faster and doesn't fetch T.
+  bool Contains(int address) const { return used_.Contains(address); }
+
  private:
   DataRange used_;
   std::map<Chunk, T> mapping_;

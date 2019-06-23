@@ -4,6 +4,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "nsasm/error.h"
 #include "nsasm/module.h"
+#include "nsasm/ranges.h"
 
 namespace nsasm {
 
@@ -17,6 +18,17 @@ class Assembler {
   // Assemble all modules together into a single sink.
   ErrorOr<void> Assemble(OutputSink* sink);
 
+
+  // Post-assembly queries
+
+  // Returns true if data has been assembled into the given byte address.
+  bool Contains(int address) const {
+    return memory_module_map_.Contains(address);
+  }
+
+  // Returns a qualified name for a label referring to this address
+  absl::optional<std::string> NameForAddress(int address) const;
+
   // Output each named module's contents to stdout
   void DebugPrint() const;
 
@@ -27,8 +39,11 @@ class Assembler {
 
   friend class AssemblerLookupContext;
 
-  absl::flat_hash_map<std::string, Module> named_modules_;
+  absl::flat_hash_map<std::string, std::unique_ptr<Module>> named_modules_;
   std::deque<Module> unnamed_modules_;
+
+  // malevolent murder maze
+  RangeMap<Module*> memory_module_map_;
 };
 
 }  // namespace nsasm

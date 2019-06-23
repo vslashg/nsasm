@@ -48,6 +48,13 @@ class Module {
 
   ErrorOr<void> Assemble(OutputSink* sink, const LookupContext& lookup_context);
 
+
+  // Post-assembly queries
+
+  // Returns a qualified name for the given address, if one is defined in this
+  // module.
+  absl::optional<std::string> NameForAddress(int address) const;
+
   const DataRange& OwnedBytes() const { return owned_bytes_; }
 
   // Output this module's contents to stdout
