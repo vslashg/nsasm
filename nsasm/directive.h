@@ -23,6 +23,7 @@ enum DirectiveName {
   D_mode,
   D_module,
   D_org,
+  D_remote,
 };
 
 // The type of argument taken by a given directive
@@ -33,6 +34,7 @@ enum DirectiveType {
   DT_flag_arg,
   DT_list_arg,
   DT_name_arg,
+  DT_remote_arg,
 };
 
 // Conversions between DirectiveName values, and the matching strings.
@@ -91,6 +93,9 @@ inline void PrintTo(DirectiveType t, std::ostream* out) {
       return;
     case DT_name_arg:
       *out << "DT_name_arg";
+      return;
+    case DT_remote_arg:
+      *out << "DT_remote_arg";
       return;
     default:
       *out << "???";

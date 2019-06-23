@@ -10,8 +10,8 @@ namespace nsasm {
 namespace {
 
 constexpr absl::string_view directive_names[] = {
-    ".BEGIN", ".DB",  ".DL",   ".DW",     ".END",
-    ".ENTRY", ".EQU", ".MODE", ".MODULE", ".ORG",
+    ".BEGIN", ".DB",   ".DL",     ".DW",  ".END",    ".ENTRY",
+    ".EQU",   ".MODE", ".MODULE", ".ORG", ".REMOTE",
 };
 
 }  // namespace
@@ -26,10 +26,10 @@ absl::string_view ToString(DirectiveName d) {
 absl::optional<DirectiveName> ToDirectiveName(std::string s) {
   static auto lookup =
       new absl::flat_hash_map<absl::string_view, DirectiveName>{
-          {".BEGIN", D_begin}, {".DB", D_db},     {".DL", D_dl},
-          {".DW", D_dw},       {".END", D_end},   {".ENTRY", D_entry},
-          {".EQU", D_equ},     {".MODE", D_mode}, {".MODULE", D_module},
-          {".ORG", D_org},
+          {".BEGIN", D_begin}, {".DB", D_db},         {".DL", D_dl},
+          {".DW", D_dw},       {".END", D_end},       {".ENTRY", D_entry},
+          {".EQU", D_equ},     {".MODE", D_mode},     {".MODULE", D_module},
+          {".ORG", D_org},     {".REMOTE", D_remote},
       };
   absl::AsciiStrToUpper(&s);
   auto iter = lookup->find(s);
@@ -41,10 +41,12 @@ absl::optional<DirectiveName> ToDirectiveName(std::string s) {
 
 DirectiveType DirectiveTypeByName(DirectiveName d) {
   static auto lookup = new absl::flat_hash_map<DirectiveName, DirectiveType>{
-      {D_begin, DT_no_arg},     {D_db, DT_list_arg},   {D_dl, DT_list_arg},
-      {D_dw, DT_list_arg},      {D_end, DT_no_arg},    {D_entry, DT_flag_arg},
-      {D_equ, DT_single_arg},   {D_mode, DT_flag_arg}, {D_module, DT_name_arg},
-      {D_org, DT_constant_arg},
+      {D_begin, DT_no_arg},      {D_db, DT_list_arg},
+      {D_dl, DT_list_arg},       {D_dw, DT_list_arg},
+      {D_end, DT_no_arg},        {D_entry, DT_flag_arg},
+      {D_equ, DT_single_arg},    {D_mode, DT_flag_arg},
+      {D_module, DT_name_arg},   {D_org, DT_constant_arg},
+      {D_remote, DT_remote_arg},
   };
   auto iter = lookup->find(d);
   if (iter == lookup->end()) {
@@ -72,6 +74,9 @@ std::string Directive::ToString() const {
                         [](std::string* out, const ExpressionOrNull& v) {
                           out->append(v.ToString());
                         }));
+    case DT_remote_arg:
+      return absl::StrCat(nsasm::ToString(name), " ", argument.ToString(), " ",
+                          flag_state_argument.ToName());
   }
   return "???";
 }

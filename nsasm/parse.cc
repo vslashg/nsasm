@@ -380,6 +380,12 @@ ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
       }
       return std::move(directive);
     }
+    case DT_remote_arg: {
+      auto arg = Expr(pos);
+      NSASM_RETURN_IF_ERROR(arg);
+      directive.argument = std::move(*arg);
+    }
+    ABSL_FALLTHROUGH_INTENDED;
     case DT_flag_arg: {
       Location loc = pos->front().Location();
       if (!pos->front().Identifier()) {
