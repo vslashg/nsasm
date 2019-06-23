@@ -66,9 +66,9 @@ ErrorOr<ExpressionOrNull> Expr(TokenSpan* pos) {
   while (!AtEnd(pos)) {
     BinaryOp oper;
     if (pos->front() == '+') {
-      oper = plus_op;
+      oper = MakePlusOp();
     } else if (pos->front() == '-') {
-      oper = minus_op;
+      oper = MakeMinusOp();
     } else {
       break;
     }
@@ -90,9 +90,9 @@ ErrorOr<ExpressionOrNull> Term(TokenSpan* pos) {
   while (!AtEnd(pos)) {
     BinaryOp oper;
     if (pos->front() == '*') {
-      oper = multiply_op;
+      oper = MakeMultiplyOp();
     } else if (pos->front() == '/') {
-      oper = divide_op;
+      oper = MakeDivideOp();
     } else {
       break;
     }
@@ -109,13 +109,13 @@ ErrorOr<ExpressionOrNull> Term(TokenSpan* pos) {
 ErrorOr<ExpressionOrNull> Factor(TokenSpan* pos) {
   UnaryOp oper;
   if (pos->front() == '-') {
-    oper = negate_op;
+    oper = MakeNegateOp();
   } else if (pos->front() == '<') {
-    oper = lowbyte_op;
+    oper = MakeLowbyteOp();
   } else if (pos->front() == '>') {
-    oper = highbyte_op;
+    oper = MakeHighbyteOp();
   } else if (pos->front() == '^') {
-    oper = bankbyte_op;
+    oper = MakeBankbyteOp();
   }
   if (oper) {
     pos->remove_prefix(1);

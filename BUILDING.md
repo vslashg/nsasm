@@ -2,10 +2,8 @@
 
 ## Installing clang-9
 
-Because I am a C++ nerd, I use C++17 features, rather than targeting the
-version of the language that is widely deployed.  You need to install a modern
-compiler to build nsasm.
-
+I use clang-9 for development, but nsasm should work on any reasonably up-to-date
+compiler.  If you still want to try installing clang-9, do the following:
 
 1. Open a shell, and determine your ubuntu version number.
 
@@ -65,10 +63,8 @@ You may have to `apt-get install` git first.
 
 ## building nsasm
 
-bazel's options story is absurd; there's no good way to specify project-wide
-copts.  Until I fix this in the build files, you can run all tests and build
-all tools by executing the following from the directory you just pulled from
-git:
+I gave up on trying to use C++17 features in nsasm, which makes the story rather
+straightforward.
 
-    $ bazel test --copt --std=c++17 //...
-    $ bazel build --copt --std=c++17 //...
+    $ bazel test //...
+    $ bazel build //...

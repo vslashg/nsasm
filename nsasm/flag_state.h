@@ -46,7 +46,7 @@ enum BitState : uint8_t {
 
 // Returns the merged value of two states for the same bit.  Needed when an
 // instruction can be entered via multiple code paths.
-constexpr BitState operator|(BitState lhs, BitState rhs) {
+inline BitState operator|(BitState lhs, BitState rhs) {
   return (lhs == rhs) ? lhs : B_unknown;
 }
 
@@ -54,7 +54,7 @@ constexpr BitState operator|(BitState lhs, BitState rhs) {
 //
 // In emulation mode, the `m` and `x` registers are fixed at 1.  This function
 // constrains a given `m` or `x` state given the current `e` state.
-constexpr BitState ConstrainedForEBit(BitState input, BitState e) {
+inline BitState ConstrainedForEBit(BitState input, BitState e) {
   // In emulation mode, `m` and `x` are always on.
   if (e == B_on) {
     return B_on;
@@ -85,12 +85,11 @@ constexpr BitState ConstrainedForEBit(BitState input, BitState e) {
 class FlagState {
  public:
   // Defaults to assuming 65816 native mode, but with otherwise unknown state.
-  explicit constexpr FlagState(BitState e_bit = B_off,
-                               BitState m_bit = B_original,
-                               BitState x_bit = B_original,
-                               BitState pushed_m_bit = B_unknown,
-                               BitState pushed_x_bit = B_unknown,
-                               BitState c_bit = B_unknown)
+  explicit FlagState(BitState e_bit = B_off, BitState m_bit = B_original,
+                     BitState x_bit = B_original,
+                     BitState pushed_m_bit = B_unknown,
+                     BitState pushed_x_bit = B_unknown,
+                     BitState c_bit = B_unknown)
       : e_bit_(e_bit),
         m_bit_(ConstrainedForEBit(m_bit, e_bit)),
         x_bit_(ConstrainedForEBit(x_bit, e_bit)),
@@ -98,7 +97,7 @@ class FlagState {
         pushed_x_bit_(pushed_x_bit),
         c_bit_(c_bit) {}
 
-  constexpr FlagState(const FlagState& rhs) = default;
+  FlagState(const FlagState& rhs) = default;
   FlagState& operator=(const FlagState& rhs) = default;
 
   // Returns a FlagState reflecting the given name, or `nullopt` if the name is
@@ -141,8 +140,7 @@ class FlagState {
   // The | operator merges two FlagStates into the superposition of their
   // states.  This is used to reflect all possible values for these bits
   // when an instruction can be reached over multiple code paths.
-  friend constexpr FlagState operator|(const FlagState& lhs,
-                                       const FlagState& rhs) {
+  friend FlagState operator|(const FlagState& lhs, const FlagState& rhs) {
     return FlagState(
         lhs.e_bit_ | rhs.e_bit_, lhs.m_bit_ | rhs.m_bit_,
         lhs.x_bit_ | rhs.x_bit_, lhs.pushed_m_bit_ | rhs.pushed_m_bit_,

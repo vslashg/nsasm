@@ -12,42 +12,70 @@
 namespace nsasm {
 
 struct BinaryOp {
-  ErrorOr<int> (*function)(int, int) = nullptr;
-  char symbol;
+  using FnPtr = ErrorOr<int> (*)(int, int);
+  BinaryOp() = default;
+  BinaryOp(FnPtr f, char s) : function(f), symbol(s) {}
   explicit operator bool() const { return static_cast<bool>(function); }
+
+  FnPtr function = nullptr;
+  char symbol = 0;
 };
-ABSL_CONST_INIT inline BinaryOp plus_op{
-    [](int a, int b) -> ErrorOr<int> { return a + b; }, '+'};
-ABSL_CONST_INIT inline BinaryOp minus_op{
-    [](int a, int b) -> ErrorOr<int> { return a - b; }, '-'};
-ABSL_CONST_INIT inline BinaryOp multiply_op{
-    [](int a, int b) -> ErrorOr<int> { return a * b; }, '*'};
-ABSL_CONST_INIT inline BinaryOp divide_op{[](int a, int b) -> ErrorOr<int> {
-                                            if (b == 0) {
-                                              return Error("division by zero");
-                                            }
-                                            return a / b;
-                                          },
-                                          '/'};
+
+inline BinaryOp MakePlusOp() {
+  BinaryOp::FnPtr op = [](int a, int b) -> ErrorOr<int> { return a + b; };
+  return BinaryOp(op, '+');
+}
+inline BinaryOp MakeMinusOp() {
+  BinaryOp::FnPtr op = [](int a, int b) -> ErrorOr<int> { return a - b; };
+  return BinaryOp(op, '-');
+}
+inline BinaryOp MakeMultiplyOp() {
+  BinaryOp::FnPtr op = [](int a, int b) -> ErrorOr<int> { return a * b; };
+  return BinaryOp(op, '*');
+}
+inline BinaryOp MakeDivideOp() {
+  BinaryOp::FnPtr op = [](int a, int b) -> ErrorOr<int> {
+    if (b == 0) {
+      return Error("division by zero");
+    }
+    return a / b;
+  };
+  return BinaryOp(op, '/');
+}
 
 struct UnaryOp {
-  ErrorOr<int> (*function)(int) = nullptr;
-  NumericType (*result_type)(NumericType);
-  char symbol;
+  using FnPtr = ErrorOr<int> (*)(int);
+  using TypeFnPtr = NumericType (*)(NumericType);
+  UnaryOp() = default;
+  UnaryOp(FnPtr v, TypeFnPtr t, char s)
+      : function(v), result_type(t), symbol(s) {}
   explicit operator bool() const { return static_cast<bool>(function); }
+
+  FnPtr function = nullptr;
+  TypeFnPtr result_type = nullptr;
+  char symbol = 0;
 };
-ABSL_CONST_INIT inline UnaryOp negate_op{
-    [](int a) -> ErrorOr<int> { return -a; },
-    [](NumericType t) { return Signed(t); }, '-'};
-ABSL_CONST_INIT inline UnaryOp lowbyte_op{
-    [](int a) -> ErrorOr<int> { return a & 0xff; },
-    [](NumericType) { return T_byte; }, '<'};
-ABSL_CONST_INIT inline UnaryOp highbyte_op{
-    [](int a) -> ErrorOr<int> { return (a >> 8) & 0xff; },
-    [](NumericType) { return T_byte; }, '>'};
-ABSL_CONST_INIT inline UnaryOp bankbyte_op{
-    [](int a) -> ErrorOr<int> { return (a >> 16) & 0xff; },
-    [](NumericType) { return T_byte; }, '^'};
+
+inline UnaryOp MakeNegateOp() {
+  UnaryOp::FnPtr fn = [](int a) -> ErrorOr<int> { return -a; };
+  UnaryOp::TypeFnPtr tfn = [](NumericType t) { return Signed(t); };
+  return UnaryOp(fn, tfn, '-');
+}
+inline UnaryOp MakeLowbyteOp() {
+  UnaryOp::FnPtr fn = [](int a) -> ErrorOr<int> { return a & 0xff; };
+  UnaryOp::TypeFnPtr tfn = [](NumericType) { return T_byte; };
+  return UnaryOp(fn, tfn, '<');
+}
+inline UnaryOp MakeHighbyteOp() {
+  UnaryOp::FnPtr fn = [](int a) -> ErrorOr<int> { return (a >> 8) & 0xff; };
+  UnaryOp::TypeFnPtr tfn = [](NumericType) { return T_byte; };
+  return UnaryOp(fn, tfn, '>');
+}
+inline UnaryOp MakeBankbyteOp() {
+  UnaryOp::FnPtr fn = [](int a) -> ErrorOr<int> { return (a >> 16) & 0xff; };
+  UnaryOp::TypeFnPtr tfn = [](NumericType) { return T_byte; };
+  return UnaryOp(fn, tfn, '^');
+}
 
 class LookupContext {
  public:
