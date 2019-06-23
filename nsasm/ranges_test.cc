@@ -12,7 +12,7 @@ namespace {
 using testing::ElementsAre;
 using Ch = std::pair<int, int>;
 
-TEST(Ranges, Contains) {
+TEST(DataRange, Contains) {
   // simple check of containment functionality
   DataRange data_range;
   for (int start : {20, 40, 60}) {
@@ -20,6 +20,7 @@ TEST(Ranges, Contains) {
   }
   DataRange empty;
   for (int i = 0; i < 80; ++i) {
+    SCOPED_TRACE(i);
     // The point is in data_range if the 10s place digit is 2, 4, or 6
     int digit = i / 10;
     bool expected = (digit == 2 || digit == 4 || digit == 6);
@@ -28,7 +29,7 @@ TEST(Ranges, Contains) {
   }
 }
 
-TEST(Ranges, MergeNeighbors) {
+TEST(DataRange, MergeNeighbors) {
   // check that writing adjacent chunks in any order works.
   {
     std::vector<int> starts = {20, 30, 40};
@@ -72,7 +73,7 @@ TEST(Ranges, MergeNeighbors) {
   }
 }
 
-TEST(Ranges, ComplexMerge) {
+TEST(DataRange, ComplexMerge) {
   // check behavior when a merge has more complex consolidation
   // Seed state looks like this:
   //     10   20   30   40   50   60
@@ -219,7 +220,7 @@ TEST(Ranges, ComplexMerge) {
   }
 }
 
-TEST(Ranges, BankWrapping) {
+TEST(DataRange, BankWrapping) {
   // Test that writing across a bank boundary wraps around
   {
     DataRange data_range;
@@ -248,6 +249,31 @@ TEST(Ranges, BankWrapping) {
     EXPECT_TRUE(data_range.ClaimBytes(0x50010, 0x20));
     EXPECT_THAT(data_range.Chunks(),
                 ElementsAre(Ch(0x50000, 0x50030), Ch(0x5ffd0, 0x60000)));
+  }
+}
+
+TEST(RangeMap, SanityTest) {
+  RangeMap<int> map;
+  DataRange first_range;
+  DataRange second_range;
+  first_range.ClaimBytes(10, 10);
+  second_range.ClaimBytes(30, 10);
+  first_range.ClaimBytes(50, 10);
+  second_range.ClaimBytes(70, 10);
+
+  EXPECT_TRUE(map.Insert(first_range, 1));
+  EXPECT_TRUE(map.Insert(second_range, 2));
+
+  for (int i = 0; i < 100; ++i) {
+    SCOPED_TRACE(i);
+    absl::optional<int> expected;
+    if ((i >= 10 && i < 20) || (i >= 50 && i < 60)) {
+      expected = 1;
+    }
+    if ((i >= 30 && i < 40) || (i >= 70 && i < 80)) {
+      expected = 2;
+    }
+    EXPECT_EQ(map.Lookup(i), expected);
   }
 }
 

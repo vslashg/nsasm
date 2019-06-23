@@ -294,7 +294,9 @@ cc_library(
     name="ranges",
     srcs=["ranges.cc"],
     hdrs=["ranges.h"],
-    deps=[],
+    deps=[
+        "@absl//absl/types:optional",
+    ],
 )
 
 cc_test(

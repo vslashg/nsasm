@@ -8,7 +8,7 @@ namespace {
 
 // Less-than comparator that will compare Chunks with integers,
 // using the lower bound of the chunk as the comparison basis.
-bool LeftSideSearch(int lhs, const DataRange::Chunk& rhs) {
+bool LeftSideSearch(int lhs, const Chunk& rhs) {
   return lhs < rhs.first;
 }
 
@@ -21,7 +21,7 @@ bool DataRange::ClaimBytes(int location, int length) {
     const int next_chunk_size =
         std::min(length, first_byte_next_bank - location);
     const Chunk chunk(location, location + next_chunk_size);
-    success = DoClaimBytes(chunk) && success;
+    success = ClaimBytes(chunk) && success;
     length -= next_chunk_size;
     location += next_chunk_size - 0x10000;
   }
@@ -41,7 +41,7 @@ bool DataRange::Contains(int location) const {
   return location >= it->first && location < it->second;
 }
 
-bool DataRange::DoClaimBytes(Chunk new_chunk) {
+bool DataRange::ClaimBytes(Chunk new_chunk) {
   if (ranges_.empty()) {
     ranges_.push_back(new_chunk);
     return true;
