@@ -79,8 +79,8 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
     if (bytes.size() < 2) {
       return Error("Not enough bytes to decode");
     }
-    decoded.arg1 = absl::make_unique<Literal>(bytes[0], T_byte);
-    decoded.arg2 = absl::make_unique<Literal>(bytes[1], T_byte);
+    decoded.arg1 = absl::make_unique<Literal>(bytes[1], T_byte);
+    decoded.arg2 = absl::make_unique<Literal>(bytes[0], T_byte);
   }
   if (decoded.addressing_mode == A_rel8) {
     // 8 bit signed argument

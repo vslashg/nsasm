@@ -284,8 +284,8 @@ ErrorOr<void> Instruction::Assemble(int address, const LookupContext& context,
     NSASM_RETURN_IF_ERROR(val1);
     auto val2 = arg2.Evaluate(context);
     NSASM_RETURN_IF_ERROR(val2);
-    *(output++) = (*val1 & 0xff);
     *(output++) = (*val2 & 0xff);
+    *(output++) = (*val1 & 0xff);
     return sink->Write(address, absl::MakeConstSpan(output_buf, output));
   }
   // relative 8-bit addressing

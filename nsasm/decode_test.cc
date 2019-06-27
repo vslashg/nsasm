@@ -110,8 +110,8 @@ TEST(Decode, mode_independent_instructions) {
     } else if (addressing_mode == A_mov) {
       ASSERT_TRUE(decoded->arg1);
       ASSERT_TRUE(decoded->arg2);
-      EXPECT_EQ(decoded->arg1.Evaluate(lookup_context), 0x21);
-      EXPECT_EQ(decoded->arg2.Evaluate(lookup_context), 0x43);
+      EXPECT_EQ(decoded->arg1.Evaluate(lookup_context), 0x43);
+      EXPECT_EQ(decoded->arg2.Evaluate(lookup_context), 0x21);
     }
   }
 }
