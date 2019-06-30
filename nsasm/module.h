@@ -55,6 +55,11 @@ class Module {
   // module.
   absl::optional<std::string> NameForAddress(int address) const;
 
+  // Returns the collection of all jump targets found during assembly.
+  const std::map<int, FlagState>& JumpTargets() const {
+    return unnamed_targets_;
+  }
+
   const DataRange& OwnedBytes() const { return owned_bytes_; }
 
   // Output this module's contents to stdout

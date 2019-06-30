@@ -298,9 +298,9 @@ ErrorOr<void> Module::Assemble(OutputSink* sink,
         // this is our branch target.
         auto it = unnamed_targets_.find(*branch_target);
         if (it == unnamed_targets_.end()) {
-          unnamed_targets_[*branch_target] = directive->flag_state_argument;
+          unnamed_targets_[*branch_target] = line.incoming_state;
         } else {
-          it->second |= directive->flag_state_argument;
+          it->second |= line.incoming_state;
         }
       }
     }
