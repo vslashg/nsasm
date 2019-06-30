@@ -1,10 +1,10 @@
 # Nerd Snipe Assembler (nsasm)
 
-nsasm is a new 65816 assembler/disassembler, with an initial focus on SNES development.  A lot of work remains to be done, but enough exists at this point that I can semi-credibly complain that this is the beginnings of an actual toolchain.
+nsasm is a new 65816 assembler/disassembler, with an initial focus on SNES development.  A lot of work remains to be done, but enough exists at this point that I can semi-credibly claim that this is the beginnings of an actual toolchain.
 
 I know the world wasn’t asking for yet another 6502-family toolchain.  Certainly the SNES hacking community wasn’t.  So why does nsasm exist?  It’s a fair question.
 
-It’s called the “Nerd Snipe Assembler” because I was nerd-sniped into writing it.  A friend working on SNES romhacks challenged me to apply a trivial modification to a SNES game using existing popular tools.  His assumption was that I would be so bothered by the process, he could tricked me into writing new tools.
+It’s called the “Nerd Snipe Assembler” because I was nerd-sniped into writing it.  A friend working on SNES romhacks challenged me to apply a trivial modification to a SNES game using existing popular tools.  His assumption was that I would be so bothered by the process, he could trick me into writing new tools.
 
 My friends know me well.  I'm amazed I've gotten this far.
 
