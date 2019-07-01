@@ -43,6 +43,18 @@ class Disassembler {
 
   const DisassemblyMap& Result() const { return disassembly_; }
 
+  // Install a set of subroutine yield values.  Any subroutine jump to the
+  // given address is disassembled with a `yields` suffix, changing the mode to
+  // the requested state.
+  //
+  // (This is intended to handle disassembly where a called subroutine modifies
+  // the flag state.  Why would anyone do this madness?  Can't we have a little
+  // sanity here?  I mean, really.  Come on, SNES devs from a few decades ago.
+  // Get it together.)
+  void AddTargetYields(const std::map<int, FlagState>& yields) {
+    yields_ = yields;
+  }
+
  private:
   absl::optional<std::string> NameForAddress(int address);
 
@@ -51,6 +63,7 @@ class Disassembler {
   Rom rom_;
   std::set<int> entry_points_;
   std::map<int, DisassembledInstruction> disassembly_;
+  std::map<int, FlagState> yields_;
   int current_sym_;
 };
 

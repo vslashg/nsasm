@@ -51,7 +51,10 @@ int main(int argc, char** argv) {
   }
 
   std::map<int, nsasm::FlagState> seeds = assembler.JumpTargets();
+  std::map<int, nsasm::FlagState> yields = assembler.JumpTargetYields();
+
   nsasm::Disassembler disassembler(*std::move(rom));
+  disassembler.AddTargetYields(yields);
 
   for (int pass = 0; pass < 100; ++pass) {
     std::map<int, nsasm::FlagState> new_seeds;

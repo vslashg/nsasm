@@ -106,7 +106,16 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
 
       auto far_branch_address = instruction->FarBranchTarget(pc);
       if (far_branch_address.has_value()) {
-        add_far_branch(*far_branch_address, *next_flag_state);
+        int target = *far_branch_address;
+        if (instruction->mnemonic == M_jsr || instruction->mnemonic == M_jsl) {
+          // If the subroutine callrequires a yield, add that to disassembly.
+          auto yields_it = yields_.find(target);
+          if (yields_it != yields_.end()) {
+            next_flag_state = yields_it->second;
+            instruction->yields = *next_flag_state;
+          }
+        }
+        add_far_branch(target, *next_flag_state);
       }
 
       // If this instruction is relatively addressed, we need a label, and

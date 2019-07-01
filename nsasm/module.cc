@@ -280,6 +280,14 @@ ErrorOr<void> Module::Assemble(OutputSink* sink,
                      *line.address)
             .SetLocation(line.statement.Location());
       }
+    } else if (directive && directive->name == D_entry) {
+      if (!line.address.has_value()) {
+        return Error("logic error: no address for .entry directive")
+            .SetLocation(line.statement.Location());
+      }
+      if (directive->flag_state_argument_2.has_value()) {
+        yields_[*line.address] = *directive->flag_state_argument_2;
+      }
     } else if (directive && directive->name == D_remote) {
       auto address = directive->argument.Evaluate(context);
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(address, directive->location);
@@ -288,6 +296,9 @@ ErrorOr<void> Module::Assemble(OutputSink* sink,
         unnamed_targets_[*address] = directive->flag_state_argument;
       } else {
         it->second |= directive->flag_state_argument;
+      }
+      if (directive->flag_state_argument_2.has_value()) {
+        yields_[*address] = *directive->flag_state_argument_2;
       }
     }
     if (instruction) {

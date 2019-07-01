@@ -32,6 +32,9 @@ class Assembler {
   // Returns the collection of all jump targets found during assembly.
   std::map<int, FlagState> JumpTargets() const;
 
+  // Returns the set of jump targets found which yield alternate flag states
+  std::map<int, FlagState> JumpTargetYields() const;
+
   // Output each named module's contents to stdout
   void DebugPrint() const;
 

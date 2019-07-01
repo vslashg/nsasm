@@ -150,6 +150,19 @@ std::map<int, FlagState> Assembler::JumpTargets() const {
   return ret;
 }
 
+std::map<int, FlagState> Assembler::JumpTargetYields() const {
+  std::map<int, FlagState> ret;
+  for (const Module& m : unnamed_modules_) {
+    const std::map<int, FlagState>& yields = m.JumpTargetYields();
+    ret.insert(yields.begin(), yields.end());
+  }
+  for (const auto& node : named_modules_) {
+    const std::map<int, FlagState>& yields = node.second->JumpTargetYields();
+    ret.insert(yields.begin(), yields.end());
+  }
+  return ret;
+}
+
 void Assembler::DebugPrint() const {
   for (const auto& node : named_modules_) {
     absl::PrintF("  === debug info for %s\n", node.second->Name());

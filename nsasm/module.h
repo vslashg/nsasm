@@ -60,6 +60,11 @@ class Module {
     return unnamed_targets_;
   }
 
+  // Returns the set of jump targets assembled which yield alternate flag states
+  const std::map<int, FlagState>& JumpTargetYields() const {
+    return yields_;
+  }
+
   const DataRange& OwnedBytes() const { return owned_bytes_; }
 
   // Output this module's contents to stdout
@@ -103,6 +108,7 @@ class Module {
   DataRange owned_bytes_;
   absl::flat_hash_map<int, std::string> value_to_global_;
   std::map<int, FlagState> unnamed_targets_;
+  std::map<int, FlagState> yields_;
 };
 
 }  // namespace nsasm
