@@ -336,7 +336,7 @@ class Label : public Expression {
       : label_(std::move(label)), held_value_(std::move(expr)) {}
 
   ErrorOr<int> Evaluate(const LookupContext& context) const override {
-    return Error("Can't evaluate labels");
+    return held_value_->Evaluate(context);
   }
   NumericType Type() const override { return held_value_->Type(); }
   virtual bool RequiresLookup() const override { return true; }

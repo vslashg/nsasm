@@ -50,3 +50,14 @@ cc_binary(
         "//nsasm:token",
     ],
 )
+
+cc_binary(
+    name="disassemble_more",
+    srcs=["disassemble_more.cc"],
+    deps=[
+        "@absl//absl/strings:str_format",
+        "//nsasm:assembler",
+        "//nsasm:disassemble",
+        "//nsasm:rom",
+    ],
+)
