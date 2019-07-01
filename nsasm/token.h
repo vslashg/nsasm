@@ -21,6 +21,7 @@ enum Punctuation {
   P_none = 0,
   P_scope = 257,
   P_export = 258,
+  P_yields = 259,
 };
 
 class Token {

@@ -6,8 +6,10 @@
 namespace nsasm {
 
 std::string Instruction::ToString() const {
-  return absl::StrFormat("%s%s", nsasm::ToString(mnemonic),
-                         ArgsToString(addressing_mode, arg1, arg2));
+  std::string yields_str =
+      yields.has_value() ? absl::StrCat(" yields ", yields->ToString()) : "";
+  return absl::StrFormat("%s%s%s", nsasm::ToString(mnemonic),
+                         ArgsToString(addressing_mode, arg1, arg2), yields_str);
 }
 
 ErrorOr<void> Instruction::CheckConsistency(const FlagState& flag_state) const {
@@ -105,6 +107,11 @@ ErrorOr<void> Instruction::FixAddressingMode(const FlagState& flag_state) {
 
 ErrorOr<FlagState> Instruction::Execute(const FlagState& flag_state_in) const {
   NSASM_RETURN_IF_ERROR(CheckConsistency(flag_state_in));
+
+  // If a call has `yields` state attached, honor it
+  if (yields.has_value()) {
+    return *yields;
+  }
 
   FlagState flag_state = flag_state_in;
   const Mnemonic& m = mnemonic;

@@ -32,6 +32,7 @@ enum DirectiveType {
   DT_single_arg,
   DT_constant_arg,
   DT_flag_arg,
+  DT_flag_or_flags_arg,
   DT_list_arg,
   DT_name_arg,
   DT_remote_arg,
@@ -48,6 +49,7 @@ struct Directive {
   DirectiveName name;
   ExpressionOrNull argument;
   FlagState flag_state_argument;
+  absl::optional<FlagState> flag_state_argument_2;
   std::vector<ExpressionOrNull> list_argument;
   Location location;
 
@@ -64,7 +66,6 @@ struct Directive {
 
   std::string ToString() const;
 };
-
 
 
 // googletest pretty printers (streams are an abomination)
@@ -87,6 +88,9 @@ inline void PrintTo(DirectiveType t, std::ostream* out) {
       return;
     case DT_flag_arg:
       *out << "DT_flag_arg";
+      return;
+    case DT_flag_or_flags_arg:
+      *out << "DT_flag_or_flags_arg";
       return;
     case DT_list_arg:
       *out << "DT_list_arg";

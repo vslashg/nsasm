@@ -59,9 +59,15 @@ TEST(Directive, directive_types) {
   }
 
   // Directives that take a flag state name
-  for (DirectiveName name : {D_entry, D_mode}) {
+  for (DirectiveName name : {D_mode}) {
     SCOPED_TRACE(ToString(name));
     EXPECT_EQ(DirectiveTypeByName(name), DT_flag_arg);
+  }
+
+  // Directives that take one or two flag state names
+  for (DirectiveName name : {D_entry}) {
+    SCOPED_TRACE(ToString(name));
+    EXPECT_EQ(DirectiveTypeByName(name), DT_flag_or_flags_arg);
   }
 
   // Directives that take a simple name

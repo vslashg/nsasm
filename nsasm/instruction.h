@@ -14,6 +14,7 @@ struct Instruction {
   AddressingMode addressing_mode;
   ExpressionOrNull arg1;
   ExpressionOrNull arg2;
+  absl::optional<FlagState> yields;
   Location location;
 
   // Returns an error if this instruction's mnemonic and addressing mode are

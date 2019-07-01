@@ -26,10 +26,10 @@ TEST(Token, names) {
   }
   {
     // And for keywords
-    auto x = Tokenize("import/export IMPORT/EXPORT", Location());
+    auto x = Tokenize("import/export yiELds IMPORT/EXPORT", Location());
     NSASM_ASSERT_OK(x);
-    EXPECT_EQ(*x,
-              TokenVector("import", '/', P_export, "IMPORT", '/', P_export));
+    EXPECT_EQ(*x, TokenVector("import", '/', P_export, P_yields, "IMPORT", '/',
+                              P_export));
   }
   {
     // Test that numbers are read correctly and type is inferred from value
