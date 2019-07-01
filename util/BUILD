@@ -61,3 +61,13 @@ cc_binary(
         "//nsasm:rom",
     ],
 )
+
+cc_binary(
+    name="dumb_disassemble",
+    srcs=["dumb_disassemble.cc"],
+    deps=[
+        "@absl//absl/strings:str_format",
+        "//nsasm:disassemble",
+        "//nsasm:rom",
+    ],
+)
