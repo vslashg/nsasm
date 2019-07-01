@@ -54,10 +54,7 @@ class Statement {
     return ins && ins->IsLocalBranch();
   }
 
-  bool IsExitInstruction() const {
-    auto* ins = absl::get_if<nsasm::Instruction>(&data_);
-    return ins && ins->IsExitInstruction();
-  }
+  bool IsExitInstruction() const;
 
   std::string ToString() const;
 

@@ -20,6 +20,7 @@ enum DirectiveName {
   D_end,
   D_entry,
   D_equ,
+  D_halt,
   D_mode,
   D_module,
   D_org,
@@ -65,6 +66,10 @@ struct Directive {
                          OutputSink* sink) const;
 
   std::string ToString() const;
+
+  bool IsExitInstruction() const {
+    return name == D_halt;
+  }
 };
 
 

@@ -55,4 +55,14 @@ ErrorOr<void> Statement::Assemble(int address, const LookupContext& context,
   }
 }
 
+bool Statement::IsExitInstruction() const {
+  switch (data_.index()) {
+    case 0:
+      return absl::get<nsasm::Instruction>(data_).IsExitInstruction();
+    case 1:
+    default:
+      return absl::get<nsasm::Directive>(data_).IsExitInstruction();
+  }
+}
+
 }  // namespace nsasm
