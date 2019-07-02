@@ -311,7 +311,7 @@ ErrorOr<void> Instruction::Assemble(int address, const LookupContext& context,
   if (addressing_mode == A_rel16) {
     auto val1 = arg1.Evaluate(context);
     NSASM_RETURN_IF_ERROR(val1);
-    int branch_base = address + 2;
+    int branch_base = address + 3;
     int offset = *val1 - branch_base;
     // TODO: This is not correct; relative branching can't overflow in this
     // way.  Fix to handle wrapping on the high 8 bits.
