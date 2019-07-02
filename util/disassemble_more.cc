@@ -60,6 +60,10 @@ int main(int argc, char** argv) {
   for (int pass = 0; pass < 100; ++pass) {
     std::map<int, nsasm::FlagState> new_seeds;
     for (const auto& node : seeds) {
+      if (assembler.Contains(node.first)) {
+        // This function is already disassembled in our input.
+        continue;
+      }
       auto branch_targets = disassembler.Disassemble(node.first, node.second);
       if (!branch_targets.ok()) {
         absl::PrintF("; ERROR branching to $%06x with mode %s\n",
