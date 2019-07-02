@@ -1,3 +1,5 @@
+#include <map>
+
 #include "absl/strings/str_format.h"
 #include "nsasm/decode.h"
 #include "nsasm/flag_state.h"
@@ -39,6 +41,7 @@ int main(int argc, char** argv) {
 
   int address = hex_address;
   nsasm::FlagState flag_state = *parsed_flag;
+  std::map<int, nsasm::FlagState> local_jumps;
   while (true) {
     auto instruction_data = rom->Read(address, 4);
     if (!instruction_data.ok()) {
@@ -65,15 +68,39 @@ int main(int argc, char** argv) {
     if (instruction->IsLocalBranch()) {
       int target =
           next_pc + *instruction->arg1.Evaluate(nsasm::NullLookupContext());
+      auto prev_value = local_jumps.find(target);
       local_branch_target = absl::StrFormat(" to $%06x", target);
+      if (prev_value == local_jumps.end()) {
+        local_branch_target += " (new)";
+      } else {
+        local_branch_target +=
+            absl::StrFormat(" (was %s)", prev_value->second.ToString());
+      }
+      local_jumps[target] = flag_state;
     }
     std::string instruction_string = instruction->ToString();
     absl::PrintF("%06x - %30s ; %s%s\n", address, instruction_string,
                  flag_state.ToString(), local_branch_target);
     if (instruction->IsExitInstruction()) {
-      break;
+      auto next_instruction_it = local_jumps.lower_bound(next_pc);
+      if (next_instruction_it == local_jumps.end()) {
+        absl::PrintF("End of subroutine.\n");
+        break;
+      }
+      if (next_instruction_it->first > next_pc) {
+        absl::PrintF(
+            "Gap found here.  Nearest local jump target is %06x (%s).\n",
+            next_instruction_it->first, next_instruction_it->second.ToString());
+        break;
+      }
+      flag_state = next_instruction_it->second;
     }
     address = next_pc;
+  }
+  if (!local_jumps.empty()) {
+    absl::PrintF("Earliest branch target %06x (%s).\n",
+                 local_jumps.begin()->first,
+                 local_jumps.begin()->second.ToString());
   }
   return 0;
 }
