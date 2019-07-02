@@ -2,6 +2,7 @@
 #define NSASM_INSTRUCTION_H_
 
 #include "nsasm/addressing_mode.h"
+#include "nsasm/calling_convention.h"
 #include "nsasm/expression.h"
 #include "nsasm/flag_state.h"
 #include "nsasm/mnemonic.h"
@@ -14,7 +15,7 @@ struct Instruction {
   AddressingMode addressing_mode;
   ExpressionOrNull arg1;
   ExpressionOrNull arg2;
-  absl::optional<FlagState> yields;
+  ReturnConvention return_convention;
   Location location;
 
   // Returns an error if this instruction's mnemonic and addressing mode are
@@ -71,7 +72,8 @@ struct Instruction {
 
 inline bool Instruction::IsExitInstruction() const {
   return mnemonic == M_jmp || mnemonic == M_rtl || mnemonic == M_rts ||
-         mnemonic == M_rti || mnemonic == M_stp || mnemonic == M_bra;
+         mnemonic == M_rti || mnemonic == M_stp || mnemonic == M_bra ||
+         return_convention.IsExitCall();
 };
 
 inline bool Instruction::IsLocalBranch() const {

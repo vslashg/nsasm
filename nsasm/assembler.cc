@@ -150,14 +150,16 @@ std::map<int, FlagState> Assembler::JumpTargets() const {
   return ret;
 }
 
-std::map<int, FlagState> Assembler::JumpTargetYields() const {
-  std::map<int, FlagState> ret;
+std::map<int, ReturnConvention> Assembler::JumpTargetReturnConventions() const {
+  std::map<int, ReturnConvention> ret;
   for (const Module& m : unnamed_modules_) {
-    const std::map<int, FlagState>& yields = m.JumpTargetYields();
+    const std::map<int, ReturnConvention>& yields =
+        m.JumpTargetReturnConventions();
     ret.insert(yields.begin(), yields.end());
   }
   for (const auto& node : named_modules_) {
-    const std::map<int, FlagState>& yields = node.second->JumpTargetYields();
+    const std::map<int, ReturnConvention>& yields =
+        node.second->JumpTargetReturnConventions();
     ret.insert(yields.begin(), yields.end());
   }
   return ret;

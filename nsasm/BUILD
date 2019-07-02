@@ -132,11 +132,24 @@ cc_library(
 
 
 cc_library(
+    name="calling_convention",
+    srcs=["calling_convention.cc"],
+    hdrs=["calling_convention.h"],
+    deps=[
+        ":flag_state",
+        "@absl//absl/strings:str_format",
+        "@absl//absl/types:variant",
+    ],
+)
+
+
+cc_library(
     name="instruction",
     srcs=["instruction.cc"],
     hdrs=["instruction.h"],
     deps=[
         ":addressing_mode",
+        ":calling_convention",
         ":expression",
         ":flag_state",
         ":mnemonic",
@@ -213,6 +226,7 @@ cc_library(
     srcs=["directive.cc"],
     hdrs=["directive.h"],
     deps=[
+        ":calling_convention",
         ":expression",
         ":flag_state",
         ":output_sink",

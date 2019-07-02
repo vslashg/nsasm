@@ -107,15 +107,18 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
       auto far_branch_address = instruction->FarBranchTarget(pc);
       if (far_branch_address.has_value()) {
         int target = *far_branch_address;
+        add_far_branch(target, *next_flag_state);
         if (instruction->mnemonic == M_jsr || instruction->mnemonic == M_jsl) {
           // If the subroutine callrequires a yield, add that to disassembly.
-          auto yields_it = yields_.find(target);
-          if (yields_it != yields_.end()) {
-            next_flag_state = yields_it->second;
-            instruction->yields = *next_flag_state;
+          auto return_conventions_it = return_conventions_.find(target);
+          if (return_conventions_it != return_conventions_.end()) {
+            instruction->return_convention = return_conventions_it->second;
           }
         }
-        add_far_branch(target, *next_flag_state);
+        auto yield_state = instruction->return_convention.YieldState();
+        if (yield_state.has_value()) {
+          next_flag_state = *yield_state;
+        }
       }
 
       // If this instruction is relatively addressed, we need a label, and

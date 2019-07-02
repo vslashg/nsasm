@@ -285,8 +285,9 @@ ErrorOr<void> Module::Assemble(OutputSink* sink,
         return Error("logic error: no address for .entry directive")
             .SetLocation(line.statement.Location());
       }
-      if (directive->flag_state_argument_2.has_value()) {
-        yields_[*line.address] = *directive->flag_state_argument_2;
+      if (!directive->return_convention_argument.IsDefault()) {
+        return_conventions_[*line.address] =
+            directive->return_convention_argument;
       }
     } else if (directive && directive->name == D_remote) {
       auto address = directive->argument.Evaluate(context);
@@ -297,8 +298,8 @@ ErrorOr<void> Module::Assemble(OutputSink* sink,
       } else {
         it->second |= directive->flag_state_argument;
       }
-      if (directive->flag_state_argument_2.has_value()) {
-        yields_[*address] = *directive->flag_state_argument_2;
+      if (!directive->return_convention_argument.IsDefault()) {
+        return_conventions_[*address] = directive->return_convention_argument;
       }
     }
     if (instruction) {

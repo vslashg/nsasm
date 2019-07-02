@@ -2,6 +2,7 @@
 #define NSASM_ASSEMBLER_H
 
 #include "absl/container/flat_hash_map.h"
+#include "nsasm/calling_convention.h"
 #include "nsasm/error.h"
 #include "nsasm/module.h"
 #include "nsasm/ranges.h"
@@ -32,8 +33,8 @@ class Assembler {
   // Returns the collection of all jump targets found during assembly.
   std::map<int, FlagState> JumpTargets() const;
 
-  // Returns the set of jump targets found which yield alternate flag states
-  std::map<int, FlagState> JumpTargetYields() const;
+  // Returns the set of jump targets found with nonstandard calling conventions.
+  std::map<int, ReturnConvention> JumpTargetReturnConventions() const;
 
   // Output each named module's contents to stdout
   void DebugPrint() const;

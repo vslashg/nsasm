@@ -43,7 +43,7 @@ DirectiveType DirectiveTypeByName(DirectiveName d) {
   static auto lookup = new absl::flat_hash_map<DirectiveName, DirectiveType>{
       {D_begin, DT_no_arg},     {D_db, DT_list_arg},
       {D_dl, DT_list_arg},      {D_dw, DT_list_arg},
-      {D_end, DT_no_arg},       {D_entry, DT_flag_or_flags_arg},
+      {D_end, DT_no_arg},       {D_entry, DT_calling_convention_arg},
       {D_equ, DT_single_arg},   {D_halt, DT_no_arg},
       {D_mode, DT_flag_arg},    {D_module, DT_name_arg},
       {D_org, DT_constant_arg}, {D_remote, DT_remote_arg},
@@ -65,14 +65,10 @@ std::string Directive::ToString() const {
     case DT_name_arg:
       return absl::StrCat(nsasm::ToString(name), " ", argument.ToString());
     case DT_flag_arg:
-    case DT_flag_or_flags_arg:
-      if (flag_state_argument_2.has_value()) {
-        return absl::StrCat(nsasm::ToString(name), " ",
-                            flag_state_argument.ToName(), " ",
-                            flag_state_argument_2->ToName());
-      }
+    case DT_calling_convention_arg:
       return absl::StrCat(nsasm::ToString(name), " ",
-                          flag_state_argument.ToName());
+                          flag_state_argument.ToName(),
+                          return_convention_argument.ToSuffixString());
     case DT_list_arg:
       return absl::StrCat(
           nsasm::ToString(name), " ",

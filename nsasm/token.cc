@@ -50,6 +50,8 @@ std::string Token::ToString() const {
       return "symbol `::`";
     case P_export:
       return "keyword `export`";
+    case P_noreturn:
+      return "keyword `noreturn`";
     case P_yields:
       return "keyword `yields`";
     default:
@@ -173,6 +175,9 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
       // keyword?
       if (absl::AsciiStrToLower(identifier) == "export") {
         result.emplace_back(P_export, loc);
+        continue;
+      } else if (absl::AsciiStrToLower(identifier) == "noreturn") {
+        result.emplace_back(P_noreturn, loc);
         continue;
       } else if (absl::AsciiStrToLower(identifier) == "yields") {
         result.emplace_back(P_yields, loc);

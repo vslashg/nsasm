@@ -3,6 +3,7 @@
 
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+#include "nsasm/calling_convention.h"
 #include "nsasm/expression.h"
 #include "nsasm/flag_state.h"
 #include "nsasm/output_sink.h"
@@ -33,7 +34,7 @@ enum DirectiveType {
   DT_single_arg,
   DT_constant_arg,
   DT_flag_arg,
-  DT_flag_or_flags_arg,
+  DT_calling_convention_arg,
   DT_list_arg,
   DT_name_arg,
   DT_remote_arg,
@@ -50,7 +51,7 @@ struct Directive {
   DirectiveName name;
   ExpressionOrNull argument;
   FlagState flag_state_argument;
-  absl::optional<FlagState> flag_state_argument_2;
+  ReturnConvention return_convention_argument;
   std::vector<ExpressionOrNull> list_argument;
   Location location;
 
@@ -94,8 +95,8 @@ inline void PrintTo(DirectiveType t, std::ostream* out) {
     case DT_flag_arg:
       *out << "DT_flag_arg";
       return;
-    case DT_flag_or_flags_arg:
-      *out << "DT_flag_or_flags_arg";
+    case DT_calling_convention_arg:
+      *out << "DT_calling_convention_arg";
       return;
     case DT_list_arg:
       *out << "DT_list_arg";
