@@ -73,7 +73,7 @@ struct Instruction {
 inline bool Instruction::IsExitInstruction() const {
   return mnemonic == M_jmp || mnemonic == M_rtl || mnemonic == M_rts ||
          mnemonic == M_rti || mnemonic == M_stp || mnemonic == M_bra ||
-         return_convention.IsExitCall();
+         mnemonic == M_brl || return_convention.IsExitCall();
 };
 
 inline bool Instruction::IsLocalBranch() const {
