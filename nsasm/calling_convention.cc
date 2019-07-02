@@ -10,10 +10,10 @@ std::string ReturnConvention::ToSuffixString() const {
     default:
       return "";  // default
     case 1:
-      return absl::StrFormat(" YIELDS %s",
+      return absl::StrFormat(" yields %s",
                              absl::get<FlagState>(state_).ToString());
     case 2:
-      return " NORETURN";
+      return " noreturn";
   }
 }
 

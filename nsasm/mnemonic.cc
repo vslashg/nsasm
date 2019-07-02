@@ -8,15 +8,15 @@ namespace nsasm {
 namespace {
 
 constexpr absl::string_view mnemonic_names[] = {
-    "ADC", "AND", "ASL", "BIT", "CLD", "CLI", "CLV", "CMP", "CPX", "CPY", "DEC",
-    "DEX", "DEY", "EOR", "INC", "INX", "INY", "LDA", "LDX", "LDY", "LSR", "MVN",
-    "MVP", "NOP", "ORA", "PEA", "PEI", "PER", "PHA", "PHB", "PHD", "PHK", "PHX",
-    "PHY", "PLA", "PLB", "PLD", "PLX", "PLY", "ROL", "ROR", "SBC", "SED", "SEI",
-    "STA", "STP", "STX", "STY", "STZ", "TAX", "TAY", "TCD", "TCS", "TDC", "TRB",
-    "TSB", "TSC", "TSX", "TXA", "TXS", "TXY", "TYA", "TYX", "WAI", "WDM", "XBA",
-    "BCC", "BCS", "BEQ", "BMI", "BNE", "BPL", "BRA", "BRK", "BRL", "BVC", "BVS",
-    "COP", "JMP", "JSL", "JSR", "RTI", "RTL", "RTS", "CLC", "PHP", "PLP", "REP",
-    "SEC", "SEP", "XCE", "ADD", "SUB",
+    "adc", "and", "asl", "bit", "cld", "cli", "clv", "cmp", "cpx", "cpy", "dec",
+    "dex", "dey", "eor", "inc", "inx", "iny", "lda", "ldx", "ldy", "lsr", "mvn",
+    "mvp", "nop", "ora", "pea", "pei", "per", "pha", "phb", "phd", "phk", "phx",
+    "phy", "pla", "plb", "pld", "plx", "ply", "rol", "ror", "sbc", "sed", "sei",
+    "sta", "stp", "stx", "sty", "stz", "tax", "tay", "tcd", "tcs", "tdc", "trb",
+    "tsb", "tsc", "tsx", "txa", "txs", "txy", "tya", "tyx", "wai", "wdm", "xba",
+    "bcc", "bcs", "beq", "bmi", "bne", "bpl", "bra", "brk", "brl", "bvc", "bvs",
+    "cop", "jmp", "jsl", "jsr", "rti", "rtl", "rts", "clc", "php", "plp", "rep",
+    "sec", "sep", "xce", "add", "sub",
 };
 
 }  // namespace
@@ -30,32 +30,32 @@ absl::string_view ToString(Mnemonic m) {
 
 absl::optional<Mnemonic> ToMnemonic(std::string s) {
   static auto lookup = new absl::flat_hash_map<absl::string_view, Mnemonic>{
-      {"ADC", M_adc},  {"AND", M_and}, {"ASL", M_asl}, {"BIT", M_bit},
-      {"CLD", M_cld},  {"CLI", M_cli}, {"CLV", M_clv}, {"CMP", M_cmp},
-      {"CPX", M_cpx},  {"CPY", M_cpy}, {"DEC", M_dec}, {"DEX", M_dex},
-      {"DEY", M_dey},  {"EOR", M_eor}, {"INC", M_inc}, {"INX", M_inx},
-      {"INY", M_iny},  {"LDA", M_lda}, {"LDX", M_ldx}, {"LDY", M_ldy},
-      {"LSR", M_lsr},  {"MVN", M_mvn}, {"MVP", M_mvp}, {"NOP", M_nop},
-      {"ORA", M_ora},  {"PEA", M_pea}, {"PEI", M_pei}, {"PER", M_per},
-      {"PHA", M_pha},  {"PHB", M_phb}, {"PHD", M_phd}, {"PHX", M_phx},
-      {"PHY", M_phy},  {"PHK", M_phk}, {"PLA", M_pla}, {"PLB", M_plb},
-      {"PLD", M_pld},  {"PLX", M_plx}, {"PLY", M_ply}, {"ROL", M_rol},
-      {"ROR", M_ror},  {"SBC", M_sbc}, {"SED", M_sed}, {"SEI", M_sei},
-      {"STA", M_sta},  {"STP", M_stp}, {"STX", M_stx}, {"STY", M_sty},
-      {"STZ", M_stz},  {"TAX", M_tax}, {"TAY", M_tay}, {"TCD", M_tcd},
-      {"TCS", M_tcs},  {"TDC", M_tdc}, {"TRB", M_trb}, {"TSB", M_tsb},
-      {"TSC", M_tsc},  {"TSX", M_tsx}, {"TXA", M_txa}, {"TXS", M_txs},
-      {"TXY", M_txy},  {"TYA", M_tya}, {"TYX", M_tyx}, {"WAI", M_wai},
-      {"WDM", M_wdm},  {"XBA", M_xba}, {"BCC", M_bcc}, {"BCS", M_bcs},
-      {"BEQ", M_beq},  {"BMI", M_bmi}, {"BNE", M_bne}, {"BPL", M_bpl},
-      {"BRA", M_bra},  {"BRK", M_brk}, {"BRL", M_brl}, {"BVC", M_bvc},
-      {"BVS", M_bvs},  {"COP", M_cop}, {"JMP", M_jmp}, {"JSL", M_jsl},
-      {"JSR", M_jsr},  {"RTI", M_rti}, {"RTL", M_rtl}, {"RTS", M_rts},
-      {"CLC", M_clc},  {"PHP", M_php}, {"PLP", M_plp}, {"REP", M_rep},
-      {"SEC", M_sec},  {"SEP", M_sep}, {"XCE", M_xce}, {"ADD", PM_add},
-      {"SUB", PM_sub},
+      {"adc", M_adc},  {"and", M_and}, {"asl", M_asl}, {"bit", M_bit},
+      {"cld", M_cld},  {"cli", M_cli}, {"clv", M_clv}, {"cmp", M_cmp},
+      {"cpx", M_cpx},  {"cpy", M_cpy}, {"dec", M_dec}, {"dex", M_dex},
+      {"dey", M_dey},  {"eor", M_eor}, {"inc", M_inc}, {"inx", M_inx},
+      {"iny", M_iny},  {"lda", M_lda}, {"ldx", M_ldx}, {"ldy", M_ldy},
+      {"lsr", M_lsr},  {"mvn", M_mvn}, {"mvp", M_mvp}, {"nop", M_nop},
+      {"ora", M_ora},  {"pea", M_pea}, {"pei", M_pei}, {"per", M_per},
+      {"pha", M_pha},  {"phb", M_phb}, {"phd", M_phd}, {"phx", M_phx},
+      {"phy", M_phy},  {"phk", M_phk}, {"pla", M_pla}, {"plb", M_plb},
+      {"pld", M_pld},  {"plx", M_plx}, {"ply", M_ply}, {"rol", M_rol},
+      {"ror", M_ror},  {"sbc", M_sbc}, {"sed", M_sed}, {"sei", M_sei},
+      {"sta", M_sta},  {"stp", M_stp}, {"stx", M_stx}, {"sty", M_sty},
+      {"stz", M_stz},  {"tax", M_tax}, {"tay", M_tay}, {"tcd", M_tcd},
+      {"tcs", M_tcs},  {"tdc", M_tdc}, {"trb", M_trb}, {"tsb", M_tsb},
+      {"tsc", M_tsc},  {"tsx", M_tsx}, {"txa", M_txa}, {"txs", M_txs},
+      {"txy", M_txy},  {"tya", M_tya}, {"tyx", M_tyx}, {"wai", M_wai},
+      {"wdm", M_wdm},  {"xba", M_xba}, {"bcc", M_bcc}, {"bcs", M_bcs},
+      {"beq", M_beq},  {"bmi", M_bmi}, {"bne", M_bne}, {"bpl", M_bpl},
+      {"bra", M_bra},  {"brk", M_brk}, {"brl", M_brl}, {"bvc", M_bvc},
+      {"bvs", M_bvs},  {"cop", M_cop}, {"jmp", M_jmp}, {"jsl", M_jsl},
+      {"jsr", M_jsr},  {"rti", M_rti}, {"rtl", M_rtl}, {"rts", M_rts},
+      {"clc", M_clc},  {"php", M_php}, {"plp", M_plp}, {"rep", M_rep},
+      {"sec", M_sec},  {"sep", M_sep}, {"xce", M_xce}, {"add", PM_add},
+      {"sub", PM_sub},
   };
-  absl::AsciiStrToUpper(&s);
+  absl::AsciiStrToLower(&s);
   auto iter = lookup->find(s);
   if (iter == lookup->end()) {
     return absl::nullopt;
