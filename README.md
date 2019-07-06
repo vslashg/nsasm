@@ -46,3 +46,10 @@ I chose the latter.  This is a case where either approach feels fine.  My decisi
 
 65816 assembly syntax is what it is, for better and worse.  I’m not looking to overhaul it.  Obviously nsasm will have its own directives, syntax, and features where that makes sense, but this is not a free-for-all.  We’ll save the novelties for our ROM hacks.  The tools need to be unsurprising.
 
+## Efficiency doesn't matter.
+
+In the days of 16-bit microprocessors, development tools needed to care about economy of resources, to run on contemporary hardware.
+
+Today, over 35 years removed from the release of the 65816, the phone in your kid's pocket has orders of magnitude more RAM and computational power than the platforms nsasm is targeting.  Aiming for frugality would only adds unnecessary complexity and restrictions.
+
+While nsasm is not gratuitously wasteful of resources, I will always be happy to throw another data structure at the problem.  No matter what we do, because the target platform is so small, everything will fit in RAM.
