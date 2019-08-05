@@ -52,4 +52,4 @@ In the days of 16-bit microprocessors, development tools needed to care about ec
 
 Today, over 35 years removed from the release of the 65816, the phone in your kid's pocket has orders of magnitude more RAM and computational power than the platforms nsasm is targeting.  Aiming for frugality would only adds unnecessary complexity and restrictions.
 
-While nsasm is not gratuitously wasteful of resources, I will always be happy to throw another data structure at the problem.  No matter what we do, because the target platform is so small, everything will fit in RAM.
+While nsasm is not gratuitously wasteful of resources, I will always be happy to throw another data structure or assembler pass at the problem.  No matter what we do, because the target platform is so small, everything will fit in RAM and complete in an instant.

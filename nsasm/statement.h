@@ -42,7 +42,9 @@ class Statement {
 
   nsasm::Location Location() const;
 
-  ErrorOr<FlagState> Execute(const FlagState& fs) const;
+  ErrorOr<void> Execute(ExecutionState* es) const;
+
+  ErrorOr<void> ExecuteBranch(ExecutionState* es) const;
 
   int SerializedSize() const;
 

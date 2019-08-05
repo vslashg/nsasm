@@ -83,7 +83,7 @@ std::string Directive::ToString() const {
   return "???";
 }
 
-ErrorOr<FlagState> Directive::Execute(const FlagState& state) const {
+ErrorOr<void> Directive::Execute(ExecutionState* state) const {
   if (name == D_db || name == D_dl || name == D_dw || name == D_org) {
     // Attempt to execute data or across .ORG gap
     return Error("Execution continues into %s directive",
@@ -92,10 +92,10 @@ ErrorOr<FlagState> Directive::Execute(const FlagState& state) const {
   if (name == D_mode) {
     // The .mode directive forces static analysis to change its state to its
     // argument
-    return flag_state_argument;
+    state->Flags() = flag_state_argument;
   }
   // Other directives are no-ops in analysis
-  return state;
+  return {};
 }
 
 int Directive::SerializedSize() const {

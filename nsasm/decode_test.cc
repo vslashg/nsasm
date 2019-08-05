@@ -18,9 +18,9 @@ TEST(Decode, mode_dependent_instructions) {
       continue;
     }
 
-    FlagState unknown_flags;
-    FlagState eight_bit_flags;
-    FlagState sixteen_bit_flags;
+    StatusFlags unknown_flags;
+    StatusFlags eight_bit_flags(/*emu_mode=*/B_off);
+    StatusFlags sixteen_bit_flags(/*emu_mode=*/B_off);
     if (addressing_mode == A_imm_fm) {
       eight_bit_flags.SetMBit(B_on);
       sixteen_bit_flags.SetMBit(B_off);
@@ -69,14 +69,14 @@ TEST(Decode, mode_independent_instructions) {
     // Check that we error on too few bytes, but accept the correct size
     EXPECT_FALSE(Decode(absl::MakeSpan(data).subspan(
                             0, InstructionLength(addressing_mode) - 1),
-                        FlagState())
+                        StatusFlags())
                      .ok());
     EXPECT_TRUE(Decode(absl::MakeSpan(data).subspan(
                            0, InstructionLength(addressing_mode)),
-                       FlagState())
+                       StatusFlags())
                     .ok());
 
-    auto decoded = Decode(data, FlagState());
+    auto decoded = Decode(data, StatusFlags());
     NSASM_ASSERT_OK(decoded);
     EXPECT_EQ(decoded->mnemonic, mnemonic);
     EXPECT_EQ(decoded->addressing_mode, addressing_mode);

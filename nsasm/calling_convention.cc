@@ -11,7 +11,7 @@ std::string ReturnConvention::ToSuffixString() const {
       return "";  // default
     case 1:
       return absl::StrFormat(" yields %s",
-                             absl::get<FlagState>(state_).ToString());
+                             absl::get<StatusFlags>(state_).ToString());
     case 2:
       return " noreturn";
   }

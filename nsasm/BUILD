@@ -99,27 +99,38 @@ cc_test(
     ],
 )
 
+cc_library(name="flag_state")
+#
+#cc_library(
+#    name="flag_state",
+#    srcs=["flag_state.cc", "flag_state.h"],
+#    hdrs=["flag_state.h"],
+#    deps=[
+#        "@absl//absl/base:core_headers",
+#        "@absl//absl/strings",
+#        "@absl//absl/types:optional",
+#    ],
+#)
+#
+#cc_test(
+#    name="flag_state_test",
+#    srcs=["flag_state_test.cc"],
+#    deps=[
+#        ":flag_state",
+#        "@gtest//:gtest_main",
+#    ],
+#)
 
 cc_library(
-    name="flag_state",
-    srcs=["flag_state.cc"],
-    hdrs=["flag_state.h"],
+    name="execution_state",
+    srcs=["execution_state.cc"],
+    hdrs=["execution_state.h"],
     deps=[
-        "@absl//absl/base:core_headers",
+        "@absl//absl/container:inlined_vector",
         "@absl//absl/strings",
         "@absl//absl/types:optional",
     ],
 )
-
-cc_test(
-    name="flag_state_test",
-    srcs=["flag_state_test.cc"],
-    deps=[
-        ":flag_state",
-        "@gtest//:gtest_main",
-    ],
-)
-
 
 cc_library(
     name="output_sink",
@@ -136,7 +147,7 @@ cc_library(
     srcs=["calling_convention.cc"],
     hdrs=["calling_convention.h"],
     deps=[
-        ":flag_state",
+        ":execution_state",
         "@absl//absl/strings:str_format",
         "@absl//absl/types:variant",
     ],

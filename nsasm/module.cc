@@ -123,8 +123,9 @@ ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
 
 ErrorOr<void> Module::RunFirstPass() {
   // Map of lines to evaluate next, and the flag state on entry
-  std::map<int, FlagState> decode_stack;
-  auto add_to_decode_stack = [&decode_stack](int line, const FlagState& state) {
+  std::map<int, ExecutionState> decode_stack;
+  auto add_to_decode_stack = [&decode_stack](int line,
+                                             const ExecutionState& state) {
     auto it = decode_stack.find(line);
     if (it == decode_stack.end()) {
       decode_stack[line] = state;
@@ -148,7 +149,7 @@ ErrorOr<void> Module::RunFirstPass() {
       return Error("Execution continues past end of file");
     }
     Line& line = lines_[node.first];
-    const FlagState& current_state = node.second;
+    const ExecutionState& current_state = node.second;
     if (line.reached && line.incoming_state == current_state) {
       // we've been here before under these conditions; nothing more to do
       decode_stack.erase(decode_stack.begin());
@@ -158,10 +159,11 @@ ErrorOr<void> Module::RunFirstPass() {
     line.reached = true;
     line.incoming_state = current_state;
 
-    auto next_state = line.statement.Execute(current_state);
-    NSASM_RETURN_IF_ERROR_WITH_LOCATION(next_state, line.statement.Location());
+    ExecutionState next_state = current_state;
+    NSASM_RETURN_IF_ERROR_WITH_LOCATION(line.statement.Execute(&next_state),
+                                        line.statement.Location());
     if (!line.statement.IsExitInstruction()) {
-      add_to_decode_stack(node.first + 1, *next_state);
+      add_to_decode_stack(node.first + 1, next_state);
     }
     if (line.statement.IsLocalBranch()) {
       const Instruction& ins = *line.statement.Instruction();
@@ -175,9 +177,10 @@ ErrorOr<void> Module::RunFirstPass() {
                      nsasm::ToString(ins.mnemonic), *target)
             .SetLocation(ins.location);
       }
-      auto branch_state = ins.ExecuteBranch(current_state);
-      NSASM_RETURN_IF_ERROR_WITH_LOCATION(branch_state, ins.location);
-      add_to_decode_stack(*target_index, *branch_state);
+      next_state = current_state;
+      NSASM_RETURN_IF_ERROR_WITH_LOCATION(ins.ExecuteBranch(&next_state),
+                                          line.statement.Location());
+      add_to_decode_stack(*target_index, next_state);
     }
   }
 
@@ -191,7 +194,7 @@ ErrorOr<void> Module::RunFirstPass() {
     }
     if (ins) {
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(
-          ins->FixAddressingMode(line.incoming_state), ins->location);
+          ins->FixAddressingMode(line.incoming_state.Flags()), ins->location);
     }
   }
 
@@ -236,7 +239,7 @@ ErrorOr<int> Module::LocalIndex(absl::string_view sv,
 }
 
 ErrorOr<int> Module::LocalLookup(absl::string_view sv,
-                                const std::vector<int>& active_scopes) const {
+                                 const std::vector<int>& active_scopes) const {
   auto index = LocalIndex(sv, active_scopes);
   NSASM_RETURN_IF_ERROR(index);
   const Line& line = lines_[*index];
@@ -310,9 +313,9 @@ ErrorOr<void> Module::Assemble(OutputSink* sink,
         // this is our branch target.
         auto it = unnamed_targets_.find(*branch_target);
         if (it == unnamed_targets_.end()) {
-          unnamed_targets_[*branch_target] = line.incoming_state;
+          unnamed_targets_[*branch_target] = line.incoming_state.Flags();
         } else {
-          it->second |= line.incoming_state;
+          it->second |= line.incoming_state.Flags();
         }
       }
     }

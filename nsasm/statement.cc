@@ -12,13 +12,13 @@ std::string Statement::ToString() const {
   }
 }
 
-ErrorOr<FlagState> Statement::Execute(const FlagState& fs) const {
+ErrorOr<void> Statement::Execute(ExecutionState* es) const {
   switch (data_.index()) {
     case 0:
-      return absl::get<nsasm::Instruction>(data_).Execute(fs);
+      return absl::get<nsasm::Instruction>(data_).Execute(es);
     case 1:
     default:
-      return absl::get<nsasm::Directive>(data_).Execute(fs);
+      return absl::get<nsasm::Directive>(data_).Execute(es);
   }
 }
 

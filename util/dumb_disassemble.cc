@@ -2,7 +2,7 @@
 
 #include "absl/strings/str_format.h"
 #include "nsasm/decode.h"
-#include "nsasm/flag_state.h"
+#include "nsasm/execution_state.h"
 #include "nsasm/rom.h"
 
 void usage(char* path) {
@@ -33,15 +33,15 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  auto parsed_flag = nsasm::FlagState::FromName(argv[3]);
+  auto parsed_flag = nsasm::StatusFlags::FromName(argv[3]);
   if (!parsed_flag) {
     absl::PrintF("%s does not name a processor mode\n", argv[3]);
     return 1;
   }
 
   int address = hex_address;
-  nsasm::FlagState flag_state = *parsed_flag;
-  std::map<int, nsasm::FlagState> local_jumps;
+  nsasm::ExecutionState execution_state(*parsed_flag);
+  std::map<int, nsasm::ExecutionState> local_jumps;
   while (true) {
     auto instruction_data = rom->Read(address, 4);
     if (!instruction_data.ok()) {
@@ -49,7 +49,8 @@ int main(int argc, char** argv) {
                    instruction_data.error().ToString());
       return 1;
     }
-    auto instruction = nsasm::Decode(*instruction_data, flag_state);
+    auto instruction =
+        nsasm::Decode(*instruction_data, execution_state.Flags());
     if (!instruction.ok()) {
       absl::PrintF("%06x - ERROR: %s\n", address,
                    instruction.error().ToString());
@@ -57,13 +58,11 @@ int main(int argc, char** argv) {
     }
     int instruction_bytes = InstructionLength(instruction->addressing_mode);
     int next_pc = nsasm::AddToPC(address, instruction_bytes);
-    auto next_flag_state = instruction->Execute(flag_state);
-    if (!next_flag_state.ok()) {
-      absl::PrintF("%06x - ERROR: %s\n", address,
-                   next_flag_state.error().ToString());
+    auto status = instruction->Execute(&execution_state);
+    if (!status.ok()) {
+      absl::PrintF("%06x - ERROR: %s\n", address, status.error().ToString());
       return 1;
     }
-    flag_state = *next_flag_state;
     std::string local_branch_target;
     if (instruction->IsLocalBranch()) {
       int target =
@@ -74,13 +73,13 @@ int main(int argc, char** argv) {
         local_branch_target += " (new)";
       } else {
         local_branch_target +=
-            absl::StrFormat(" (was %s)", prev_value->second.ToString());
+            absl::StrFormat(" (was %s)", prev_value->second.Flags().ToString());
       }
-      local_jumps[target] = flag_state;
+      local_jumps[target] = execution_state;
     }
     std::string instruction_string = instruction->ToString();
     absl::PrintF("%06x - %30s ; %s%s\n", address, instruction_string,
-                 flag_state.ToString(), local_branch_target);
+                 execution_state.Flags().ToString(), local_branch_target);
     if (instruction->IsExitInstruction()) {
       auto next_instruction_it = local_jumps.lower_bound(next_pc);
       if (next_instruction_it == local_jumps.end()) {
@@ -90,17 +89,18 @@ int main(int argc, char** argv) {
       if (next_instruction_it->first > next_pc) {
         absl::PrintF(
             "Gap found here.  Nearest local jump target is %06x (%s).\n",
-            next_instruction_it->first, next_instruction_it->second.ToString());
+            next_instruction_it->first,
+            next_instruction_it->second.Flags().ToString());
         break;
       }
-      flag_state = next_instruction_it->second;
+      execution_state = next_instruction_it->second;
     }
     address = next_pc;
   }
   if (!local_jumps.empty()) {
     absl::PrintF("Earliest branch target %06x (%s).\n",
                  local_jumps.begin()->first,
-                 local_jumps.begin()->second.ToString());
+                 local_jumps.begin()->second.Flags().ToString());
   }
   return 0;
 }

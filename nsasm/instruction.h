@@ -3,8 +3,8 @@
 
 #include "nsasm/addressing_mode.h"
 #include "nsasm/calling_convention.h"
+#include "nsasm/execution_state.h"
 #include "nsasm/expression.h"
-#include "nsasm/flag_state.h"
 #include "nsasm/mnemonic.h"
 #include "nsasm/output_sink.h"
 
@@ -20,11 +20,11 @@ struct Instruction {
 
   // Returns an error if this instruction's mnemonic and addressing mode are
   // inconsistent with the provided flag state.
-  ErrorOr<void> CheckConsistency(const FlagState& flag_state) const;
+  ErrorOr<void> CheckConsistency(const StatusFlags& status_flags) const;
 
   // If this instruction has a conditional addressing mode, change it to be
   // definite, based on the provided flag state.
-  ErrorOr<void> FixAddressingMode(const FlagState& flag_state);
+  ErrorOr<void> FixAddressingMode(const StatusFlags& status_flags);
 
   // Returns true if executing this instruction means control does not contine
   // to the next.
@@ -46,8 +46,7 @@ struct Instruction {
 
   // Returns the new state that results from executing the given instruction
   // from the current state.
-  ABSL_MUST_USE_RESULT ErrorOr<FlagState> Execute(
-      const FlagState& flag_state) const;
+  ErrorOr<void> Execute(ExecutionState* execution_state) const;
 
   // As above, but returns the state that results from a successful conditional
   // branch from this instruction.
@@ -55,8 +54,7 @@ struct Instruction {
   // This difference matters for BCC/BCS.  For example, after BCC (branch if
   // carry clear), the C bit is set if we continue to the next instruction, and
   // clear if set.
-  ABSL_MUST_USE_RESULT ErrorOr<FlagState> ExecuteBranch(
-      const FlagState& flag_state) const;
+  ErrorOr<void> ExecuteBranch(ExecutionState* execution_state) const;
 
   int SerializedSize() const;
 

@@ -123,7 +123,7 @@ absl::optional<std::string> Assembler::NameForAddress(int address) const {
   return absl::nullopt;
 }
 
-std::map<int, FlagState> Assembler::JumpTargets() const {
+std::map<int, StatusFlags> Assembler::JumpTargets() const {
   std::vector<const Module*> module_order;
   for (const Module& m : unnamed_modules_) {
     module_order.push_back(&m);
@@ -133,7 +133,7 @@ std::map<int, FlagState> Assembler::JumpTargets() const {
   }
   // TODO: add support for warnings, and report on jumps into existing modules
 
-  std::map<int, FlagState> ret;
+  std::map<int, StatusFlags> ret;
   for (const Module* module : module_order) {
     for (auto& node : module->JumpTargets()) {
       int dest = node.first;

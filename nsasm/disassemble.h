@@ -6,7 +6,7 @@
 
 #include "absl/types/optional.h"
 #include "nsasm/error.h"
-#include "nsasm/flag_state.h"
+#include "nsasm/execution_state.h"
 #include "nsasm/instruction.h"
 #include "nsasm/rom.h"
 
@@ -16,8 +16,8 @@ struct DisassembledInstruction {
   std::string label;
   Instruction instruction;
   bool is_entry = false;
-  FlagState current_flag_state;
-  FlagState next_flag_state;
+  ExecutionState current_execution_state;
+  ExecutionState next_execution_state;
 };
 
 using DisassemblyMap = std::map<int, DisassembledInstruction>;
@@ -37,8 +37,8 @@ class Disassembler {
   //
   // Returns an error, or else a mapping of all far jump targets found in
   // this disassembly.
-  ErrorOr<std::map<int, FlagState>> Disassemble(
-      int starting_address, const FlagState& initial_flag_state);
+  ErrorOr<std::map<int, StatusFlags>> Disassemble(
+      int starting_address, const StatusFlags& initial_status_flags);
   ErrorOr<void> Cleanup();
 
   const DisassemblyMap& Result() const { return disassembly_; }

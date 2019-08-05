@@ -56,7 +56,7 @@ class Module {
   absl::optional<std::string> NameForAddress(int address) const;
 
   // Returns the collection of all jump targets found during assembly.
-  const std::map<int, FlagState>& JumpTargets() const {
+  const std::map<int, StatusFlags>& JumpTargets() const {
     return unnamed_targets_;
   }
 
@@ -93,7 +93,7 @@ class Module {
     Statement statement;
     std::vector<std::string> labels;
     bool reached = false;
-    FlagState incoming_state;
+    ExecutionState incoming_state;
     absl::optional<int> address;
     std::vector<int> active_scopes;
     absl::flat_hash_map<std::string, int> scoped_locals;
@@ -107,7 +107,7 @@ class Module {
 
   DataRange owned_bytes_;
   absl::flat_hash_map<int, std::string> value_to_global_;
-  std::map<int, FlagState> unnamed_targets_;
+  std::map<int, StatusFlags> unnamed_targets_;
   std::map<int, ReturnConvention> return_conventions_;
 };
 

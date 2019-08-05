@@ -31,7 +31,7 @@ class Assembler {
   absl::optional<std::string> NameForAddress(int address) const;
 
   // Returns the collection of all jump targets found during assembly.
-  std::map<int, FlagState> JumpTargets() const;
+  std::map<int, StatusFlags> JumpTargets() const;
 
   // Returns the set of jump targets found with nonstandard calling conventions.
   std::map<int, ReturnConvention> JumpTargetReturnConventions() const;

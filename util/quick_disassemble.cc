@@ -19,8 +19,8 @@ void usage(char* path) {
       path);
 }
 
-void CombineStates(std::map<int, nsasm::FlagState>* targets,
-                   const std::map<int, nsasm::FlagState>& new_targets) {
+void CombineStates(std::map<int, nsasm::StatusFlags>* targets,
+                   const std::map<int, nsasm::StatusFlags>& new_targets) {
   for (const auto& node : new_targets) {
     auto it = targets->find(node.first);
     if (it == targets->end()) {
@@ -43,9 +43,9 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  std::map<int, nsasm::FlagState> seeds;
+  std::map<int, nsasm::StatusFlags> seeds;
   for (int idx = 2; idx < argc - 1; idx += 2) {
-    auto parsed_flag = nsasm::FlagState::FromName(argv[idx + 1]);
+    auto parsed_flag = nsasm::StatusFlags::FromName(argv[idx + 1]);
     if (!parsed_flag) {
       absl::PrintF("%s does not name a processor mode\n", argv[idx + 1]);
       return 1;
@@ -72,12 +72,12 @@ int main(int argc, char** argv) {
   nsasm::Disassembler disassembler(*std::move(rom));
 
   for (int pass = 0; pass < 100; ++pass) {
-    std::map<int, nsasm::FlagState> new_seeds;
+    std::map<int, nsasm::StatusFlags> new_seeds;
     for (const auto& node : seeds) {
       auto branch_targets = disassembler.Disassemble(node.first, node.second);
       if (!branch_targets.ok()) {
-        absl::PrintF("; ERROR branching to $%06x with mode %s\n",
-          node.first, node.second.ToString());
+        absl::PrintF("; ERROR branching to $%06x with mode %s\n", node.first,
+                     node.second.ToString());
         absl::PrintF(";   %s\n", branch_targets.error().ToString());
       } else {
         CombineStates(&new_seeds, *branch_targets);
@@ -111,13 +111,13 @@ int main(int argc, char** argv) {
       }
       if (value.second.is_entry) {
         absl::PrintF("%-8s .entry %s\n", label,
-                     value.second.current_flag_state.ToString());
+                     value.second.current_execution_state.Flags().ToString());
         label.clear();
       }
       std::string text =
           absl::StrFormat("%-8s %s", label, instruction.ToString());
       absl::PrintF("%-35s ; %06x %s\n", text, pc,
-                   value.second.next_flag_state.ToString());
+                   value.second.next_execution_state.Flags().ToString());
 
       pc += value.second.instruction.SerializedSize();
     }

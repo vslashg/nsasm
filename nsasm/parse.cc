@@ -73,7 +73,7 @@ ErrorOr<void> ConfirmLegalRegister(const TokenSpan* pos,
 }
 
 // Parse a mode name
-ErrorOr<FlagState> Mode(TokenSpan* pos) {
+ErrorOr<StatusFlags> Mode(TokenSpan* pos) {
   Location loc = pos->front().Location();
   if (!pos->front().Identifier()) {
     return Error("Expected mode name, found %s", pos->front().ToString())
@@ -81,12 +81,12 @@ ErrorOr<FlagState> Mode(TokenSpan* pos) {
   }
   std::string flag_name = *pos->front().Identifier();
   pos->remove_prefix(1);
-  auto flag_state = FlagState::FromName(flag_name);
-  if (!flag_state.has_value()) {
+  auto status_flags = StatusFlags::FromName(flag_name);
+  if (!status_flags.has_value()) {
     return Error("\"%s\" does not name a flag state", flag_name)
         .SetLocation(loc);
   }
-  return *flag_state;
+  return *status_flags;
 }
 
 ErrorOr<ExpressionOrNull> Expr(TokenSpan* pos) {

@@ -7,7 +7,7 @@
 namespace nsasm {
 
 ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
-                            const FlagState& state) {
+                            const StatusFlags& flags) {
   if (bytes.empty()) {
     return Error("Not enough bytes to decode");
   }
@@ -21,7 +21,7 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
   if (decoded.addressing_mode == A_imm_fm ||
       decoded.addressing_mode == A_imm_fx) {
     BitState narrow_register =
-        (decoded.addressing_mode == A_imm_fm) ? state.MBit() : state.XBit();
+        (decoded.addressing_mode == A_imm_fm) ? flags.MBit() : flags.XBit();
     if (narrow_register == B_on) {
       decoded.addressing_mode = A_imm_b;
     } else if (narrow_register == B_off) {

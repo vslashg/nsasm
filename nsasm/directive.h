@@ -4,8 +4,8 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "nsasm/calling_convention.h"
+#include "nsasm/execution_state.h"
 #include "nsasm/expression.h"
-#include "nsasm/flag_state.h"
 #include "nsasm/output_sink.h"
 
 #include <iostream>
@@ -50,12 +50,12 @@ DirectiveType DirectiveTypeByName(DirectiveName d);
 struct Directive {
   DirectiveName name;
   ExpressionOrNull argument;
-  FlagState flag_state_argument;
+  StatusFlags flag_state_argument;
   ReturnConvention return_convention_argument;
   std::vector<ExpressionOrNull> list_argument;
   Location location;
 
-  ErrorOr<FlagState> Execute(const FlagState& state) const;
+  ErrorOr<void> Execute(ExecutionState* state) const;
 
   int SerializedSize() const;
 

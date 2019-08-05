@@ -1,8 +1,8 @@
 #include "nsasm/addressing_mode.h"
 
 #include "gtest/gtest.h"
+#include "nsasm/execution_state.h"
 #include "nsasm/expression.h"
-#include "nsasm/flag_state.h"
 #include "nsasm/instruction.h"
 #include "nsasm/numeric_type.h"
 #include "nsasm/opcode_map.h"
@@ -156,7 +156,7 @@ struct SimpleDeductionCase {
 
 TEST(AddressingMode, simple_deduce_mode) {
   AddressingMode none = A_imp;  // sentinel value
-  const FlagState dummy_flag_state;
+  const StatusFlags dummy_status_flags;
 
   SimpleDeductionCase test_cases[] = {
       {SA_imm, {A_imm_b, A_imm_w, none}},
@@ -207,7 +207,7 @@ TEST(AddressingMode, simple_deduce_mode) {
               << "DeduceMode() returned a mode of " << ToString(*deduced)
               << " for mnemonic " << ToString(m) << " where "
               << ToString(addressing_mode) << " was expected";
-          EXPECT_TRUE(instruction.CheckConsistency(dummy_flag_state).ok())
+          EXPECT_TRUE(instruction.CheckConsistency(dummy_status_flags).ok())
               << "DeduceMode() returned a mode of " << ToString(*deduced)
               << " for mnemonic " << ToString(m)
               << ", but this is not a valid combination";
@@ -217,7 +217,7 @@ TEST(AddressingMode, simple_deduce_mode) {
           //   b) this addressing mode and type is invalid for the mnemonic.
           if (addressing_mode != none) {
             // not in case (a), check that we are in case (b)
-            EXPECT_FALSE(instruction.CheckConsistency(dummy_flag_state).ok())
+            EXPECT_FALSE(instruction.CheckConsistency(dummy_status_flags).ok())
                 << "DeduceMode() did not deduce " << ToString(addressing_mode)
                 << " argument for mnemonic " << ToString(m)
                 << ", but this combination is valid";
@@ -231,21 +231,21 @@ TEST(AddressingMode, simple_deduce_mode) {
 TEST(AddressingMode, deduce_no_arg_mode) {
   // Test instructions taking no arguments and/or taking A as an argument.
   const ExpressionOrNull null;
-  const FlagState dummy_flag_state;
+  const StatusFlags dummy_status_flags;
 
   for (Mnemonic m : AllMnemonics()) {
     SCOPED_TRACE(ToString(m));
     Instruction implied_instruction = {m, A_imp, null, null};
     Instruction accumulator_instruction = {m, A_acc, null, null};
 
-    if (accumulator_instruction.CheckConsistency(dummy_flag_state).ok()) {
+    if (accumulator_instruction.CheckConsistency(dummy_status_flags).ok()) {
       // For instructions that support accumulator mode (like DEC), we should
       // support syntactic forms `DEC A` and `DEC`.
       auto deduced_acc = DeduceMode(m, SA_acc, null, null);
       auto deduced_imp = DeduceMode(m, SA_imp, null, null);
       EXPECT_TRUE(deduced_acc.ok() && (*deduced_acc == A_acc));
       EXPECT_TRUE(deduced_imp.ok() && (*deduced_imp == A_acc));
-    } else if (implied_instruction.CheckConsistency(dummy_flag_state).ok()) {
+    } else if (implied_instruction.CheckConsistency(dummy_status_flags).ok()) {
       // For instructions that take no argumnet (like RTS), we should accept
       // `RTS` but not `RTS A`
       auto deduced_acc = DeduceMode(m, SA_acc, null, null);
@@ -268,13 +268,13 @@ TEST(AddressingMode, deduce_immediate_mode) {
     SCOPED_TRACE(ToString(m));
     if (ImmediateArgumentUsesMBit(m)) {
       // flag state where m bit is known
-      FlagState flag_state(B_off, B_off, B_original);
+      StatusFlags status_flags(B_off, B_off, B_original);
       Literal arg1(0, T_word);
       ExpressionOrNull arg2;
 
       // Sanity-check ImmediateArgumentUsesMBit()
       Instruction instruction = {m, A_imm_fm, ExpressionOrNull(arg1), arg2};
-      EXPECT_TRUE(instruction.CheckConsistency(flag_state).ok());
+      EXPECT_TRUE(instruction.CheckConsistency(status_flags).ok());
 
       // We should deduce this as an instruction that cares about the m bit
       auto deduced = DeduceMode(m, SA_imm, arg1, arg2);
@@ -283,13 +283,13 @@ TEST(AddressingMode, deduce_immediate_mode) {
 
     if (ImmediateArgumentUsesXBit(m)) {
       // flag state where x bit is known
-      FlagState flag_state(B_off, B_original, B_off);
+      StatusFlags status_flags(B_off, B_original, B_off);
       Literal arg1(0, T_word);
       ExpressionOrNull arg2;
 
       // Sanity-check ImmediateArgumentUsesXBit()
       Instruction instruction = {m, A_imm_fx, ExpressionOrNull(arg1), arg2};
-      EXPECT_TRUE(instruction.CheckConsistency(flag_state).ok());
+      EXPECT_TRUE(instruction.CheckConsistency(status_flags).ok());
 
       // We should deduce this as an instruction that cares about the x bit
       auto deduced = DeduceMode(m, SA_imm, arg1, arg2);

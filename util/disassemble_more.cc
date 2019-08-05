@@ -13,8 +13,8 @@ void usage(char* path) {
       path);
 }
 
-void CombineStates(std::map<int, nsasm::FlagState>* targets,
-                   const std::map<int, nsasm::FlagState>& new_targets) {
+void CombineStates(std::map<int, nsasm::StatusFlags>* targets,
+                   const std::map<int, nsasm::StatusFlags>& new_targets) {
   for (const auto& node : new_targets) {
     auto it = targets->find(node.first);
     if (it == targets->end()) {
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  std::map<int, nsasm::FlagState> seeds = assembler.JumpTargets();
+  std::map<int, nsasm::StatusFlags> seeds = assembler.JumpTargets();
   std::map<int, nsasm::ReturnConvention> return_conventions =
       assembler.JumpTargetReturnConventions();
 
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
   disassembler.AddTargetReturnConventions(return_conventions);
 
   for (int pass = 0; pass < 100; ++pass) {
-    std::map<int, nsasm::FlagState> new_seeds;
+    std::map<int, nsasm::StatusFlags> new_seeds;
     for (const auto& node : seeds) {
       if (assembler.Contains(node.first)) {
         // This function is already disassembled in our input.
@@ -101,13 +101,13 @@ int main(int argc, char** argv) {
       }
       if (value.second.is_entry) {
         absl::PrintF("%-8s .entry %s\n", label,
-                     value.second.current_flag_state.ToString());
+                     value.second.current_execution_state.Flags().ToString());
         label.clear();
       }
       std::string text =
           absl::StrFormat("%-8s %s", label, instruction.ToString());
       absl::PrintF("%-35s ; %06x %s\n", text, pc,
-                   value.second.next_flag_state.ToString());
+                   value.second.next_execution_state.Flags().ToString());
 
       pc += value.second.instruction.SerializedSize();
     }

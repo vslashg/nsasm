@@ -2,7 +2,7 @@
 #define NSASM_CALLING_CONVENTION_H_
 
 #include "absl/types/variant.h"
-#include "nsasm/flag_state.h"
+#include "nsasm/execution_state.h"
 
 namespace nsasm {
 
@@ -21,7 +21,7 @@ class ReturnConvention {
   ReturnConvention() : state_() {}
 
   // Constructs a "yields" convention.
-  ReturnConvention(const FlagState& state) : state_(state) {}
+  ReturnConvention(const StatusFlags& flags) : state_(flags) {}
 
   // Constructs a "noreturn" convention.
   ReturnConvention(NoReturn) : state_(NoReturn()) {}
@@ -30,12 +30,19 @@ class ReturnConvention {
   ReturnConvention(const ReturnConvention&) = default;
   ReturnConvention& operator=(const ReturnConvention&) = default;
 
-  absl::optional<FlagState> YieldState() const {
-    auto return_mode = absl::get_if<FlagState>(&state_);
+  absl::optional<StatusFlags> YieldFlags() const {
+    auto return_mode = absl::get_if<StatusFlags>(&state_);
     if (!return_mode) {
       return absl::nullopt;
     }
     return *return_mode;
+  }
+
+  void ApplyTo(nsasm::ExecutionState* state) const {
+    auto return_mode = absl::get_if<StatusFlags>(&state_);
+    if (return_mode) {
+      state->Flags() = *return_mode;
+    }
   }
 
   // Returns true iff this is the default convention.
@@ -53,11 +60,11 @@ class ReturnConvention {
   // In the default state, this returns an empty string.
   std::string ToSuffixString() const;
  private:
-  absl::variant<absl::monostate, FlagState, NoReturn> state_;
+  absl::variant<absl::monostate, StatusFlags, NoReturn> state_;
 };
 
 struct CallingConvention {
-  FlagState incoming_state;
+  StatusFlags incoming_state;
   ReturnConvention return_state;
 };
 

@@ -10,8 +10,8 @@
 
 namespace nsasm {
 
-ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
-    int starting_address, const FlagState& initial_flag_state) {
+ErrorOr<std::map<int, StatusFlags>> Disassembler::Disassemble(
+    int starting_address, const StatusFlags& initial_status_flags) {
   // Map of newly decoded, or locally modified, instructions.  This is
   // written to disassembly_ at the end of this function, assuming we did not
   // exit with an error.
@@ -51,11 +51,11 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
     return label_names[address] = GenSym();
   };
 
-  // Map of locations to consider next, and the flag state to use
+  // Map of locations to consider next, and the execution state to use
   // when considering it.
-  std::map<int, FlagState> decode_stack;
+  std::map<int, ExecutionState> decode_stack;
   auto add_to_decode_stack = [&decode_stack](int address,
-                                             const FlagState& state) {
+                                             const ExecutionState& state) {
     auto it = decode_stack.find(address);
     if (it == decode_stack.end()) {
       decode_stack[address] = state;
@@ -65,18 +65,20 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
   };
 
   // Map of far branch targets to incoming states
-  std::map<int, FlagState> far_branch_targets;
+  std::map<int, StatusFlags> far_branch_targets;
   auto add_far_branch = [&far_branch_targets](int address,
-                                              const FlagState& state) {
+                                              const ExecutionState& state) {
     auto it = far_branch_targets.find(address);
     if (it == far_branch_targets.end()) {
-      far_branch_targets[address] = state;
+      far_branch_targets[address] = state.Flags();
     } else {
-      it->second |= state;
+      it->second |= state.Flags();
     }
   };
 
-  add_to_decode_stack(starting_address, initial_flag_state);
+  ExecutionState initial_execution_state(initial_status_flags);
+
+  add_to_decode_stack(starting_address, initial_execution_state);
   // ensure entry point is marked, and has a label
   entry_points_.insert(starting_address);
   get_label(starting_address);
@@ -87,7 +89,7 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
     decode_stack.erase(decode_stack.begin());
 
     int pc = next.first;
-    const FlagState& current_flag_state = next.second;
+    const ExecutionState& current_execution_state = next.second;
 
     DisassembledInstruction* existing_instruction = get_instruction(pc);
     if (!existing_instruction) {
@@ -95,30 +97,29 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
       // it.
       auto instruction_data = rom_.Read(pc, 4);
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(instruction_data, rom_.path(), pc);
-      auto instruction = Decode(*instruction_data, current_flag_state);
+      auto instruction =
+          Decode(*instruction_data, current_execution_state.Flags());
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(instruction, rom_.path(), pc);
 
       int instruction_bytes = InstructionLength(instruction->addressing_mode);
 
       int next_pc = AddToPC(pc, instruction_bytes);
-      auto next_flag_state = instruction->Execute(current_flag_state);
-      NSASM_RETURN_IF_ERROR_WITH_LOCATION(next_flag_state, rom_.path(), pc);
+      auto next_execution_state = current_execution_state;
+      NSASM_RETURN_IF_ERROR_WITH_LOCATION(
+          instruction->Execute(&next_execution_state), rom_.path(), pc);
 
       auto far_branch_address = instruction->FarBranchTarget(pc);
       if (far_branch_address.has_value()) {
         int target = *far_branch_address;
-        add_far_branch(target, *next_flag_state);
+        add_far_branch(target, next_execution_state);
         if (instruction->mnemonic == M_jsr || instruction->mnemonic == M_jsl) {
-          // If the subroutine callrequires a yield, add that to disassembly.
+          // If the subroutine call requires a yield, add that to disassembly.
           auto return_conventions_it = return_conventions_.find(target);
           if (return_conventions_it != return_conventions_.end()) {
             instruction->return_convention = return_conventions_it->second;
           }
         }
-        auto yield_state = instruction->return_convention.YieldState();
-        if (yield_state.has_value()) {
-          next_flag_state = *yield_state;
-        }
+        instruction->return_convention.ApplyTo(&next_execution_state);
       }
 
       // If this instruction is relatively addressed, we need a label, and
@@ -127,22 +128,24 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
         int value = *instruction->arg1.Evaluate(NullLookupContext());
         int target = AddToPC(next_pc, value);
         instruction->arg1.ApplyLabel(get_label(target));
-        auto branch_flag_state = instruction->ExecuteBranch(current_flag_state);
-        NSASM_RETURN_IF_ERROR_WITH_LOCATION(branch_flag_state, rom_.path(), pc);
-        add_to_decode_stack(target, *branch_flag_state);
+        auto branch_execution_state = current_execution_state;
+        NSASM_RETURN_IF_ERROR_WITH_LOCATION(
+            instruction->ExecuteBranch(&branch_execution_state), rom_.path(),
+            pc);
+        add_to_decode_stack(target, branch_execution_state);
       }
 
       // We've decoded an instruction!  Store it.
       DisassembledInstruction di;
       di.instruction = std::move(*instruction);
-      di.current_flag_state = current_flag_state;
-      di.next_flag_state = *next_flag_state;
+      di.current_execution_state = current_execution_state;
+      di.next_execution_state = next_execution_state;
       new_disassembly[pc] = std::move(di);
 
       // If this instruction doesn't terminate the subroutine, we need to
       // execute the next line as well.
       if (!di.instruction.IsExitInstruction()) {
-        add_to_decode_stack(next_pc, *next_flag_state);
+        add_to_decode_stack(next_pc, next_execution_state);
       }
     } else {
       // We've been here before.  Weaken the incoming state bits for this
@@ -150,43 +153,46 @@ ErrorOr<std::map<int, FlagState>> Disassembler::Disassemble(
       // a change, check that the resulting state is still consistent, and
       // propagate the changed flag state bits forward.
       DisassembledInstruction& di = *existing_instruction;
-      FlagState combined_flag_state =
-          current_flag_state | di.current_flag_state;
-      if (combined_flag_state != di.current_flag_state) {
+      ExecutionState combined_execution_state =
+          current_execution_state | di.current_execution_state;
+      if (combined_execution_state != di.current_execution_state) {
         // Check that the instruction still decodes with the new flag state.
         // (We can throw the answer away if so, since we've already disassembled
         // this instruction before.)
         auto instruction_data = rom_.Read(pc, 4);
         NSASM_RETURN_IF_ERROR_WITH_LOCATION(
-            Decode(*instruction_data, combined_flag_state), rom_.path(), pc);
+            Decode(*instruction_data, combined_execution_state.Flags()),
+            rom_.path(), pc);
 
         // Update the flag state on this instruction
-        di.current_flag_state = combined_flag_state;
-        auto next_flag_state = di.instruction.Execute(combined_flag_state);
-        NSASM_RETURN_IF_ERROR_WITH_LOCATION(next_flag_state, rom_.path(), pc);
-        di.next_flag_state = *next_flag_state;
+        di.current_execution_state = combined_execution_state;
+        auto next_execution_state = combined_execution_state;
+
+        NSASM_RETURN_IF_ERROR_WITH_LOCATION(
+            di.instruction.Execute(&next_execution_state), rom_.path(), pc);
+        di.next_execution_state = next_execution_state;
         int instruction_bytes =
             InstructionLength(di.instruction.addressing_mode);
         int next_pc = AddToPC(pc, instruction_bytes);
 
         // Propagate the changed state forward to the next instruction...
         if (!di.instruction.IsExitInstruction()) {
-          add_to_decode_stack(next_pc, *next_flag_state);
+          add_to_decode_stack(next_pc, next_execution_state);
         }
         // ... the far branch target ...
         auto far_branch_address = di.instruction.FarBranchTarget(pc);
         if (far_branch_address.has_value()) {
-          add_far_branch(*far_branch_address, *next_flag_state);
+          add_far_branch(*far_branch_address, next_execution_state);
         }
         // ... and the local branch target.
         if (di.instruction.IsLocalBranch()) {
-          auto branch_flag_state =
-              di.instruction.ExecuteBranch(current_flag_state);
+          auto branch_execution_state = current_execution_state;
+          NSASM_RETURN_IF_ERROR_WITH_LOCATION(
+              di.instruction.ExecuteBranch(&branch_execution_state),
+              rom_.path(), pc);
           int value = *di.instruction.arg1.Evaluate(NullLookupContext());
           int target = AddToPC(next_pc, value);
-          NSASM_RETURN_IF_ERROR_WITH_LOCATION(branch_flag_state, rom_.path(),
-                                              pc);
-          add_to_decode_stack(target, *branch_flag_state);
+          add_to_decode_stack(target, branch_execution_state);
         }
       }
     }
@@ -262,7 +268,8 @@ ErrorOr<void> Disassembler::Cleanup() {
         next_iter->second.label.empty()) {
       iter->second.instruction = std::move(next_iter->second.instruction);
       iter->second.instruction.mnemonic = PM_add;
-      iter->second.next_flag_state = next_iter->second.next_flag_state;
+      iter->second.next_execution_state =
+          next_iter->second.next_execution_state;
       disassembly_.erase(next_iter);
       continue;
     }
@@ -271,7 +278,8 @@ ErrorOr<void> Disassembler::Cleanup() {
         next_iter->second.label.empty()) {
       iter->second.instruction = std::move(next_iter->second.instruction);
       iter->second.instruction.mnemonic = PM_sub;
-      iter->second.next_flag_state = next_iter->second.next_flag_state;
+      iter->second.next_execution_state =
+          next_iter->second.next_execution_state;
       disassembly_.erase(next_iter);
       continue;
     }

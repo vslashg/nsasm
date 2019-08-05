@@ -11,7 +11,8 @@ std::string Instruction::ToString() const {
                          return_convention.ToSuffixString());
 }
 
-ErrorOr<void> Instruction::CheckConsistency(const FlagState& flag_state) const {
+ErrorOr<void> Instruction::CheckConsistency(
+    const StatusFlags& status_flags) const {
   Mnemonic effective_mnemonic = mnemonic;
   if (mnemonic == PM_add || mnemonic == PM_sub) {
     // ADD and SUB aren't real mnemonics, but follow the same addressing
@@ -27,7 +28,7 @@ ErrorOr<void> Instruction::CheckConsistency(const FlagState& flag_state) const {
 
   if (addressing_mode == A_imm_fm) {
     // only legal if we know the state of the `m` bit
-    if (flag_state.MBit() != B_on && flag_state.MBit() != B_off) {
+    if (status_flags.MBit() != B_on && status_flags.MBit() != B_off) {
       return Error(
           "instruction %s with immediate argument depends on `m` flag state, "
           "which is unknown here",
@@ -35,7 +36,7 @@ ErrorOr<void> Instruction::CheckConsistency(const FlagState& flag_state) const {
     }
   } else if (addressing_mode == A_imm_fx) {
     // as above, but for the `x` bit
-    if (flag_state.XBit() != B_on && flag_state.XBit() != B_off) {
+    if (status_flags.XBit() != B_on && status_flags.XBit() != B_off) {
       return Error(
           "instruction %s with immediate argument depends on `x` flag state, "
           "which is unknown here",
@@ -47,10 +48,10 @@ ErrorOr<void> Instruction::CheckConsistency(const FlagState& flag_state) const {
     char target_flag;
     if (ImmediateArgumentUsesMBit(mnemonic)) {
       target_flag = 'm';
-      actual_bit = flag_state.MBit();
+      actual_bit = status_flags.MBit();
     } else if (ImmediateArgumentUsesXBit(mnemonic)) {
       target_flag = 'x';
-      actual_bit = flag_state.XBit();
+      actual_bit = status_flags.XBit();
     } else {
       // This instruction doesn't depend on the `m` or `x` flag states, so
       // there's no flag state to check consistency against.
@@ -77,15 +78,15 @@ ErrorOr<void> Instruction::CheckConsistency(const FlagState& flag_state) const {
   return {};
 }
 
-ErrorOr<void> Instruction::FixAddressingMode(const FlagState& flag_state) {
+ErrorOr<void> Instruction::FixAddressingMode(const StatusFlags& status_flags) {
   BitState bs = B_unknown;
   char target_flag;
   if (addressing_mode == A_imm_fm) {
     target_flag = 'm';
-    bs = flag_state.MBit();
+    bs = status_flags.MBit();
   } else if (addressing_mode == A_imm_fx) {
     target_flag = 'x';
-    bs = flag_state.XBit();
+    bs = status_flags.XBit();
   } else {
     return {};  // nothing to fix
   }
@@ -104,16 +105,16 @@ ErrorOr<void> Instruction::FixAddressingMode(const FlagState& flag_state) {
   return {};
 }
 
-ErrorOr<FlagState> Instruction::Execute(const FlagState& flag_state_in) const {
-  NSASM_RETURN_IF_ERROR(CheckConsistency(flag_state_in));
+ErrorOr<void> Instruction::Execute(ExecutionState* es) const {
+  NSASM_RETURN_IF_ERROR(CheckConsistency(es->Flags()));
 
   // If a call has `yields` state attached, honor it
-  auto yield_state = return_convention.YieldState();
-  if (yield_state.has_value()) {
-    return *yield_state;
+  auto yield_flags = return_convention.YieldFlags();
+  if (yield_flags.has_value()) {
+    es->Flags() = *yield_flags;
+    return {};
   }
 
-  FlagState flag_state = flag_state_in;
   const Mnemonic& m = mnemonic;
 
   // Instructions that clear or set carry bit (used to prime the XCE
@@ -123,11 +124,11 @@ ErrorOr<FlagState> Instruction::Execute(const FlagState& flag_state_in) const {
   // respectively, because if the bit is in the opposite state, we will branch
   // instead.
   if (m == M_sec || m == M_bcc) {
-    flag_state.SetCBit(B_on);
-    return flag_state;
+    es->Flags().SetCBit(B_on);
+    return {};
   } else if (m == M_clc || m == M_bcs) {
-    flag_state.SetCBit(B_off);
-    return flag_state;
+    es->Flags().SetCBit(B_off);
+    return {};
   }
 
   // Instructions that clear or set status bits explicitly
@@ -141,47 +142,45 @@ ErrorOr<FlagState> Instruction::Execute(const FlagState& flag_state_in) const {
       // Each bit will either be set to `target` or else left alone.  If the
       // current value of a bit is equal to `target`, it's unchanged; otherwise
       // it becomes ambiguous.
-      if (flag_state.CBit() != target) {
-        flag_state.SetCBit(B_unknown);
+      if (es->Flags().CBit() != target) {
+        es->Flags().SetCBit(B_unknown);
       }
-      if (flag_state.XBit() != target) {
-        flag_state.SetXBit(B_unknown);
+      if (es->Flags().XBit() != target) {
+        es->Flags().SetXBit(B_unknown);
       }
-      if (flag_state.MBit() != target) {
-        flag_state.SetMBit(B_unknown);
+      if (es->Flags().MBit() != target) {
+        es->Flags().SetMBit(B_unknown);
       }
-      return flag_state;
+      return {};
     }
 
     // If the argument is known, we can set the effected bits.
     if (*arg & 0x01) {
-      flag_state.SetCBit(target);
+      es->Flags().SetCBit(target);
     }
     if (*arg & 0x10) {
-      flag_state.SetXBit(target);
+      es->Flags().SetXBit(target);
     }
     if (*arg & 0x20) {
-      flag_state.SetMBit(target);
+      es->Flags().SetMBit(target);
     }
-    return flag_state;
+    return {};
   }
 
   // Instructions that push or pull the status bits onto the stack.
-  // This heuristic doesn't attempt to track the stack pointer; we
-  // just assume a PLP instruction gets the last value pushed by PHP.
   if (m == M_php) {
-    flag_state.PushFlags();
-    return flag_state;
+    es->PushFlags();
+    return {};
   } else if (m == M_plp) {
-    flag_state.PullFlags();
-    return flag_state;
+    es->PullFlags();
+    return {};
   }
 
   // Instruction that swaps the c and e bits.  This can change the
   // m and x bits as a side effect.
   if (m == M_xce) {
-    flag_state.ExchangeCE();
-    return flag_state;
+    es->Flags().ExchangeCE();
+    return {};
   }
 
   // Instructions that use the c bit to indicate carry.  For the
@@ -190,32 +189,32 @@ ErrorOr<FlagState> Instruction::Execute(const FlagState& flag_state_in) const {
   if (m == M_adc || m == M_sbc || m == PM_add || m == PM_sub || m == M_cmp ||
       m == M_cpx || m == M_cpy || m == M_asl || m == M_lsr || m == M_rol ||
       m == M_ror) {
-    flag_state.SetCBit(B_unknown);
-    return flag_state;
+    es->Flags().SetCBit(B_unknown);
+    return {};
   }
 
   // Subroutine and interrupt calls.  This logic will get more robust as we
   // introduce calling conventions, but for now we should assume these trash the
   // carry bit.
+  //
+  // TODO: Will it?
   if (m == M_jmp || m == M_jsl || m == M_jsr || m == M_brk || m == M_cop) {
-    flag_state.SetCBit(B_unknown);
-    return flag_state;
+    es->Flags().SetCBit(B_unknown);
+    return {};
   }
 
   // Other instructions don't effect the flag state.
-  return flag_state;
+  return {};
 }
 
-ErrorOr<FlagState> Instruction::ExecuteBranch(
-    const FlagState& flag_state_in) const {
-  auto flag_state = Execute(flag_state_in);
-  NSASM_RETURN_IF_ERROR(flag_state);
+ErrorOr<void> Instruction::ExecuteBranch(ExecutionState* es) const {
+  NSASM_RETURN_IF_ERROR(Execute(es));
   if (mnemonic == M_bcc) {
-    flag_state->SetCBit(B_off);
+    es->Flags().SetCBit(B_off);
   } else if (mnemonic == M_bcs) {
-    flag_state->SetCBit(B_on);
+    es->Flags().SetCBit(B_on);
   }
-  return flag_state;
+  return {};
 }
 
 int Instruction::SerializedSize() const {
