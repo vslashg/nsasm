@@ -105,15 +105,32 @@ ErrorOr<void> Instruction::FixAddressingMode(const StatusFlags& status_flags) {
   return {};
 }
 
-ErrorOr<void> Instruction::Execute(ExecutionState* es) const {
+ErrorOr<void> Instruction::Execute(ExecutionState* es,
+                                   const LookupContext& context,
+                                   bool* needs_reeval) const {
   NSASM_RETURN_IF_ERROR(CheckConsistency(es->Flags()));
 
-  // If a call has `yields` state attached, honor it
-  auto yield_flags = return_convention.YieldFlags();
-  if (yield_flags.has_value()) {
-    es->Flags() = *yield_flags;
-    return {};
-  }
+  auto maybe_arg1 = [&context, needs_reeval, this]() -> absl::optional<int> {
+    auto arg = arg1.Evaluate(context);
+    if (!arg.ok()) {
+      if (needs_reeval) {
+        *needs_reeval = true;
+      }
+      return absl::nullopt;
+    }
+    return *arg;
+  };
+
+  auto maybe_arg2 = [&context, needs_reeval, this]() -> absl::optional<int> {
+    auto arg = arg2.Evaluate(context);
+    if (!arg.ok()) {
+      if (needs_reeval) {
+        *needs_reeval = true;
+      }
+      return absl::nullopt;
+    }
+    return *arg;
+  };
 
   const Mnemonic& m = mnemonic;
 
@@ -134,8 +151,8 @@ ErrorOr<void> Instruction::Execute(ExecutionState* es) const {
   // Instructions that clear or set status bits explicitly
   if (m == M_rep || m == M_sep) {
     BitState target = (m == M_rep) ? B_off : B_on;
-    auto arg = arg1.Evaluate(NullLookupContext());
-    if (!arg.ok()) {
+    auto arg = maybe_arg1();
+    if (!arg.has_value()) {
       // If REP or SEP are invoked with an unknown argument (a constant pulled
       // from another module, say), we will have to account for the ambiguity.
       //
@@ -154,7 +171,7 @@ ErrorOr<void> Instruction::Execute(ExecutionState* es) const {
       return {};
     }
 
-    // If the argument is known, we can set the effected bits.
+    // If the argument is known, we can set the affected bits.
     if (*arg & 0x01) {
       es->Flags().SetCBit(target);
     }
@@ -164,6 +181,147 @@ ErrorOr<void> Instruction::Execute(ExecutionState* es) const {
     if (*arg & 0x20) {
       es->Flags().SetMBit(target);
     }
+    return {};
+  }
+
+  // ALU operations which modify the accumulator and modify the carry bit.
+  // Static analysis could attempt to track the math when both inputs
+  // are known, but this would require tracking the state of the BCD
+  // mode.  This would add complexity to the implementation and to input
+  // assembly, for no real-world gains.
+  if (m == M_adc || m == M_sbc || m == PM_add || m == PM_sub | m == M_asl ||
+      m == M_lsr || m == M_rol || m == M_ror) {
+    es->WipeAccumulator();
+    es->WipeCarry();
+    return {};
+  }
+
+  // Comparison operations which modify the carry bit.
+  if (m == M_cmp || m == M_cpx || m == M_cpy) {
+    es->WipeCarry();
+    return {};
+  }
+
+  // Bitwise operations which modify the accumulator but don't touch the
+  // carry bit.
+  if (m == M_and || m == M_eor || m == M_ora) {
+    es->WipeAccumulator();
+    return {};
+  }
+
+  // Increment and decrement
+  if (m == M_inc || m == M_dec || m == M_inx || m == M_dex || m == M_iny ||
+      m == M_dey) {
+    if (addressing_mode != A_acc && addressing_mode != A_imp) {
+      // incrementing/decrementing memory does not affect our tracked state.
+      return {};
+    }
+    RegisterValue* reg;
+    int mask = 0xffff;
+    if (m == M_inc || m == M_dec) {
+      reg = &es->Accumulator();
+      if (es->Flags().MBit() == B_on) mask = 0xff;
+    } else if (m == M_inx || m == M_dex) {
+      reg = &es->XRegister();
+      if (es->Flags().XBit() == B_on) mask = 0xff;
+    } else {
+      assert(m == M_iny || m == M_dey);
+      reg = &es->YRegister();
+      if (es->Flags().XBit() == B_on) mask = 0xff;
+    }
+    int offset = (m == M_dec || m == M_dex || m == M_dey) ? -1 : 1;
+    reg->Add(offset, mask);
+    return {};
+  }
+
+  if (m == M_lda || m == M_ldx || m == M_ldy) {
+    if (addressing_mode == A_imm_b || addressing_mode == A_imm_fx ||
+        addressing_mode == A_imm_fm || addressing_mode == A_imm_w) {
+      RegisterValue* reg;
+      if (m == M_lda) {
+        reg = &es->Accumulator();
+      } else if (m == M_ldx) {
+        reg = &es->XRegister();
+      } else {
+        reg = &es->YRegister();
+      }
+      auto arg = maybe_arg1();
+      if (!arg.has_value()) {
+        *reg = RegisterValue();
+      } else {
+        *reg = *arg;
+      }
+    }
+    return {};
+  }
+
+  if (m == M_mvn || m == M_mvp) {
+    auto initial_a = maybe_arg1();
+    if (es->Flags().MBit() == B_on) {
+      es->Accumulator() = 0xff;
+    } else if (es->Flags().MBit() == B_off) {
+      es->Accumulator() = 0xffff;
+    } else {
+      es->WipeAccumulator();
+    }
+    if (!initial_a.has_value()) {
+      es->XRegister() = RegisterValue();
+      es->YRegister() = RegisterValue();
+    } else {
+      // X and Y are adjusted per the accumulator
+      int mask = (es->Flags().XBit() == B_on) ? 0xff : 0xffff;
+      int offset = (m == M_mvn) ? 1 + *initial_a : -1 - *initial_a;
+      es->XRegister().Add(offset, mask);
+      es->YRegister().Add(offset, mask);
+    }
+    auto dbr = maybe_arg2();
+    if (dbr.has_value()) {
+      es->DataBankRegister() = *dbr;
+    } else {
+      es->DataBankRegister() = RegisterValue();
+    }
+    return {};
+  }
+
+  if (m == M_pea) {
+    es->GetStack().PushWord(maybe_arg1());
+    return {};
+  }
+
+  if (m == M_pei || m == M_per) {
+    // If the program counter were an optional argument to Evaluate(), we could
+    // implement PER here.  TODO?
+    es->GetStack().PushUnknownWord();
+    return {};
+  }
+
+  if (m == M_pha) {
+    es->PushAccumulator();
+    return {};
+  }
+
+  if (m == M_phx) {
+    es->PushXRegister();
+    return {};
+  }
+
+  if (m == M_phy) {
+    es->PushYRegister();
+    return {};
+  }
+
+  if (m == M_pla) {
+    es->PullAccumulator();
+    return {};
+  }
+
+  if (m == M_plx) {
+    es->PullXRegister();
+    return {};
+  }
+
+  if (m == M_ply) {
+    es->PullYRegister();
     return {};
   }
 
@@ -183,22 +341,15 @@ ErrorOr<void> Instruction::Execute(ExecutionState* es) const {
     return {};
   }
 
-  // Instructions that use the c bit to indicate carry.  For the
-  // purposes of this static analysis, treat these as setting the c
-  // bit to an unknown state.
-  if (m == M_adc || m == M_sbc || m == PM_add || m == PM_sub || m == M_cmp ||
-      m == M_cpx || m == M_cpy || m == M_asl || m == M_lsr || m == M_rol ||
-      m == M_ror) {
-    es->Flags().SetCBit(B_unknown);
-    return {};
-  }
-
-  // Subroutine and interrupt calls.  This logic will get more robust as we
-  // introduce calling conventions, but for now we should assume these trash the
-  // carry bit.
-  //
-  // TODO: Will it?
+  // Subroutine and interrupt calls.  For now we assume these always clobber
+  // the carry bit, though we could always add an exception to this to the
+  // ReturnConvention state if it proves necessary.
   if (m == M_jmp || m == M_jsl || m == M_jsr || m == M_brk || m == M_cop) {
+    // If a call has `yields` state attached, honor it
+    auto yield_flags = return_convention.YieldFlags();
+    if (yield_flags.has_value()) {
+      es->Flags() = *yield_flags;
+    }
     es->Flags().SetCBit(B_unknown);
     return {};
   }

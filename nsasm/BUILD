@@ -1,42 +1,40 @@
-package(default_visibility=["//visibility:public"])
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name="mnemonic",
-    srcs=["mnemonic.cc"],
-    hdrs=["mnemonic.h"],
-    deps=[
+    name = "mnemonic",
+    srcs = ["mnemonic.cc"],
+    hdrs = ["mnemonic.h"],
+    deps = [
+        "@absl//absl/container:flat_hash_map",
         "@absl//absl/strings",
         "@absl//absl/types:optional",
-        "@absl//absl/container:flat_hash_map",
     ],
 )
 
 cc_test(
-    name="mnemonic_test",
-    srcs=["mnemonic_test.cc"],
-    deps=[
+    name = "mnemonic_test",
+    srcs = ["mnemonic_test.cc"],
+    deps = [
         ":mnemonic",
         "@absl//absl/strings",
         "@gtest//:gtest_main",
     ],
 )
 
-
 cc_library(
-    name="numeric_type",
-    srcs=[],
-    hdrs=["numeric_type.h"],
-    deps=[
+    name = "numeric_type",
+    srcs = [],
+    hdrs = ["numeric_type.h"],
+    deps = [
         ":error",
     ],
 )
 
-
 cc_library(
-    name="expression",
-    srcs=["expression.cc"],
-    hdrs=["expression.h"],
-    deps=[
+    name = "expression",
+    srcs = ["expression.cc"],
+    hdrs = ["expression.h"],
+    deps = [
         ":error",
         ":numeric_type",
         "@absl//absl/types:optional",
@@ -44,21 +42,20 @@ cc_library(
 )
 
 cc_test(
-    name="expression_test",
-    srcs=["expression_test.cc"],
-    deps=[
+    name = "expression_test",
+    srcs = ["expression_test.cc"],
+    deps = [
         ":expression",
         ":parse",
         "@gtest//:gtest_main",
     ],
 )
 
-
 cc_library(
-    name="addressing_mode",
-    srcs=["addressing_mode.cc"],
-    hdrs=["addressing_mode.h"],
-    deps=[
+    name = "addressing_mode",
+    srcs = ["addressing_mode.cc"],
+    hdrs = ["addressing_mode.h"],
+    deps = [
         ":error",
         ":expression",
         ":mnemonic",
@@ -67,9 +64,9 @@ cc_library(
 )
 
 cc_test(
-    name="addressing_mode_test",
-    srcs=["addressing_mode_test.cc"],
-    deps=[
+    name = "addressing_mode_test",
+    srcs = ["addressing_mode_test.cc"],
+    deps = [
         ":addressing_mode",
         ":flag_state",
         ":instruction",
@@ -78,12 +75,11 @@ cc_test(
     ],
 )
 
-
 cc_library(
-    name="opcode_map",
-    srcs=["opcode_map.cc"],
-    hdrs=["opcode_map.h"],
-    deps=[
+    name = "opcode_map",
+    srcs = ["opcode_map.cc"],
+    hdrs = ["opcode_map.h"],
+    deps = [
         ":addressing_mode",
         ":mnemonic",
         "@absl//absl/container:flat_hash_map",
@@ -91,15 +87,15 @@ cc_library(
 )
 
 cc_test(
-    name="opcode_map_test",
-    srcs=["opcode_map_test.cc"],
-    deps=[
+    name = "opcode_map_test",
+    srcs = ["opcode_map_test.cc"],
+    deps = [
         ":opcode_map",
         "@gtest//:gtest_main",
     ],
 )
 
-cc_library(name="flag_state")
+cc_library(name = "flag_state")
 #
 #cc_library(
 #    name="flag_state",
@@ -122,10 +118,10 @@ cc_library(name="flag_state")
 #)
 
 cc_library(
-    name="execution_state",
-    srcs=["execution_state.cc"],
-    hdrs=["execution_state.h"],
-    deps=[
+    name = "execution_state",
+    srcs = ["execution_state.cc"],
+    hdrs = ["execution_state.h"],
+    deps = [
         "@absl//absl/container:inlined_vector",
         "@absl//absl/strings",
         "@absl//absl/types:optional",
@@ -133,32 +129,30 @@ cc_library(
 )
 
 cc_library(
-    name="output_sink",
-    hdrs=["output_sink.h"],
-    deps=[
+    name = "output_sink",
+    hdrs = ["output_sink.h"],
+    deps = [
         ":error",
         "@absl//absl/types:span",
-    ]
+    ],
 )
 
-
 cc_library(
-    name="calling_convention",
-    srcs=["calling_convention.cc"],
-    hdrs=["calling_convention.h"],
-    deps=[
+    name = "calling_convention",
+    srcs = ["calling_convention.cc"],
+    hdrs = ["calling_convention.h"],
+    deps = [
         ":execution_state",
         "@absl//absl/strings:str_format",
         "@absl//absl/types:variant",
     ],
 )
 
-
 cc_library(
-    name="instruction",
-    srcs=["instruction.cc"],
-    hdrs=["instruction.h"],
-    deps=[
+    name = "instruction",
+    srcs = ["instruction.cc"],
+    hdrs = ["instruction.h"],
+    deps = [
         ":addressing_mode",
         ":calling_convention",
         ":expression",
@@ -169,60 +163,56 @@ cc_library(
     ],
 )
 
-
 cc_library(
-    name="error",
-    srcs=["error.cc"],
-    hdrs=["error.h"],
-    deps=[
+    name = "error",
+    srcs = ["error.cc"],
+    hdrs = ["error.h"],
+    deps = [
         "@absl//absl/strings:str_format",
         "@absl//absl/types:optional",
         "@absl//absl/types:variant",
-    ]
+    ],
 )
 
-
 cc_library(
-    name="decode",
-    srcs=["decode.cc"],
-    hdrs=["decode.h"],
-    deps=[
-        "@absl//absl/memory",
-        "@absl//absl/types:span",
+    name = "decode",
+    srcs = ["decode.cc"],
+    hdrs = ["decode.h"],
+    deps = [
         ":error",
         ":flag_state",
         ":instruction",
         ":opcode_map",
+        "@absl//absl/memory",
+        "@absl//absl/types:span",
     ],
 )
 
 cc_test(
-    name="decode_test",
-    srcs=["decode_test.cc"],
-    deps=[
+    name = "decode_test",
+    srcs = ["decode_test.cc"],
+    deps = [
         ":decode",
         ":opcode_map",
         "@gtest//:gtest_main",
     ],
 )
 
-
 cc_library(
-    name="rom",
-    srcs=["rom.cc"],
-    hdrs=["rom.h"],
-    deps=[
+    name = "rom",
+    srcs = ["rom.cc"],
+    hdrs = ["rom.h"],
+    deps = [
         ":error",
         ":output_sink",
     ],
 )
 
-
 cc_library(
-    name="disassemble",
-    srcs=["disassemble.cc"],
-    hdrs=["disassemble.h"],
-    deps=[
+    name = "disassemble",
+    srcs = ["disassemble.cc"],
+    hdrs = ["disassemble.h"],
+    deps = [
         ":decode",
         ":error",
         ":flag_state",
@@ -231,12 +221,11 @@ cc_library(
     ],
 )
 
-
 cc_library(
-    name="directive",
-    srcs=["directive.cc"],
-    hdrs=["directive.h"],
-    deps=[
+    name = "directive",
+    srcs = ["directive.cc"],
+    hdrs = ["directive.h"],
+    deps = [
         ":calling_convention",
         ":expression",
         ":flag_state",
@@ -248,21 +237,20 @@ cc_library(
 )
 
 cc_test(
-    name="directive_test",
-    srcs=["directive_test.cc"],
-    deps=[
+    name = "directive_test",
+    srcs = ["directive_test.cc"],
+    deps = [
         ":directive",
         "@absl//absl/strings",
         "@gtest//:gtest_main",
     ],
 )
 
-
 cc_library(
-    name="token",
-    srcs=["token.cc"],
-    hdrs=["token.h"],
-    deps=[
+    name = "token",
+    srcs = ["token.cc"],
+    hdrs = ["token.h"],
+    deps = [
         ":directive",
         ":error",
         ":mnemonic",
@@ -271,31 +259,29 @@ cc_library(
 )
 
 cc_test(
-    name="token_test",
-    srcs=["token_test.cc"],
-    deps=[
+    name = "token_test",
+    srcs = ["token_test.cc"],
+    deps = [
         ":token",
         "@gtest//:gtest_main",
     ],
 )
 
-
 cc_library(
-    name="statement",
-    srcs=["statement.cc"],
-    hdrs=["statement.h"],
-    deps=[
+    name = "statement",
+    srcs = ["statement.cc"],
+    hdrs = ["statement.h"],
+    deps = [
         ":directive",
         ":instruction",
     ],
 )
 
-
 cc_library(
-    name="parse",
-    srcs=["parse.cc"],
-    hdrs=["parse.h"],
-    deps=[
+    name = "parse",
+    srcs = ["parse.cc"],
+    hdrs = ["parse.h"],
+    deps = [
         ":directive",
         ":error",
         ":instruction",
@@ -306,39 +292,37 @@ cc_library(
 )
 
 cc_test(
-    name="parse_test",
-    srcs=["parse_test.cc"],
-    deps=[
+    name = "parse_test",
+    srcs = ["parse_test.cc"],
+    deps = [
         ":parse",
         "@gtest//:gtest_main",
     ],
 )
 
-
 cc_library(
-    name="ranges",
-    srcs=["ranges.cc"],
-    hdrs=["ranges.h"],
-    deps=[
+    name = "ranges",
+    srcs = ["ranges.cc"],
+    hdrs = ["ranges.h"],
+    deps = [
         "@absl//absl/types:optional",
     ],
 )
 
 cc_test(
-    name="ranges_test",
-    srcs=["ranges_test.cc"],
-    deps=[
+    name = "ranges_test",
+    srcs = ["ranges_test.cc"],
+    deps = [
         ":ranges",
         "@gtest//:gtest_main",
     ],
 )
 
-
 cc_library(
-    name="module",
-    srcs=["module.cc"],
-    hdrs=["module.h"],
-    deps=[
+    name = "module",
+    srcs = ["module.cc"],
+    hdrs = ["module.h"],
+    deps = [
         ":parse",
         ":ranges",
         ":statement",
@@ -348,12 +332,11 @@ cc_library(
     ],
 )
 
-
 cc_library(
-    name="assembler",
-    srcs=["assembler.cc"],
-    hdrs=["assembler.h"],
-    deps=[
+    name = "assembler",
+    srcs = ["assembler.cc"],
+    hdrs = ["assembler.h"],
+    deps = [
         ":error",
         ":module",
         "@absl//absl/container:flat_hash_map",

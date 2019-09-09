@@ -41,12 +41,15 @@ struct Instruction {
   // only two bytes.
   absl::optional<int> FarBranchTarget(int source_address) const;
 
-  // TODO: Should Execute() take an evaluation context to improve static
-  // analysis?  Maybe.  Revisit later to see if it proves necessary.
-
-  // Returns the new state that results from executing the given instruction
-  // from the current state.
-  ErrorOr<void> Execute(ExecutionState* execution_state) const;
+  // Update the provided execution state to reflect this instruction being run.
+  //
+  // This may attempt to evaluate this instruction's arguments with the provided
+  // lookup context, depending on the instruction and addressing mode/.  If such
+  // a lookup is attempted and fails, and if needs_reeval is provided, then
+  // *needs_reeval is set true.
+  ErrorOr<void> Execute(ExecutionState* execution_state,
+                        const LookupContext& context = NullLookupContext(),
+                        bool* needs_reeval = nullptr) const;
 
   // As above, but returns the state that results from a successful conditional
   // branch from this instruction.

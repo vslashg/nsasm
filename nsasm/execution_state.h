@@ -155,6 +155,15 @@ class RegisterValue {
   bool HasValue() const { return type_ == T_value; }
   uint16_t operator*() const { return value_; }
 
+  void Add(int offset, int mask) {
+    if (type_ == T_value) {
+      value_ = (value_ + offset) & mask;
+    } else {
+      type_ = T_unknown;
+      value_ = 0;
+    }
+  }
+
   bool operator==(const RegisterValue& rhs) const {
     return type_ == rhs.type_ && value_ == rhs.value_;
   }
@@ -195,13 +204,13 @@ struct StackValue {
     T_flags,
     T_a_hi,
     T_a_lo,
-    T_a_byte,
+    T_a_varsize,
     T_x_hi,
     T_x_lo,
-    T_x_byte,
+    T_x_varsize,
     T_y_hi,
     T_y_lo,
-    T_y_byte,
+    T_y_varsize,
     T_dbr,
   };
 
@@ -214,38 +223,39 @@ struct StackValue {
   // unknown but original state, we set the matching mode for this entry.
   // If it's unknown, this stack entry is unknown too.  If the register's value
   // is known, we set this to the correct constant value.
-  StackValue(Type type, RegisterValue reg) {
+  StackValue(Type type, RegisterValue reg) : value_(0) {
     if (type == T_a_hi || type == T_x_hi || type == T_y_hi) {
       // Pushing the high byte of a register
       if (reg.type() == RegisterValue::T_original) {
         type_ = type;
-        value_ = 0;
       } else if (reg.type() == RegisterValue::T_unknown) {
         type_ = T_unknown;
-        value_ = 0;
       } else {
         type_ = T_byte;
         value_ = (*reg >> 8) & 0xff;
       }
-    } else if (type == T_a_lo || type == T_a_byte || type == T_x_lo ||
-               type == T_x_byte || type == T_y_lo || type == T_y_byte ||
+    } else if (type == T_a_lo || type == T_x_lo || type == T_y_lo ||
                type == T_dbr) {
       // Pushing the low byte of a register
       if (reg.type() == RegisterValue::T_original) {
         type_ = type;
-        value_ = 0;
       } else if (reg.type() == RegisterValue::T_unknown) {
         type_ = T_unknown;
-        value_ = 0;
       } else {
         type_ = T_byte;
         value_ = *reg & 0xff;
       }
+    } else if (type == T_a_varsize || type == T_x_varsize ||
+               type == T_y_varsize) {
+      type_ = type;
+      if (reg.type() == RegisterValue::T_original) {
+        // value == 1 for varsize represents original value is held
+        value_ = 1;
+      }
     } else {
       // Shouldn't get here
-      assert(type >= T_a_hi);
+      assert(false);
       type_ = T_unknown;
-      value_ = 0;
     }
   }
 
@@ -264,8 +274,17 @@ struct StackValue {
       }
     } else if (type_ == T_flags) {
       flags_ |= rhs.flags_;
+    } else if (type_ == T_a_varsize || type_ == T_x_varsize ||
+               type_ == T_y_varsize) {
+      if (value_ != rhs.value_) {
+        value_ = 0;
+      }
     }
     return *this;
+  }
+
+  bool CanMergeWith(const StackValue& rhs) const {
+    return type_ == rhs.type_ || (!IsVarSize() && !rhs.IsVarSize());
   }
 
   Type type() const { return type_; }
@@ -277,16 +296,17 @@ struct StackValue {
     assert(type_ == T_flags);
     return flags_;
   }
+  bool IsVarSize() const {
+    return type_ == T_a_varsize || type_ == T_x_varsize || type_ == T_y_varsize;
+  }
 
   bool operator==(const StackValue& rhs) const {
     if (type_ != rhs.type_) {
       return false;
-    } else if (type_ == T_byte) {
-      return value_ == rhs.value_;
     } else if (type_ == T_flags) {
       return flags_ == rhs.flags_;
     }
-    return true;
+    return value_ == rhs.value_;
   }
 
  private:
@@ -316,6 +336,20 @@ class Stack {
     }
   }
 
+  void PushByte(absl::optional<uint8_t> value) {
+    if (value.has_value()) {
+      PushByte(*value);
+    } else {
+      PushUnknownByte();
+    }
+  }
+
+  void PushUnknownByte() {
+    if (!abandoned_) {
+      stack_.push_back(StackValue());
+    }
+  }
+
   void PushWord(uint16_t value) {
     // Stack grows downward in memory, so pushing the high byte first results
     // in correct endianness. (Source: resident endianness expert Pixel.)
@@ -323,57 +357,128 @@ class Stack {
     PushByte(value & 0xff);
   }
 
+  void PushWord(absl::optional<uint16_t> value) {
+    if (value.has_value()) {
+      PushWord(*value);
+    } else {
+      PushUnknownWord();
+    }
+  }
+
+  void PushUnknownWord() {
+    if (!abandoned_) {
+      stack_.push_back(StackValue());
+      stack_.push_back(StackValue());
+    }
+  }
+
+  StackValue PullByte() {
+    if (abandoned_ || stack_.empty()) {
+      Abandon();
+      return StackValue();
+    }
+    StackValue result = stack_.back();
+    if (result.IsVarSize()) {
+      Abandon();
+      return StackValue();
+    }
+    stack_.pop_back();
+    return result;
+  }
+
+  // Pull a variable-sized object from the stack.  If that's not what's on top
+  // of the stack, this fails.
+  StackValue PullVarsize() {
+    if (abandoned_) {
+      return StackValue();
+    }
+    StackValue result = stack_.back();
+    if (!result.IsVarSize()) {
+      Abandon();
+      return StackValue();
+    }
+    stack_.pop_back();
+    return result;
+  }
+
+ private:
+  void PushReg(RegisterValue reg, BitState bit, StackValue::Type lo_byte_type,
+               StackValue::Type hi_byte_type, StackValue::Type var_byte_type) {
+    if (!abandoned_) {
+      if (bit == B_original) {
+        stack_.emplace_back(var_byte_type, reg);
+      } else if (bit == B_unknown) {
+        Abandon();
+      } else if (bit == B_on) {
+        // 8-bit register
+        stack_.emplace_back(lo_byte_type, reg);
+      } else {  // bit == B_off
+        stack_.emplace_back(hi_byte_type, reg);
+        stack_.emplace_back(lo_byte_type, reg);
+      }
+    }
+  }
+
+  RegisterValue PullReg(BitState bit, StackValue::Type lo_byte_type,
+                        StackValue::Type hi_byte_type,
+                        StackValue::Type var_byte_type) {
+    if (abandoned_ || bit == B_unknown) {
+      Abandon();
+      return RegisterValue();
+    } else if (bit == B_original) {
+      StackValue result = PullVarsize();
+      if (result.type() == var_byte_type) {
+        if (result.value() == 1) {
+          // holds original value
+          return RegisterValue(RegisterValue::T_original);
+        } else {
+          // holds dynamic sized data of unknown value; don't abandon
+          return RegisterValue();
+        }
+      } else {
+        Abandon();
+        return RegisterValue();
+      }
+    } else if (bit == B_on) {
+      // 8-bit register
+      StackValue byte = PullByte();
+      if (byte.type() == lo_byte_type) {
+        return RegisterValue(RegisterValue::T_original);
+      } else if (byte.type() == StackValue::T_byte) {
+        return RegisterValue(byte.value());
+      } else {
+        return RegisterValue();
+      }
+    } else {  // bit == B_off
+      // 16-bit register
+      StackValue lo_byte = PullByte();
+      StackValue hi_byte = PullByte();
+      if (lo_byte.type() == lo_byte_type && hi_byte.type() == hi_byte_type) {
+        return RegisterValue(RegisterValue::T_original);
+      } else if (lo_byte.type() == StackValue::T_byte &&
+                 hi_byte.type() == StackValue::T_byte) {
+        return RegisterValue((lo_byte.value() << 8) + hi_byte.value());
+      } else {
+        return RegisterValue();
+      }
+    }
+  }
+
+ public:
   // Push the contents of the provided A register
   void PushA(RegisterValue a_reg, StatusFlags flags) {
-    if (!abandoned_) {
-      BitState m_bit = flags.MBit();
-      if (m_bit == B_original || m_bit == B_unknown) {
-        // TODO: This is poor.  We need a separate stack value representing
-        // a value of unknown size
-        Abandon();
-        return;
-      } else if (m_bit == B_on) {
-        // 8-bit accumulator
-        stack_.emplace_back(StackValue::T_a_byte, a_reg);
-      } else {  // m_bit == B_off
-        stack_.emplace_back(StackValue::T_a_hi, a_reg);
-        stack_.emplace_back(StackValue::T_a_lo, a_reg);
-      }
-    }
+    PushReg(a_reg, flags.MBit(), StackValue::T_a_lo, StackValue::T_a_hi,
+            StackValue::T_a_varsize);
   }
 
-  // Push the contents of the provided X register
   void PushX(RegisterValue x_reg, StatusFlags flags) {
-    if (!abandoned_) {
-      BitState x_bit = flags.XBit();
-      if (x_bit == B_original || x_bit == B_unknown) {
-        Abandon();
-        return;
-      } else if (x_bit == B_on) {
-        // 8-bit accumulator
-        stack_.emplace_back(StackValue::T_x_byte, x_reg);
-      } else {  // m_bit == B_off
-        stack_.emplace_back(StackValue::T_x_hi, x_reg);
-        stack_.emplace_back(StackValue::T_x_lo, x_reg);
-      }
-    }
+    PushReg(x_reg, flags.XBit(), StackValue::T_x_lo, StackValue::T_x_hi,
+            StackValue::T_x_varsize);
   }
 
-  // Push the contents of the provided Y register
   void PushY(RegisterValue y_reg, StatusFlags flags) {
-    if (!abandoned_) {
-      BitState x_bit = flags.XBit();
-      if (x_bit == B_original || x_bit == B_unknown) {
-        Abandon();
-        return;
-      } else if (x_bit == B_on) {
-        // 8-bit accumulator
-        stack_.emplace_back(StackValue::T_y_byte, y_reg);
-      } else {  // m_bit == B_off
-        stack_.emplace_back(StackValue::T_y_hi, y_reg);
-        stack_.emplace_back(StackValue::T_y_lo, y_reg);
-      }
-    }
+    PushReg(y_reg, flags.XBit(), StackValue::T_y_lo, StackValue::T_y_hi,
+            StackValue::T_y_varsize);
   }
 
   void PushDBR(RegisterValue dbr) {
@@ -388,14 +493,19 @@ class Stack {
     }
   }
 
-  StackValue Pull() {
-    if (abandoned_ || stack_.empty()) {
-      Abandon();
-      return StackValue();
-    }
-    StackValue result = stack_.back();
-    stack_.pop_back();
-    return result;
+  RegisterValue PullA(StatusFlags flags) {
+    return PullReg(flags.MBit(), StackValue::T_a_lo, StackValue::T_a_hi,
+                   StackValue::T_a_varsize);
+  }
+
+  RegisterValue PullX(StatusFlags flags) {
+    return PullReg(flags.XBit(), StackValue::T_x_lo, StackValue::T_x_hi,
+                   StackValue::T_x_varsize);
+  }
+
+  RegisterValue PullY(StatusFlags flags) {
+    return PullReg(flags.XBit(), StackValue::T_y_lo, StackValue::T_y_hi,
+                   StackValue::T_y_varsize);
   }
 
   Stack& operator|=(const Stack& rhs) {
@@ -403,6 +513,10 @@ class Stack {
       Abandon();
     } else {
       for (size_t i = 0; i < stack_.size(); ++i) {
+        if (!stack_[i].CanMergeWith(rhs.stack_[i])) {
+          Abandon();
+          return *this;
+        }
         stack_[i] |= rhs.stack_[i];
       }
     }
@@ -428,7 +542,7 @@ class ExecutionState {
   // Initial execution state for a given flag state.
   ExecutionState(const StatusFlags& flags) : flags_(flags) {
     flags_.SetIncoming();
-  }  
+  }
 
   ExecutionState(const ExecutionState&) = default;
   ExecutionState(ExecutionState&&) = default;
@@ -440,17 +554,21 @@ class ExecutionState {
 
   /// Stack operations
 
-  void PushFlags() {
-    stack_.PushFlags(flags_);
-  }
+  void PushFlags() { stack_.PushFlags(flags_); }
+  void PushAccumulator() { stack_.PushA(a_reg_, flags_); }
+  void PushXRegister() { stack_.PushX(x_reg_, flags_); }
+  void PushYRegister() { stack_.PushY(y_reg_, flags_); }
+  void PullAccumulator() { a_reg_ = stack_.PullA(flags_); }
+  void PullXRegister() { x_reg_ = stack_.PullX(flags_); }
+  void PullYRegister() { y_reg_ = stack_.PullY(flags_); }
 
   void PullFlags() {
-    StackValue value = stack_.Pull();
+    StackValue value = stack_.PullByte();
     // TODO: We could update flags from a literal value.  I don't see a reason
     // to do it, nor do I see a reason not to do it.
     if (value.type() != StackValue::T_flags) {
-      // Oops, our status flags just got clobbered.
-      flags_ = StatusFlags();
+      // Oops, our status flags just got clobbered (but we retain the E bit)
+      flags_ = StatusFlags(flags_.EBit());
     } else {
       // The `e` bit isn't pushed on the stack, so we retain that, but update
       // all the others.
@@ -460,9 +578,26 @@ class ExecutionState {
     }
   }
 
+  void WipeAccumulator() { a_reg_ = RegisterValue(); }
+  void WipeCarry() { flags_.SetCBit(B_unknown); }
+
+  RegisterValue& Accumulator() { return a_reg_; }
+  const RegisterValue& Accumulator() const { return a_reg_; }
+
+  RegisterValue& XRegister() { return x_reg_; }
+  const RegisterValue& XRegister() const { return x_reg_; }
+
+  RegisterValue& YRegister() { return y_reg_; }
+  const RegisterValue& YRegister() const { return y_reg_; }
+
+  RegisterValue& DataBankRegister() { return dbr_; }
+  const RegisterValue& DataBankRegister() const { return dbr_; }
+
+  Stack& GetStack() { return stack_; }
+  const Stack& GetStack() const { return stack_; }
+
   ExecutionState& operator|=(const ExecutionState& rhs) {
     a_reg_ |= rhs.a_reg_;
-    b_reg_ |= rhs.b_reg_;
     x_reg_ |= rhs.x_reg_;
     y_reg_ |= rhs.y_reg_;
     dbr_ |= rhs.dbr_;
@@ -477,18 +612,15 @@ class ExecutionState {
   }
 
   bool operator==(const ExecutionState& rhs) const {
-    return a_reg_ == rhs.a_reg_ && b_reg_ == rhs.b_reg_ &&
-           x_reg_ == rhs.x_reg_ && y_reg_ == rhs.y_reg_ && dbr_ == rhs.dbr_ &&
-           flags_ == rhs.flags_ && stack_ == rhs.stack_;
+    return a_reg_ == rhs.a_reg_ && x_reg_ == rhs.x_reg_ &&
+           y_reg_ == rhs.y_reg_ && dbr_ == rhs.dbr_ && flags_ == rhs.flags_ &&
+           stack_ == rhs.stack_;
   }
 
-  bool operator!=(const ExecutionState& rhs) const {
-    return !(*this == rhs);
-  }
+  bool operator!=(const ExecutionState& rhs) const { return !(*this == rhs); }
 
  private:
   RegisterValue a_reg_;
-  RegisterValue b_reg_;
   RegisterValue x_reg_;
   RegisterValue y_reg_;
   RegisterValue dbr_;
