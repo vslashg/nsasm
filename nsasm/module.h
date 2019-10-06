@@ -5,8 +5,9 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "nsasm/error.h"
-#include "nsasm/statement.h"
+#include "nsasm/file.h"
 #include "nsasm/ranges.h"
+#include "nsasm/statement.h"
 
 namespace nsasm {
 
@@ -18,11 +19,9 @@ class Module {
   Module(const Module&) = delete;
   Module(Module&&) = default;
 
-  // Opens the .asm file at the given path, and either returns a Module loaded
-  // from it, or an error.
-  //
-  // path_, module_name_, and dependencies_ are set on the removed module.
-  static ErrorOr<Module> LoadAsmFile(const std::string& path);
+  // Takes a given File, and either returns the Module parsed from it, or an
+  // error.
+  static ErrorOr<Module> LoadAsmFile(const File& file);
 
   std::string Name() const { return module_name_; }
 
@@ -47,7 +46,6 @@ class Module {
   ErrorOr<int> ValueForName(absl::string_view sv) const;
 
   ErrorOr<void> Assemble(OutputSink* sink, const LookupContext& lookup_context);
-
 
   // Post-assembly queries
 

@@ -37,9 +37,15 @@ int main(int argc, char** argv) {
   }
   nsasm::Assembler assembler;
   for (int arg_index = 2; arg_index < argc; ++arg_index) {
-    auto result = assembler.AddAsmFile(argv[arg_index]);
+    auto file = nsasm::OpenFile(argv[arg_index]);
+    if (!file.ok()) {
+      absl::PrintF("Error loading file: %s", file.error().ToString());
+      return 1;
+    }
+    auto result = assembler.AddAsmFile(*file);
     if (!result.ok()) {
       absl::PrintF("Error assembling: %s\n", result.error().ToString());
+      return 1;
     }
   }
 
@@ -47,7 +53,7 @@ int main(int argc, char** argv) {
   auto status = assembler.Assemble(&rom_identity);
   if (!status.ok()) {
     absl::PrintF("Error in assembly: %s\n", status.error().ToString());
-    return 0;
+    return 1;
   }
 
   std::map<int, nsasm::StatusFlags> seeds = assembler.JumpTargets();

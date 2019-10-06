@@ -30,19 +30,13 @@ class ModuleLookupContext : public LookupContext {
   const LookupContext& externs_;
 };
 
-ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
-  std::ifstream fs(path);
-  if (!fs.good()) {
-    return Error("Unable to open file %s", path);
-  }
+ErrorOr<Module> Module::LoadAsmFile(const File& file) {
   Module m;
-  m.path_ = path;
+  m.path_ = file.path();
 
   Location loc;
-  loc.path = path;
+  loc.path = file.path();
   loc.offset = 0;
-
-  std::string line;
 
   std::vector<ParsedLabel> pending_labels;
   std::vector<int> active_scopes;
@@ -63,7 +57,7 @@ ErrorOr<Module> Module::LoadAsmFile(const std::string& path) {
     return {};
   };
 
-  while (std::getline(fs, line)) {
+  for (const std::string& line : file) {
     ++loc.offset;
     auto tokens = nsasm::Tokenize(line, loc);
     NSASM_RETURN_IF_ERROR(tokens);

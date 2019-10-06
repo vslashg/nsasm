@@ -19,8 +19,8 @@ nsasm::ErrorOr<void> Assembler::AddModule(Module&& module) {
   return {};
 }
 
-nsasm::ErrorOr<void> Assembler::AddAsmFile(const std::string& path) {
-  auto module = Module::LoadAsmFile(path);
+nsasm::ErrorOr<void> Assembler::AddAsmFile(const File& file) {
+  auto module = Module::LoadAsmFile(file);
   NSASM_RETURN_IF_ERROR(module);
   return AddModule(*std::move(module));
 }

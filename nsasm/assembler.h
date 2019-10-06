@@ -14,11 +14,10 @@ class AssemblerLookupContext;
 class Assembler {
  public:
   ErrorOr<void> AddModule(Module&& module);
-  ErrorOr<void> AddAsmFile(const std::string& path);
+  ErrorOr<void> AddAsmFile(const File& file);
 
   // Assemble all modules together into a single sink.
   ErrorOr<void> Assemble(OutputSink* sink);
-
 
   // Post-assembly queries
 

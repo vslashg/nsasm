@@ -1,5 +1,5 @@
-#ifndef NSASM_VALUE_H_
-#define NSASM_VALUE_H_
+#ifndef NSASM_EXPRESSION_H_
+#define NSASM_EXPRESSION_H_
 
 #include <set>
 
@@ -374,4 +374,4 @@ inline void ExpressionOrNull::ApplyLabel(const std::string label) {
 
 }  // namespace nsasm
 
-#endif  // NSASM_VALUE_H_
+#endif  // NSASM_EXPRESSION_H_

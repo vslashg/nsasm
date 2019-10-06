@@ -22,10 +22,21 @@ int main(int argc, char** argv) {
     return 1;
   }
   nsasm::Assembler assembler;
+  std::vector<nsasm::File> asm_files;
   for (int arg_index = 2; arg_index < argc; ++arg_index) {
-    auto result = assembler.AddAsmFile(argv[arg_index]);
+    auto file = nsasm::OpenFile(argv[arg_index]);
+    if (!file.ok()) {
+      absl::PrintF("Error loading file: %s\n", file.error().ToString());
+      return 1;
+    }
+    asm_files.push_back(*std::move(file));
+  }
+
+  for (const nsasm::File& file : asm_files) {
+    auto result = assembler.AddAsmFile(file);
     if (!result.ok()) {
       absl::PrintF("Error assembling: %s\n", result.error().ToString());
+      return 1;
     }
   }
 
@@ -33,7 +44,7 @@ int main(int argc, char** argv) {
   auto status = assembler.Assemble(&rom_identity);
   if (!status.ok()) {
     absl::PrintF("Error in assembly: %s\n", status.error().ToString());
-    return 0;
+    return 1;
   }
 
   auto jump_targets = assembler.JumpTargets();

@@ -68,7 +68,6 @@ cc_test(
     srcs = ["addressing_mode_test.cc"],
     deps = [
         ":addressing_mode",
-        ":flag_state",
         ":instruction",
         ":opcode_map",
         "@gtest//:gtest_main",
@@ -94,28 +93,6 @@ cc_test(
         "@gtest//:gtest_main",
     ],
 )
-
-cc_library(name = "flag_state")
-#
-#cc_library(
-#    name="flag_state",
-#    srcs=["flag_state.cc", "flag_state.h"],
-#    hdrs=["flag_state.h"],
-#    deps=[
-#        "@absl//absl/base:core_headers",
-#        "@absl//absl/strings",
-#        "@absl//absl/types:optional",
-#    ],
-#)
-#
-#cc_test(
-#    name="flag_state_test",
-#    srcs=["flag_state_test.cc"],
-#    deps=[
-#        ":flag_state",
-#        "@gtest//:gtest_main",
-#    ],
-#)
 
 cc_library(
     name = "execution_state",
@@ -156,7 +133,6 @@ cc_library(
         ":addressing_mode",
         ":calling_convention",
         ":expression",
-        ":flag_state",
         ":mnemonic",
         ":opcode_map",
         ":output_sink",
@@ -175,12 +151,18 @@ cc_library(
 )
 
 cc_library(
+    name = "file",
+    srcs = ["file.cc"],
+    hdrs = ["file.h"],
+    deps = [":error"],
+)
+
+cc_library(
     name = "decode",
     srcs = ["decode.cc"],
     hdrs = ["decode.h"],
     deps = [
         ":error",
-        ":flag_state",
         ":instruction",
         ":opcode_map",
         "@absl//absl/memory",
@@ -215,7 +197,6 @@ cc_library(
     deps = [
         ":decode",
         ":error",
-        ":flag_state",
         ":instruction",
         ":rom",
     ],
@@ -228,7 +209,6 @@ cc_library(
     deps = [
         ":calling_convention",
         ":expression",
-        ":flag_state",
         ":output_sink",
         "@absl//absl/container:flat_hash_map",
         "@absl//absl/strings",
@@ -323,6 +303,7 @@ cc_library(
     srcs = ["module.cc"],
     hdrs = ["module.h"],
     deps = [
+        ":file",
         ":parse",
         ":ranges",
         ":statement",
