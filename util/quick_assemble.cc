@@ -21,7 +21,8 @@ int main(int argc, char** argv) {
     absl::PrintF("Error loading ROM: %s\n", rom.error().ToString());
     return 1;
   }
-  nsasm::Assembler assembler;
+  nsasm::RomIdentityTest rom_identity_sink(&*rom);
+
   std::vector<nsasm::File> asm_files;
   for (int arg_index = 2; arg_index < argc; ++arg_index) {
     auto file = nsasm::OpenFile(argv[arg_index]);
@@ -32,22 +33,13 @@ int main(int argc, char** argv) {
     asm_files.push_back(*std::move(file));
   }
 
-  for (const nsasm::File& file : asm_files) {
-    auto result = assembler.AddAsmFile(file);
-    if (!result.ok()) {
-      absl::PrintF("Error assembling: %s\n", result.error().ToString());
-      return 1;
-    }
-  }
-
-  nsasm::RomIdentityTest rom_identity(&*rom);
-  auto status = assembler.Assemble(&rom_identity);
-  if (!status.ok()) {
-    absl::PrintF("Error in assembly: %s\n", status.error().ToString());
+  auto assembler = nsasm::Assemble(asm_files, &rom_identity_sink);
+  if (!assembler.ok()) {
+    absl::PrintF("Error assembling: %s\n", assembler.error().ToString());
     return 1;
   }
 
-  auto jump_targets = assembler.JumpTargets();
+  auto jump_targets = assembler->JumpTargets();
   absl::PrintF("%d jump targets found\n", jump_targets.size());
   for (const auto& node : jump_targets) {
     absl::PrintF("  $%06x %s\n", node.first, node.second.ToString());

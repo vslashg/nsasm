@@ -172,4 +172,13 @@ void Assembler::DebugPrint() const {
   }
 }
 
+ErrorOr<Assembler> Assemble(const std::vector<File>& files, OutputSink* sink) {
+  Assembler a;
+  for (const File& file : files) {
+    NSASM_RETURN_IF_ERROR(a.AddAsmFile(file));
+  }
+  NSASM_RETURN_IF_ERROR(a.Assemble(sink));
+  return a;
+}
+
 }  // namespace nsasm

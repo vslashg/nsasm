@@ -13,7 +13,13 @@ class AssemblerLookupContext;
 
 class Assembler {
  public:
-  ErrorOr<void> AddModule(Module&& module);
+  Assembler(const Assembler&) = delete;
+  Assembler& operator=(const Assembler&) = delete;
+  Assembler(Assembler&&) = default;
+  Assembler& operator=(Assembler&&) = default;
+
+  Assembler() = default;
+
   ErrorOr<void> AddAsmFile(const File& file);
 
   // Assemble all modules together into a single sink.
@@ -39,6 +45,8 @@ class Assembler {
   void DebugPrint() const;
 
  private:
+  ErrorOr<void> AddModule(Module&& module);
+
   // Calculates an order of named module assembly so that all
   // .equ expressions are evaluated before any are accessed.
   ErrorOr<std::vector<std::string>> FindAssemblyOrder();
@@ -51,6 +59,9 @@ class Assembler {
   // malevolent murder maze
   RangeMap<Module*> memory_module_map_;
 };
+
+// Simple factory function for assembling a collection of files
+ErrorOr<Assembler> Assemble(const std::vector<File>& files, OutputSink* sink);
 
 }  // namespace nsasm
 
