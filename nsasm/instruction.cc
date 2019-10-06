@@ -105,7 +105,7 @@ ErrorOr<void> Instruction::FixAddressingMode(const StatusFlags& status_flags) {
   return {};
 }
 
-ErrorOr<void> Instruction::Execute(ExecutionState* es,
+ErrorOr<void> Instruction::Execute(ExecutionState* es, absl::optional<int> pc,
                                    const LookupContext& context,
                                    bool* needs_reeval) const {
   NSASM_RETURN_IF_ERROR(CheckConsistency(es->Flags()));
@@ -289,8 +289,8 @@ ErrorOr<void> Instruction::Execute(ExecutionState* es,
   }
 
   if (m == M_pei || m == M_per) {
-    // If the program counter were an optional argument to Evaluate(), we could
-    // implement PER here.  TODO?
+    // We have the data needed to implement PER, but it's not clear that doing
+    // so would be helpful.
     es->GetStack().PushUnknownWord();
     return {};
   }

@@ -48,6 +48,7 @@ struct Instruction {
   // a lookup is attempted and fails, and if needs_reeval is provided, then
   // *needs_reeval is set true.
   ErrorOr<void> Execute(ExecutionState* execution_state,
+                        absl::optional<int> pc = absl::nullopt,
                         const LookupContext& context = NullLookupContext(),
                         bool* needs_reeval = nullptr) const;
 
@@ -81,7 +82,6 @@ inline bool Instruction::IsLocalBranch() const {
   return (addressing_mode == A_rel8 || addressing_mode == A_rel16) &&
          mnemonic != M_per;
 };
-
 
 }  // namespace nsasm
 
