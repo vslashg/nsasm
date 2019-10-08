@@ -1,5 +1,5 @@
-#ifndef NSASM_OUTPUT_SINK_H
-#define NSASM_OUTPUT_SINK_H
+#ifndef NSASM_OUTPUT_SINK_H_
+#define NSASM_OUTPUT_SINK_H_
 
 #include "absl/types/span.h"
 #include "nsasm/error.h"
@@ -18,4 +18,4 @@ class OutputSink {
 
 }  // namespace nsasm
 
-#endif  // NSASM_OUTPUT_SINK_H
+#endif  // NSASM_OUTPUT_SINK_H_
