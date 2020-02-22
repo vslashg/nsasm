@@ -31,22 +31,21 @@ class Token {
       : value_(identifier), location_(loc) {}
   explicit Token(int number, Location loc, NumericType type = T_unknown)
       : value_(number), location_(loc), type_(type) {}
-  explicit Token(Mnemonic mnemonic, Location loc)
+  explicit Token(nsasm::Mnemonic mnemonic, Location loc)
       : value_(mnemonic), location_(loc) {}
-  explicit Token(DirectiveName directive_name, Location loc)
+  explicit Token(nsasm::DirectiveName directive_name, Location loc)
       : value_(directive_name), location_(loc) {}
   explicit Token(char punctuation, Location loc)
       : value_(nsasm::Punctuation(punctuation)), location_(loc) {}
   explicit Token(nsasm::Punctuation punctuation, Location loc)
       : value_(punctuation), location_(loc) {}
-  explicit Token(EndOfLine eol, Location loc) : value_(eol), location_(loc) {}
+  explicit Token(nsasm::EndOfLine eol, Location loc)
+      : value_(eol), location_(loc) {}
 
   const std::string* Identifier() const {
     return absl::get_if<std::string>(&value_);
   }
-  const int* Literal() const {
-    return absl::get_if<int>(&value_);
-  }
+  const int* Literal() const { return absl::get_if<int>(&value_); }
   const nsasm::Mnemonic* Mnemonic() const {
     return absl::get_if<nsasm::Mnemonic>(&value_);
   }
@@ -111,29 +110,29 @@ inline bool operator!=(const Token& lhs, int rhs) {
   return lhs != Token(rhs, Location());
 }
 
-inline bool operator==(Mnemonic lhs, const Token& rhs) {
+inline bool operator==(nsasm::Mnemonic lhs, const Token& rhs) {
   return Token(lhs, Location()) == rhs;
 }
-inline bool operator!=(Mnemonic lhs, const Token& rhs) {
+inline bool operator!=(nsasm::Mnemonic lhs, const Token& rhs) {
   return Token(lhs, Location()) != rhs;
 }
-inline bool operator==(const Token& lhs, Mnemonic rhs) {
+inline bool operator==(const Token& lhs, nsasm::Mnemonic rhs) {
   return lhs == Token(rhs, Location());
 }
-inline bool operator!=(const Token& lhs, Mnemonic rhs) {
+inline bool operator!=(const Token& lhs, nsasm::Mnemonic rhs) {
   return lhs != Token(rhs, Location());
 }
 
-inline bool operator==(DirectiveName lhs, const Token& rhs) {
+inline bool operator==(nsasm::DirectiveName lhs, const Token& rhs) {
   return Token(lhs, Location()) == rhs;
 }
-inline bool operator!=(DirectiveName lhs, const Token& rhs) {
+inline bool operator!=(nsasm::DirectiveName lhs, const Token& rhs) {
   return Token(lhs, Location()) != rhs;
 }
-inline bool operator==(const Token& lhs, DirectiveName rhs) {
+inline bool operator==(const Token& lhs, nsasm::DirectiveName rhs) {
   return lhs == Token(rhs, Location());
 }
-inline bool operator!=(const Token& lhs, DirectiveName rhs) {
+inline bool operator!=(const Token& lhs, nsasm::DirectiveName rhs) {
   return lhs != Token(rhs, Location());
 }
 

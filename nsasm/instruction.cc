@@ -189,7 +189,7 @@ ErrorOr<void> Instruction::Execute(ExecutionState* es, absl::optional<int> pc,
   // are known, but this would require tracking the state of the BCD
   // mode.  This would add complexity to the implementation and to input
   // assembly, for no real-world gains.
-  if (m == M_adc || m == M_sbc || m == PM_add || m == PM_sub | m == M_asl ||
+  if (m == M_adc || m == M_sbc || m == PM_add || m == PM_sub || m == M_asl ||
       m == M_lsr || m == M_rol || m == M_ror) {
     es->WipeAccumulator();
     es->WipeCarry();

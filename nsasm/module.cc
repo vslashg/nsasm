@@ -117,8 +117,8 @@ ErrorOr<Module> Module::LoadAsmFile(const File& file) {
 
 ErrorOr<void> Module::RunFirstPass() {
   // Map of lines to evaluate next, and the flag state on entry
-  std::map<int, ExecutionState> decode_stack;
-  auto add_to_decode_stack = [&decode_stack](int line,
+  std::map<size_t, ExecutionState> decode_stack;
+  auto add_to_decode_stack = [&decode_stack](size_t line,
                                              const ExecutionState& state) {
     auto it = decode_stack.find(line);
     if (it == decode_stack.end()) {
@@ -128,7 +128,7 @@ ErrorOr<void> Module::RunFirstPass() {
     }
   };
   // Find all .entry points in the module to begin static analysis.
-  for (int i = 0; i < lines_.size(); ++i) {
+  for (size_t i = 0; i < lines_.size(); ++i) {
     Line& line = lines_[i];
     if (line.statement == D_entry) {
       add_to_decode_stack(i + 1,

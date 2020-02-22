@@ -1,6 +1,8 @@
 #ifndef NSASM_MNEMONIC_H_
 #define NSASM_MNEMONIC_H_
 
+#include <vector>
+
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 
