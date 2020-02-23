@@ -155,8 +155,8 @@ ErrorOr<Rom> LoadRomFile(const std::string& path) {
   }
 }
 
-ErrorOr<void> RomIdentityTest::Write(
-    int address, absl::Span<const std::uint8_t> data) {
+ErrorOr<void> RomIdentityTest::Write(int address,
+                                     absl::Span<const std::uint8_t> data) {
   auto actual = rom_->Read(address, data.size());
   NSASM_RETURN_IF_ERROR(actual);
 
@@ -164,7 +164,7 @@ ErrorOr<void> RomIdentityTest::Write(
     return {};
   }
 
-  for (size_t i = 0; i < data.size() ; ++i) {
+  for (size_t i = 0; i < data.size(); ++i) {
     if (data[i] != (*actual)[i]) {
       return Error("Wrote 0x%02x to 0x%06x, expected 0x%02x", data[i],
                    address + i, (*actual)[i]);

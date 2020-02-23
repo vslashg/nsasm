@@ -8,9 +8,7 @@ namespace {
 
 // Less-than comparator that will compare Chunks with integers,
 // using the lower bound of the chunk as the comparison basis.
-bool LeftSideSearch(int lhs, const Chunk& rhs) {
-  return lhs < rhs.first;
-}
+bool LeftSideSearch(int lhs, const Chunk& rhs) { return lhs < rhs.first; }
 
 }  // namespace
 

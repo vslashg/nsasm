@@ -10,7 +10,7 @@ namespace nsasm {
 
 struct ParsedLabel {
   ParsedLabel() : name(), exported(false) {}
-  ParsedLabel(std::string n, bool e) : name(std::move(n)), exported(e) {};
+  ParsedLabel(std::string n, bool e) : name(std::move(n)), exported(e){};
   std::string name;
   bool exported;
 };

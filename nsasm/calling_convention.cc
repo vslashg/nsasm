@@ -17,4 +17,4 @@ std::string ReturnConvention::ToSuffixString() const {
   }
 }
 
-}
+}  // namespace nsasm

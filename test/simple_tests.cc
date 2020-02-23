@@ -1,5 +1,4 @@
 #include "gtest/gtest.h"
-
 #include "test/test_assembly.h"
 
 TEST(SimpleTest, Example) {

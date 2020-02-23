@@ -448,7 +448,7 @@ ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
       NSASM_RETURN_IF_ERROR(arg);
       directive.argument = std::move(*arg);
     }
-    ABSL_FALLTHROUGH_INTENDED;
+      ABSL_FALLTHROUGH_INTENDED;
     case DT_flag_arg:
     case DT_calling_convention_arg: {
       auto flag_state = Mode(pos);

@@ -1,11 +1,11 @@
 #ifndef NSASM_ROM_H_
 #define NSASM_ROM_H_
 
-#include "nsasm/error.h"
-#include "nsasm/output_sink.h"
-
 #include <cstdint>
 #include <string>
+
+#include "nsasm/error.h"
+#include "nsasm/output_sink.h"
 
 namespace nsasm {
 
@@ -52,6 +52,7 @@ class Rom {
   ErrorOr<int> ReadLong(int address) const;
 
   const std::string& path() const { return path_; }
+
  private:
   Mapping mapping_mode_;
   std::string path_;

@@ -87,8 +87,7 @@ TEST(Expression, namespaces) {
               ElementsAre("foo"));
   EXPECT_THAT(Ex("foo::bar + baz::blat").ModuleNamesReferenced(),
               ElementsAre("baz", "foo"));
-  EXPECT_THAT(Ex("foo + bar + baz").ModuleNamesReferenced(),
-              IsEmpty());
+  EXPECT_THAT(Ex("foo + bar + baz").ModuleNamesReferenced(), IsEmpty());
 }
 
 }  // namespace nsasm

@@ -1,11 +1,11 @@
 #ifndef NSASM_RANGES_H
 #define NSASM_RANGES_H
 
-#include "absl/types/optional.h"
-
 #include <algorithm>
 #include <map>
 #include <vector>
+
+#include "absl/types/optional.h"
 
 namespace nsasm {
 
@@ -61,11 +61,9 @@ class RangeMap {
   std::map<Chunk, T> mapping_;
 };
 
-
 // Implementation details follow.
 
-
-template<typename T>
+template <typename T>
 bool RangeMap<T>::Insert(DataRange range, const T& value) {
   DataRange combined = used_;
   for (Chunk chunk : range.Chunks()) {
@@ -82,7 +80,7 @@ bool RangeMap<T>::Insert(DataRange range, const T& value) {
   return true;
 }
 
-template<typename T>
+template <typename T>
 absl::optional<T> RangeMap<T>::Lookup(int address) const {
   auto it = mapping_.upper_bound(Chunk(address, address));
   if (it != mapping_.end() && it->first.first == address) {

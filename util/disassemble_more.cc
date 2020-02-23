@@ -69,8 +69,8 @@ int main(int argc, char** argv) {
       }
       auto branch_targets = disassembler.Disassemble(node.first, node.second);
       if (!branch_targets.ok()) {
-        absl::PrintF("; ERROR branching to $%06x with mode %s\n",
-          node.first, node.second.ToString());
+        absl::PrintF("; ERROR branching to $%06x with mode %s\n", node.first,
+                     node.second.ToString());
         absl::PrintF(";   %s\n", branch_targets.error().ToString());
       } else {
         CombineStates(&new_seeds, *branch_targets);

@@ -1,10 +1,10 @@
 #include "nsasm/ranges.h"
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
-
 #include <algorithm>
 #include <vector>
+
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 namespace nsasm {
 namespace {

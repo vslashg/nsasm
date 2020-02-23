@@ -2,10 +2,9 @@
 
 #include <fstream>
 
+#include "absl/strings/str_format.h"
 #include "nsasm/parse.h"
 #include "nsasm/token.h"
-
-#include "absl/strings/str_format.h"
 
 namespace nsasm {
 

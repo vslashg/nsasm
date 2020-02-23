@@ -44,12 +44,9 @@ class Error {
 
   std::string ToString() const;
 
-  bool operator==(const Error& rhs) const {
-    return message_ == rhs.message_;
-  }
-  bool operator!=(const Error& rhs) const {
-    return message_ != rhs.message_;
-  }
+  bool operator==(const Error& rhs) const { return message_ == rhs.message_; }
+  bool operator!=(const Error& rhs) const { return message_ != rhs.message_; }
+
  private:
   std::string message_;
   Location location_;
@@ -75,12 +72,9 @@ class ErrorOr {
 
   bool ok() const { return absl::holds_alternative<T>(value); }
 
-  bool operator==(const ErrorOr<T>& rhs) const {
-    return value == rhs.value;
-  }
-  bool operator!=(const ErrorOr<T>& rhs) const {
-    return value != rhs.value;
-  }
+  bool operator==(const ErrorOr<T>& rhs) const { return value == rhs.value; }
+  bool operator!=(const ErrorOr<T>& rhs) const { return value != rhs.value; }
+
  private:
   absl::variant<Error, T> value;
 };
@@ -97,12 +91,9 @@ class ErrorOr<void> {
   Error error() const { return *value; }
   bool ok() const { return !value; }
 
-  bool operator==(const ErrorOr<void>& rhs) const {
-    return value == rhs.value;
-  }
-  bool operator!=(const ErrorOr<void>& rhs) const {
-    return value != rhs.value;
-  }
+  bool operator==(const ErrorOr<void>& rhs) const { return value == rhs.value; }
+  bool operator!=(const ErrorOr<void>& rhs) const { return value != rhs.value; }
+
  private:
   absl::optional<Error> value;
 };

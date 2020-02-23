@@ -1,14 +1,14 @@
 #ifndef NSASM_DIRECTIVE_H_
 #define NSASM_DIRECTIVE_H_
 
+#include <iostream>
+
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "nsasm/calling_convention.h"
 #include "nsasm/execution_state.h"
 #include "nsasm/expression.h"
 #include "nsasm/output_sink.h"
-
-#include <iostream>
 
 namespace nsasm {
 
@@ -68,11 +68,8 @@ struct Directive {
 
   std::string ToString() const;
 
-  bool IsExitInstruction() const {
-    return name == D_halt;
-  }
+  bool IsExitInstruction() const { return name == D_halt; }
 };
-
 
 // googletest pretty printers (streams are an abomination)
 inline void PrintTo(DirectiveName d, std::ostream* out) {

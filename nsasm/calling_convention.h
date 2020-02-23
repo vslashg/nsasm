@@ -50,15 +50,14 @@ class ReturnConvention {
     return absl::holds_alternative<absl::monostate>(state_);
   }
   // Returns true iff this call never returns.
-  bool IsExitCall() const {
-    return absl::holds_alternative<NoReturn>(state_);
-  }
+  bool IsExitCall() const { return absl::holds_alternative<NoReturn>(state_); }
 
   // Convert the return convention to a suffix string, suitable for appending
   // to a JSR or JSL instruction or an .entry or .remote directive.
   //
   // In the default state, this returns an empty string.
   std::string ToSuffixString() const;
+
  private:
   absl::variant<absl::monostate, StatusFlags, NoReturn> state_;
 };

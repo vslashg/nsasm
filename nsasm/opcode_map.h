@@ -1,8 +1,8 @@
 #ifndef NSASM_OPCODE_MAP_H_
 #define NSASM_OPCODE_MAP_H_
 
-#include <cstdint>
 #include <algorithm>
+#include <cstdint>
 
 #include "absl/types/optional.h"
 #include "nsasm/addressing_mode.h"

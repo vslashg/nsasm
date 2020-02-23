@@ -1,12 +1,12 @@
+#include <cstdint>
+#include <cstdio>
+
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
 #include "nsasm/decode.h"
 #include "nsasm/disassemble.h"
 #include "nsasm/instruction.h"
 #include "nsasm/rom.h"
-
-#include <cstdint>
-#include <cstdio>
 
 // Test utility to exercise disassembly
 

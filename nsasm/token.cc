@@ -46,20 +46,20 @@ std::string Token::ToString() const {
   auto punctuation = Punctuation();
   if (punctuation) {
     switch (*punctuation) {
-    case P_scope:
-      return "symbol `::`";
-    case P_export:
-      return "keyword `export`";
-    case P_noreturn:
-      return "keyword `noreturn`";
-    case P_yields:
-      return "keyword `yields`";
-    default:
-      char v = *punctuation;
-      if (v == 'A' || v == 'S' || v == 'X' || v == 'Y') {
-        return absl::StrFormat("register %c", v);
-      }
-      return absl::StrFormat("symbol `%c`", v);
+      case P_scope:
+        return "symbol `::`";
+      case P_export:
+        return "keyword `export`";
+      case P_noreturn:
+        return "keyword `noreturn`";
+      case P_yields:
+        return "keyword `yields`";
+      default:
+        char v = *punctuation;
+        if (v == 'A' || v == 'S' || v == 'X' || v == 'Y') {
+          return absl::StrFormat("register %c", v);
+        }
+        return absl::StrFormat("symbol `%c`", v);
     }
   }
   return "logic error?";

@@ -310,9 +310,7 @@ class UnaryExpression : public Expression {
     NSASM_RETURN_IF_ERROR(value);
     return op_.function(*value);
   }
-  NumericType Type() const override {
-    return op_.result_type(arg_.Type());
-  }
+  NumericType Type() const override { return op_.result_type(arg_.Type()); }
   virtual bool RequiresLookup() const override { return arg_.RequiresLookup(); }
   virtual std::set<std::string> ModuleNamesReferenced() const override {
     return arg_.ModuleNamesReferenced();
