@@ -406,6 +406,7 @@ ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
   pos->remove_prefix(1);
   DirectiveType directive_type = DirectiveTypeByName(directive.name);
   switch (directive_type) {
+    default:
     case DT_no_arg: {
       NSASM_RETURN_IF_ERROR(ConfirmAtEnd(pos, "after no-arg directive"));
       return std::move(directive);
