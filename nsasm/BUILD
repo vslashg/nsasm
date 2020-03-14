@@ -142,10 +142,19 @@ cc_library(
 )
 
 cc_library(
+    name = "location",
+    hdrs = ["location.h"],
+    deps = [
+        "@absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
     name = "error",
     srcs = ["error.cc"],
     hdrs = ["error.h"],
     deps = [
+        ":location",
         "@absl//absl/strings:str_format",
         "@absl//absl/types:optional",
         "@absl//absl/types:variant",
@@ -256,6 +265,7 @@ cc_library(
     deps = [
         ":directive",
         ":instruction",
+        ":location",
     ],
 )
 

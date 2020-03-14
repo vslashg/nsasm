@@ -3,6 +3,7 @@
 
 #include "nsasm/directive.h"
 #include "nsasm/instruction.h"
+#include "nsasm/location.h"
 
 namespace nsasm {
 

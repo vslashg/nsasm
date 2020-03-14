@@ -33,9 +33,7 @@ ErrorOr<Module> Module::LoadAsmFile(const File& file) {
   Module m;
   m.path_ = file.path();
 
-  Location loc;
-  loc.path = file.path();
-  loc.offset = 0;
+  Location loc(file.path());
 
   std::vector<ParsedLabel> pending_labels;
   std::vector<int> active_scopes;
@@ -56,8 +54,10 @@ ErrorOr<Module> Module::LoadAsmFile(const File& file) {
     return {};
   };
 
+  int line_number = 0;
   for (const std::string& line : file) {
-    ++loc.offset;
+    ++line_number;
+    loc.Update(line_number);
     auto tokens = nsasm::Tokenize(line, loc);
     NSASM_RETURN_IF_ERROR(tokens);
     auto entities = nsasm::Parse(*tokens);

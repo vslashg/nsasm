@@ -6,14 +6,9 @@
 #include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
 #include "absl/types/variant.h"
+#include "nsasm/location.h"
 
 namespace nsasm {
-
-// Representation of a position in a file
-struct Location {
-  std::string path;
-  int offset;
-};
 
 class Error {
  public:
@@ -22,23 +17,15 @@ class Error {
       : message_(absl::StrFormat(format, args...)), location_() {}
 
   Error& SetLocation(Location location) {
-    location_ = location;
+    location_.Update(location);
     return *this;
   }
 
-  Error& SetLocation(const std::string& path) {
-    location_.path = path;
-    return *this;
-  }
-
-  Error& SetLocation(int offset) {
-    location_.offset = offset;
-    return *this;
-  }
-
-  Error& SetLocation(const std::string& path, int offset) {
-    location_.path = path;
-    location_.offset = offset;
+  // Update from two location objects.  This is intended to accept a path and
+  // address, or path and line number.
+  Error& SetLocation(Location loc1, Location loc2) {
+    location_.Update(loc1);
+    location_.Update(loc2);
     return *this;
   }
 
