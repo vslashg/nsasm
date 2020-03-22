@@ -37,3 +37,6 @@ bazel-genfiles
 bazel-nsasm
 bazel-out
 bazel-testlogs
+
+# vscode
+.vscode
