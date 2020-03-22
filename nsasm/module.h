@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "nsasm/address.h"
 #include "nsasm/error.h"
 #include "nsasm/file.h"
 #include "nsasm/ranges.h"
@@ -43,7 +44,7 @@ class Module {
   // Returns the value for the given name, or nullopt if that name is not
   // defined by this module.  Call this only after RunFirstPass() has
   // successfully returned.
-  ErrorOr<int> ValueForName(absl::string_view sv) const;
+  ErrorOr<LabelValue> ValueForName(absl::string_view sv) const;
 
   ErrorOr<void> Assemble(OutputSink* sink, const LookupContext& lookup_context);
 
@@ -51,15 +52,16 @@ class Module {
 
   // Returns a qualified name for the given address, if one is defined in this
   // module.
-  absl::optional<std::string> NameForAddress(int address) const;
+  absl::optional<std::string> NameForAddress(nsasm::Address address) const;
 
   // Returns the collection of all jump targets found during assembly.
-  const std::map<int, StatusFlags>& JumpTargets() const {
+  const std::map<nsasm::Address, StatusFlags>& JumpTargets() const {
     return unnamed_targets_;
   }
 
   // Returns the set of jump targets assembled which yield alternate flag states
-  const std::map<int, ReturnConvention>& JumpTargetReturnConventions() const {
+  const std::map<nsasm::Address, ReturnConvention>&
+  JumpTargetReturnConventions() const {
     return return_conventions_;
   }
 
@@ -79,8 +81,8 @@ class Module {
 
   // Perform an internal lookup for a given label.  As above, but returns the
   // value associated with the label, rather than an index.
-  ErrorOr<int> LocalLookup(absl::string_view sv,
-                           const std::vector<int>& active_scopes) const;
+  ErrorOr<LabelValue> LocalLookup(absl::string_view sv,
+                                  const std::vector<int>& active_scopes) const;
 
   friend class nsasm::ModuleLookupContext;
 
@@ -92,7 +94,7 @@ class Module {
     std::vector<std::string> labels;
     bool reached = false;
     ExecutionState incoming_state;
-    absl::optional<int> address;
+    absl::optional<LabelValue> value;
     std::vector<int> active_scopes;
     absl::flat_hash_map<std::string, int> scoped_locals;
   };
@@ -104,9 +106,9 @@ class Module {
   absl::flat_hash_map<std::string, int> global_to_line_;
 
   DataRange owned_bytes_;
-  absl::flat_hash_map<int, std::string> value_to_global_;
-  std::map<int, StatusFlags> unnamed_targets_;
-  std::map<int, ReturnConvention> return_conventions_;
+  absl::flat_hash_map<nsasm::Address, std::string> address_to_global_;
+  std::map<nsasm::Address, StatusFlags> unnamed_targets_;
+  std::map<nsasm::Address, ReturnConvention> return_conventions_;
 };
 
 }  // namespace nsasm

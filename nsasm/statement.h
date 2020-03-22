@@ -1,6 +1,7 @@
 #ifndef NSASM_STATEMENT_H
 #define NSASM_STATEMENT_H
 
+#include "nsasm/address.h"
 #include "nsasm/directive.h"
 #include "nsasm/instruction.h"
 #include "nsasm/location.h"
@@ -49,7 +50,7 @@ class Statement {
 
   int SerializedSize() const;
 
-  ErrorOr<void> Assemble(int address, const LookupContext& context,
+  ErrorOr<void> Assemble(nsasm::Address address, const LookupContext& context,
                          OutputSink* sink) const;
 
   bool IsLocalBranch() const {

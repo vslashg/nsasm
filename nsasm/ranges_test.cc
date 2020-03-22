@@ -10,19 +10,23 @@ namespace nsasm {
 namespace {
 
 using testing::ElementsAre;
-using Ch = std::pair<int, int>;
+
+std::pair<nsasm::Address, nsasm::Address> Ch(int a, int b) {
+  return std::make_pair(nsasm::Address(a), nsasm::Address(b));
+}
+nsasm::Address Ad(int a) { return nsasm::Address(a); }
 
 TEST(DataRange, Contains) {
   // simple check of containment functionality
   DataRange data_range;
-  for (int start : {20, 40, 60}) {
+  for (nsasm::Address start : {Ad(20), Ad(40), Ad(60)}) {
     EXPECT_TRUE(data_range.ClaimBytes(start, 10));
   }
   DataRange empty;
-  for (int i = 0; i < 80; ++i) {
+  for (nsasm::Address i = Ad(0); i < Ad(80); i = i.AddWrapped(1)) {
     SCOPED_TRACE(i);
     // The point is in data_range if the 10s place digit is 2, 4, or 6
-    int digit = i / 10;
+    int digit = i.BankAddress() / 10;
     bool expected = (digit == 2 || digit == 4 || digit == 6);
     EXPECT_EQ(data_range.Contains(i), expected);
     EXPECT_FALSE(empty.Contains(i));
@@ -32,10 +36,10 @@ TEST(DataRange, Contains) {
 TEST(DataRange, MergeNeighbors) {
   // check that writing adjacent chunks in any order works.
   {
-    std::vector<int> starts = {20, 30, 40};
+    std::vector<nsasm::Address> starts = {Ad(20), Ad(30), Ad(40)};
     do {
       DataRange data_range;
-      for (int start : starts) {
+      for (nsasm::Address start : starts) {
         EXPECT_TRUE(data_range.ClaimBytes(start, 10));
       }
       EXPECT_THAT(data_range.Chunks(), ElementsAre(Ch(20, 50)));
@@ -43,10 +47,10 @@ TEST(DataRange, MergeNeighbors) {
   }
   // check that writing non-neighboring chunks in any order works.
   {
-    std::vector<int> starts = {20, 40, 60};
+    std::vector<nsasm::Address> starts = {Ad(20), Ad(40), Ad(60)};
     do {
       DataRange data_range;
-      for (int start : starts) {
+      for (nsasm::Address start : starts) {
         EXPECT_TRUE(data_range.ClaimBytes(start, 10));
       }
       EXPECT_THAT(data_range.Chunks(),
@@ -55,14 +59,14 @@ TEST(DataRange, MergeNeighbors) {
   }
   // Check that writing slightly-overlapping chunks in any order works.
   {
-    std::vector<int> starts = {20, 30, 40};
+    std::vector<nsasm::Address> starts = {Ad(20), Ad(30), Ad(40)};
     do {
       DataRange data_range;
       // First write should never overlap anything
       EXPECT_TRUE(data_range.ClaimBytes(starts[0], 12));
 
       // Second write will overlap unless we are writing the middle last.
-      bool success_expected = (starts[2] == 30);
+      bool success_expected = (starts[2] == Ad(30));
       EXPECT_EQ(data_range.ClaimBytes(starts[1], 12), success_expected);
 
       // Third write will always overlap something.
@@ -79,9 +83,9 @@ TEST(DataRange, ComplexMerge) {
   //     10   20   30   40   50   60
   //      [---]     [---]     [---]
   DataRange seed_state;
-  EXPECT_TRUE(seed_state.ClaimBytes(10, 10));
-  EXPECT_TRUE(seed_state.ClaimBytes(30, 10));
-  EXPECT_TRUE(seed_state.ClaimBytes(50, 10));
+  EXPECT_TRUE(seed_state.ClaimBytes(Ad(10), 10));
+  EXPECT_TRUE(seed_state.ClaimBytes(Ad(30), 10));
+  EXPECT_TRUE(seed_state.ClaimBytes(Ad(50), 10));
 
   {
     // Non-overlapping write that merges blocks
@@ -89,7 +93,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //           [---]
     DataRange data_range = seed_state;
-    EXPECT_TRUE(data_range.ClaimBytes(20, 10));
+    EXPECT_TRUE(data_range.ClaimBytes(Ad(20), 10));
     EXPECT_THAT(data_range.Chunks(), ElementsAre(Ch(10, 40), Ch(50, 60)));
   }
 
@@ -99,7 +103,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //        [------]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(15, 15));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(15), 15));
     EXPECT_THAT(data_range.Chunks(), ElementsAre(Ch(10, 40), Ch(50, 60)));
   }
   {
@@ -107,7 +111,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //           [------]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(20, 15));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(20), 15));
     EXPECT_THAT(data_range.Chunks(), ElementsAre(Ch(10, 40), Ch(50, 60)));
   }
   {
@@ -115,7 +119,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //        [---------]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(15, 20));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(15), 20));
     EXPECT_THAT(data_range.Chunks(), ElementsAre(Ch(10, 40), Ch(50, 60)));
   }
 
@@ -125,7 +129,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //                [-]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(30, 5));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(30), 5));
     EXPECT_THAT(data_range.Chunks(),
                 ElementsAre(Ch(10, 20), Ch(30, 40), Ch(50, 60)));
   }
@@ -134,7 +138,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //                 [-]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(32, 5));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(32), 5));
     EXPECT_THAT(data_range.Chunks(),
                 ElementsAre(Ch(10, 20), Ch(30, 40), Ch(50, 60)));
   }
@@ -143,7 +147,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //                  [-]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(35, 5));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(35), 5));
     EXPECT_THAT(data_range.Chunks(),
                 ElementsAre(Ch(10, 20), Ch(30, 40), Ch(50, 60)));
   }
@@ -154,7 +158,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //             [------]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(25, 15));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(25), 15));
     EXPECT_THAT(data_range.Chunks(),
                 ElementsAre(Ch(10, 20), Ch(25, 40), Ch(50, 60)));
   }
@@ -163,7 +167,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //                [------]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(30, 15));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(30), 15));
     EXPECT_THAT(data_range.Chunks(),
                 ElementsAre(Ch(10, 20), Ch(30, 45), Ch(50, 60)));
   }
@@ -172,7 +176,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //             [---------]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(25, 20));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(25), 20));
     EXPECT_THAT(data_range.Chunks(),
                 ElementsAre(Ch(10, 20), Ch(25, 45), Ch(50, 60)));
   }
@@ -183,7 +187,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //           [-------------]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(20, 30));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(20), 30));
     EXPECT_THAT(data_range.Chunks(), ElementsAre(Ch(10, 60)));
   }
   {
@@ -191,7 +195,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //        [-------------------]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(15, 40));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(15), 40));
     EXPECT_THAT(data_range.Chunks(), ElementsAre(Ch(10, 60)));
   }
   {
@@ -199,7 +203,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //      [-----------------------]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(10, 50));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(10), 50));
     EXPECT_THAT(data_range.Chunks(), ElementsAre(Ch(10, 60)));
   }
   {
@@ -207,7 +211,7 @@ TEST(DataRange, ComplexMerge) {
     //      [---]     [---]     [---]
     //      [----------------------------]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(10, 60));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(10), 60));
     EXPECT_THAT(data_range.Chunks(), ElementsAre(Ch(10, 70)));
   }
   {
@@ -215,7 +219,7 @@ TEST(DataRange, ComplexMerge) {
     //           [---]     [---]     [---]
     //      [----------------------------]
     DataRange data_range = seed_state;
-    EXPECT_FALSE(data_range.ClaimBytes(0, 60));
+    EXPECT_FALSE(data_range.ClaimBytes(Ad(0), 60));
     EXPECT_THAT(data_range.Chunks(), ElementsAre(Ch(0, 60)));
   }
 }
@@ -224,7 +228,7 @@ TEST(DataRange, BankWrapping) {
   // Test that writing across a bank boundary wraps around
   {
     DataRange data_range;
-    EXPECT_TRUE(data_range.ClaimBytes(0x5fff0, 0x20));
+    EXPECT_TRUE(data_range.ClaimBytes(Ad(0x5fff0), 0x20));
     EXPECT_THAT(data_range.Chunks(),
                 ElementsAre(Ch(0x50000, 0x50010), Ch(0x5fff0, 0x60000)));
   }
@@ -232,21 +236,21 @@ TEST(DataRange, BankWrapping) {
   // Writing on the edge of a bank boundary should not cause problems
   {
     DataRange data_range;
-    EXPECT_TRUE(data_range.ClaimBytes(0x5fff0, 0x10));
+    EXPECT_TRUE(data_range.ClaimBytes(Ad(0x5fff0), 0x10));
     EXPECT_THAT(data_range.Chunks(), ElementsAre(Ch(0x5fff0, 0x60000)));
   }
   {
     DataRange data_range;
-    EXPECT_TRUE(data_range.ClaimBytes(0x50000, 0x10));
+    EXPECT_TRUE(data_range.ClaimBytes(Ad(0x50000), 0x10));
     EXPECT_THAT(data_range.Chunks(), ElementsAre(Ch(0x50000, 0x50010)));
   }
 
   // Wrapping should still merge correctly with existing values
   {
     DataRange data_range;
-    EXPECT_TRUE(data_range.ClaimBytes(0x5ffd0, 0x20));
-    EXPECT_TRUE(data_range.ClaimBytes(0x5fff0, 0x20));
-    EXPECT_TRUE(data_range.ClaimBytes(0x50010, 0x20));
+    EXPECT_TRUE(data_range.ClaimBytes(Ad(0x5ffd0), 0x20));
+    EXPECT_TRUE(data_range.ClaimBytes(Ad(0x5fff0), 0x20));
+    EXPECT_TRUE(data_range.ClaimBytes(Ad(0x50010), 0x20));
     EXPECT_THAT(data_range.Chunks(),
                 ElementsAre(Ch(0x50000, 0x50030), Ch(0x5ffd0, 0x60000)));
   }
@@ -256,21 +260,21 @@ TEST(RangeMap, SanityTest) {
   RangeMap<int> map;
   DataRange first_range;
   DataRange second_range;
-  first_range.ClaimBytes(10, 10);
-  second_range.ClaimBytes(30, 10);
-  first_range.ClaimBytes(50, 10);
-  second_range.ClaimBytes(70, 10);
+  first_range.ClaimBytes(Ad(10), 10);
+  second_range.ClaimBytes(Ad(30), 10);
+  first_range.ClaimBytes(Ad(50), 10);
+  second_range.ClaimBytes(Ad(70), 10);
 
   EXPECT_TRUE(map.Insert(first_range, 1));
   EXPECT_TRUE(map.Insert(second_range, 2));
 
-  for (int i = 0; i < 100; ++i) {
+  for (nsasm::Address i = Ad(0); i < Ad(100); i = i.AddWrapped(1)) {
     SCOPED_TRACE(i);
     absl::optional<int> expected;
-    if ((i >= 10 && i < 20) || (i >= 50 && i < 60)) {
+    if ((i >= Ad(10) && i < Ad(20)) || (i >= Ad(50) && i < Ad(60))) {
       expected = 1;
     }
-    if ((i >= 30 && i < 40) || (i >= 70 && i < 80)) {
+    if ((i >= Ad(30) && i < Ad(40)) || (i >= Ad(70) && i < Ad(80))) {
       expected = 2;
     }
     EXPECT_EQ(map.Lookup(i), expected);

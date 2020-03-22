@@ -3,6 +3,16 @@ load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
+    name = "address",
+    hdrs = ["address.h"],
+    deps = [
+        ":error",
+        ":numeric_type",
+        "@absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "mnemonic",
     srcs = ["mnemonic.cc"],
     hdrs = ["mnemonic.h"],
@@ -111,6 +121,7 @@ cc_library(
     name = "output_sink",
     hdrs = ["output_sink.h"],
     deps = [
+        ":address",
         ":error",
         "@absl//absl/types:span",
     ],
@@ -297,6 +308,7 @@ cc_library(
     srcs = ["ranges.cc"],
     hdrs = ["ranges.h"],
     deps = [
+        ":address",
         "@absl//absl/types:optional",
     ],
 )

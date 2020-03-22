@@ -2,43 +2,44 @@
 
 namespace nsasm {
 
-ErrorOr<void> TestSink::Write(int address,
+ErrorOr<void> TestSink::Write(nsasm::Address address,
                               absl::Span<const std::uint8_t> data) {
   for (int i = 0; i < data.size(); ++i) {
-    if (received_.count(i + address)) {
-      return Error("Duplicate write to address 0x%06x", i);
+    nsasm::Address target = address.AddWrapped(i);
+    if (received_.count(target)) {
+      return Error("Duplicate write to address %s", target.ToString());
     }
-    received_[i + address] = data[i];
+    received_[target] = data[i];
   }
   return {};
 }
 
 ErrorOr<void> TestSink::Check() const {
   // Local copy of received map; we will clear it as we go
-  std::map<int, std::uint8_t> received = received_;
+  std::map<nsasm::Address, std::uint8_t> received = received_;
 
   absl::PrintF("%d %d\n", received.size(), expected_.size());
 
   for (const ExpectedBytes& entry : expected_) {
-    int location = entry.location;
+    nsasm::Address location(entry.location);
     const std::vector<std::uint8_t>& bytes = entry.bytes;
     for (int i = 0; i < bytes.size(); ++i) {
-      auto iter = received.find(location + i);
+      nsasm::Address target = location.AddWrapped(i);
+      auto iter = received.find(target);
       if (iter == received.end()) {
-        return Error("Expected 0x%02x at 0x%06x, but nothing written", bytes[i],
-                     location + i);
+        return Error("Expected 0x%02x at %s, but nothing written", bytes[i],
+                     target.ToString());
       } else if (iter->second != bytes[i]) {
-        return Error(
-            "Expected 0x%02x at 0x%06x, but 0x%02x was written instead",
-            bytes[i], location + i, iter->second);
+        return Error("Expected 0x%02x at %s, but 0x%02x was written instead",
+                     bytes[i], target.ToString(), iter->second);
       }
       received.erase(iter);
     }
   }
   if (!received.empty()) {
     auto iter = received.begin();
-    return Error("Unexpected 0x%02x written at 0x%06x", iter->second,
-                 iter->first);
+    return Error("Unexpected 0x%02x written at %s", iter->second,
+                 iter->first.ToString());
   }
   return {};
 }

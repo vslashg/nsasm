@@ -122,7 +122,8 @@ void EncodeValue(DirectiveName d, int value, std::vector<uint8_t>* buf) {
 }
 }  // namespace
 
-ErrorOr<void> Directive::Assemble(int address, const LookupContext& context,
+ErrorOr<void> Directive::Assemble(nsasm::Address address,
+                                  const LookupContext& context,
                                   OutputSink* sink) const {
   if (name != D_db && name != D_dw && name != D_dl) {
     return {};

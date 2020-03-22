@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
   auto jump_targets = assembler->JumpTargets();
   absl::PrintF("%d jump targets found\n", jump_targets.size());
   for (const auto& node : jump_targets) {
-    absl::PrintF("  $%06x %s\n", node.first, node.second.ToString());
+    absl::PrintF("  %s %s\n", node.first.ToString(), node.second.ToString());
   }
   // assembler.DebugPrint();
 }

@@ -376,7 +376,8 @@ int Instruction::SerializedSize() const {
   return InstructionLength(addressing_mode) + overhead;
 }
 
-ErrorOr<void> Instruction::Assemble(int address, const LookupContext& context,
+ErrorOr<void> Instruction::Assemble(nsasm::Address address,
+                                    const LookupContext& context,
                                     OutputSink* sink) const {
   std::uint8_t output_buf[5];
   std::uint8_t* output = output_buf;
@@ -449,37 +450,38 @@ ErrorOr<void> Instruction::Assemble(int address, const LookupContext& context,
   if (addressing_mode == A_rel8) {
     auto val1 = arg1.Evaluate(context);
     NSASM_RETURN_IF_ERROR(val1);
-    int branch_base = address + 2;
-    int offset = *val1 - branch_base;
-    if (offset > 127 || offset < -128) {
+    nsasm::Address target(*val1);
+    nsasm::Address branch_base = address.AddWrapped(2);
+    auto offset = target.SubtractWrapped(branch_base);
+    NSASM_RETURN_IF_ERROR(offset);
+    if (*offset > 127 || *offset < -128) {
       return Error("Relative branch too far");
     }
-    *(output++) = (offset & 0xff);
+    *(output++) = (*offset & 0xff);
     return sink->Write(address, absl::MakeConstSpan(output_buf, output));
   }
   // relative 16-bit addressing
   if (addressing_mode == A_rel16) {
     auto val1 = arg1.Evaluate(context);
     NSASM_RETURN_IF_ERROR(val1);
-    int branch_base = address + 3;
-    int offset = *val1 - branch_base;
-    // TODO: This is not correct; relative branching can't overflow in this
-    // way.  Fix to handle wrapping on the high 8 bits.
-    if (offset > 32767 || offset < -32768) {
-      return Error("Relative branch too far");
-    }
-    *(output++) = (offset & 0xff);
-    *(output++) = ((offset >> 8) & 0xff);
+    nsasm::Address target(*val1);
+    nsasm::Address branch_base = address.AddWrapped(3);
+    auto offset = target.SubtractWrapped(branch_base);
+    NSASM_RETURN_IF_ERROR(offset);
+    int wrapped_offset = *offset & 0xffff;
+    *(output++) = wrapped_offset & 0xff;
+    *(output++) = wrapped_offset >> 8;
     return sink->Write(address, absl::MakeConstSpan(output_buf, output));
   }
   return Error("logic error: addressing mode not handled in Assemble()");
 }
 
-absl::optional<int> Instruction::FarBranchTarget(int source_address) const {
+absl::optional<nsasm::Address> Instruction::FarBranchTarget(
+    nsasm::Address source_address) const {
   if (addressing_mode == A_dir_l && (mnemonic == M_jmp || mnemonic == M_jsl)) {
     auto target = arg1.Evaluate(NullLookupContext());
     if (target.ok()) {
-      return *target;
+      return nsasm::Address(*target);
     }
     return absl::nullopt;
   }
@@ -487,7 +489,7 @@ absl::optional<int> Instruction::FarBranchTarget(int source_address) const {
   if (addressing_mode == A_dir_w && (mnemonic == M_jmp || mnemonic == M_jsr)) {
     auto target = arg1.Evaluate(NullLookupContext());
     if (target.ok()) {
-      return (source_address & 0xff0000) | (*target & 0x00ffff);
+      return nsasm::Address(source_address.Bank(), *target);
     }
     return absl::nullopt;
   }

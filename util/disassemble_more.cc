@@ -13,8 +13,9 @@ void usage(char* path) {
       path);
 }
 
-void CombineStates(std::map<int, nsasm::StatusFlags>* targets,
-                   const std::map<int, nsasm::StatusFlags>& new_targets) {
+void CombineStates(
+    std::map<nsasm::Address, nsasm::StatusFlags>* targets,
+    const std::map<nsasm::Address, nsasm::StatusFlags>& new_targets) {
   for (const auto& node : new_targets) {
     auto it = targets->find(node.first);
     if (it == targets->end()) {
@@ -53,15 +54,15 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  std::map<int, nsasm::StatusFlags> seeds = assembler->JumpTargets();
-  std::map<int, nsasm::ReturnConvention> return_conventions =
+  std::map<nsasm::Address, nsasm::StatusFlags> seeds = assembler->JumpTargets();
+  std::map<nsasm::Address, nsasm::ReturnConvention> return_conventions =
       assembler->JumpTargetReturnConventions();
 
   nsasm::Disassembler disassembler(*std::move(rom));
   disassembler.AddTargetReturnConventions(return_conventions);
 
   for (int pass = 0; pass < 100; ++pass) {
-    std::map<int, nsasm::StatusFlags> new_seeds;
+    std::map<nsasm::Address, nsasm::StatusFlags> new_seeds;
     for (const auto& node : seeds) {
       if (assembler->Contains(node.first)) {
         // This function is already disassembled in our input.
@@ -69,8 +70,8 @@ int main(int argc, char** argv) {
       }
       auto branch_targets = disassembler.Disassemble(node.first, node.second);
       if (!branch_targets.ok()) {
-        absl::PrintF("; ERROR branching to $%06x with mode %s\n", node.first,
-                     node.second.ToString());
+        absl::PrintF("; ERROR branching to %s with mode %s\n",
+                     node.first.ToString(), node.second.ToString());
         absl::PrintF(";   %s\n", branch_targets.error().ToString());
       } else {
         CombineStates(&new_seeds, *branch_targets);
@@ -88,12 +89,12 @@ int main(int argc, char** argv) {
   if (disassembly.empty()) {
     absl::PrintF("; Disassembled no instructions.\n");
   } else {
-    int pc = disassembly.begin()->first;
+    nsasm::Address pc = disassembly.begin()->first;
     absl::PrintF("; Disassembled %d instructions.\n", disassembly.size());
-    absl::PrintF("         .org $%06x\n", pc);
+    absl::PrintF("         .org %s\n", pc.ToString());
     for (const auto& value : disassembly) {
       if (value.first != pc) {
-        absl::PrintF("         .org $%06x\n", value.first);
+        absl::PrintF("         .org %s\n", value.first.ToString());
         pc = value.first;
       }
       std::string label = value.second.label;
@@ -109,10 +110,10 @@ int main(int argc, char** argv) {
       }
       std::string text =
           absl::StrFormat("%-8s %s", label, instruction.ToString());
-      absl::PrintF("%-35s ; %06x %s\n", text, pc,
+      absl::PrintF("%-35s ; %s %s\n", text, pc.ToString(),
                    value.second.next_execution_state.Flags().ToString());
 
-      pc += value.second.instruction.SerializedSize();
+      pc = pc.AddWrapped(value.second.instruction.SerializedSize());
     }
   }
 }

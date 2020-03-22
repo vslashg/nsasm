@@ -67,7 +67,9 @@ class AssemblerLookupContext : public LookupContext {
       return Error("No such module '%s' (resolving '%s::%s')", module, module,
                    name);
     }
-    return module_it->second->ValueForName(name);
+    auto v = module_it->second->ValueForName(name);
+    NSASM_RETURN_IF_ERROR(v);
+    return v->ToInt();
   }
 
  private:
@@ -113,7 +115,8 @@ nsasm::ErrorOr<void> Assembler::Assemble(OutputSink* sink) {
   return {};
 }
 
-absl::optional<std::string> Assembler::NameForAddress(int address) const {
+absl::optional<std::string> Assembler::NameForAddress(
+    nsasm::Address address) const {
   for (const auto& node : named_modules_) {
     auto v = node.second->NameForAddress(address);
     if (v.has_value()) {
@@ -123,7 +126,7 @@ absl::optional<std::string> Assembler::NameForAddress(int address) const {
   return absl::nullopt;
 }
 
-std::map<int, StatusFlags> Assembler::JumpTargets() const {
+std::map<nsasm::Address, StatusFlags> Assembler::JumpTargets() const {
   std::vector<const Module*> module_order;
   for (const Module& m : unnamed_modules_) {
     module_order.push_back(&m);
@@ -133,10 +136,10 @@ std::map<int, StatusFlags> Assembler::JumpTargets() const {
   }
   // TODO: add support for warnings, and report on jumps into existing modules
 
-  std::map<int, StatusFlags> ret;
+  std::map<nsasm::Address, StatusFlags> ret;
   for (const Module* module : module_order) {
     for (auto& node : module->JumpTargets()) {
-      int dest = node.first;
+      nsasm::Address dest = node.first;
       if (!Contains(dest)) {
         auto it = ret.find(node.first);
         if (it == ret.end()) {
@@ -150,15 +153,16 @@ std::map<int, StatusFlags> Assembler::JumpTargets() const {
   return ret;
 }
 
-std::map<int, ReturnConvention> Assembler::JumpTargetReturnConventions() const {
-  std::map<int, ReturnConvention> ret;
+std::map<nsasm::Address, ReturnConvention>
+Assembler::JumpTargetReturnConventions() const {
+  std::map<nsasm::Address, ReturnConvention> ret;
   for (const Module& m : unnamed_modules_) {
-    const std::map<int, ReturnConvention>& yields =
+    const std::map<nsasm::Address, ReturnConvention>& yields =
         m.JumpTargetReturnConventions();
     ret.insert(yields.begin(), yields.end());
   }
   for (const auto& node : named_modules_) {
-    const std::map<int, ReturnConvention>& yields =
+    const std::map<nsasm::Address, ReturnConvention>& yields =
         node.second->JumpTargetReturnConventions();
     ret.insert(yields.begin(), yields.end());
   }

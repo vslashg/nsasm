@@ -56,8 +56,8 @@ int main(int argc, char** argv) {
   }
 
   std::vector<std::string> values;
-  unsigned end = start + count * stride;
-  for (int address = start; address < end; address += stride) {
+  nsasm::Address address(start);
+  for (int i = 0; i < count; ++i, address = address.AddWrapped(stride)) {
     nsasm::ErrorOr<int> value = 0;
     switch (stride) {
       default:

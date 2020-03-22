@@ -6,12 +6,13 @@
 #include <vector>
 
 #include "absl/types/optional.h"
+#include "nsasm/address.h"
 
 namespace nsasm {
 
 // A Chunk is a half-open address range (inclusive of first but exclusive of
 // second.
-using Chunk = std::pair<int, int>;
+using Chunk = std::pair<nsasm::Address, nsasm::Address>;
 
 class DataRange {
  public:
@@ -21,13 +22,13 @@ class DataRange {
   //
   // Returns true if the claimed bytes were previously free, or false if this
   // claim conflicts with a prior claim on this object.
-  bool ClaimBytes(int location, int length);
+  bool ClaimBytes(nsasm::Address location, int length);
 
   // As above, but claims a given chunk instead.
   bool ClaimBytes(Chunk chunk);
 
   // Returns true if the given byte is inside this range.
-  bool Contains(int address) const;
+  bool Contains(nsasm::Address address) const;
 
   // Get the underlying chunks of this data range.
   const std::vector<Chunk>& Chunks() const { return ranges_; }
@@ -50,11 +51,13 @@ class RangeMap {
 
   // Return the T associated with the given address, or nullopt if there is
   // none.
-  absl::optional<T> Lookup(int address) const;
+  absl::optional<T> Lookup(nsasm::Address address) const;
 
   // Returns true if the given byte is inside this range.  Like Lookup, but
   // is faster and doesn't fetch T.
-  bool Contains(int address) const { return used_.Contains(address); }
+  bool Contains(nsasm::Address address) const {
+    return used_.Contains(address);
+  }
 
  private:
   DataRange used_;
@@ -81,7 +84,7 @@ bool RangeMap<T>::Insert(DataRange range, const T& value) {
 }
 
 template <typename T>
-absl::optional<T> RangeMap<T>::Lookup(int address) const {
+absl::optional<T> RangeMap<T>::Lookup(nsasm::Address address) const {
   auto it = mapping_.upper_bound(Chunk(address, address));
   if (it != mapping_.end() && it->first.first == address) {
     return it->second;

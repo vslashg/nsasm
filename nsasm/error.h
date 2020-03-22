@@ -10,7 +10,7 @@
 
 namespace nsasm {
 
-class Error {
+class ABSL_MUST_USE_RESULT Error {
  public:
   template <typename... Args>
   explicit Error(const absl::FormatSpec<Args...>& format, const Args&... args)
@@ -40,7 +40,7 @@ class Error {
 };
 
 template <typename T>
-class ErrorOr {
+class ABSL_MUST_USE_RESULT ErrorOr {
  public:
   ErrorOr(T&& t) : value(std::move(t)) {}
   ErrorOr(const T& t) : value(t) {}

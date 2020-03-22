@@ -5,6 +5,7 @@
 
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+#include "nsasm/address.h"
 #include "nsasm/calling_convention.h"
 #include "nsasm/execution_state.h"
 #include "nsasm/expression.h"
@@ -63,7 +64,7 @@ struct Directive {
   //
   // Returns an error if the instruction cannot be assembled for some reason.
   // Also forwards any error returned by the output sink.
-  ErrorOr<void> Assemble(int address, const LookupContext& context,
+  ErrorOr<void> Assemble(nsasm::Address address, const LookupContext& context,
                          OutputSink* sink) const;
 
   std::string ToString() const;

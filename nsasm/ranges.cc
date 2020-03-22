@@ -8,25 +8,26 @@ namespace {
 
 // Less-than comparator that will compare Chunks with integers,
 // using the lower bound of the chunk as the comparison basis.
-bool LeftSideSearch(int lhs, const Chunk& rhs) { return lhs < rhs.first; }
+bool LeftSideSearch(nsasm::Address lhs, const Chunk& rhs) {
+  return lhs < rhs.first;
+}
 
 }  // namespace
 
-bool DataRange::ClaimBytes(int location, int length) {
+bool DataRange::ClaimBytes(nsasm::Address location, int length) {
   bool success = true;
   while (length > 0) {
-    const int first_byte_next_bank = (location + 0x10000) & 0xff0000;
     const int next_chunk_size =
-        std::min(length, first_byte_next_bank - location);
-    const Chunk chunk(location, location + next_chunk_size);
+        std::min(length, 0x10000 - location.BankAddress());
+    const Chunk chunk(location, location.AddUnwrapped(next_chunk_size));
     success = ClaimBytes(chunk) && success;
     length -= next_chunk_size;
-    location += next_chunk_size - 0x10000;
+    location = nsasm::Address(location.Bank(), 0);
   }
   return success;
 }
 
-bool DataRange::Contains(int location) const {
+bool DataRange::Contains(nsasm::Address location) const {
   if (ranges_.empty()) {
     return false;
   }

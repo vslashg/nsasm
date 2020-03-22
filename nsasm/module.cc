@@ -17,7 +17,9 @@ class ModuleLookupContext : public LookupContext {
   ErrorOr<int> Lookup(absl::string_view name,
                       absl::string_view module) const override {
     if (module.empty() || module == module_->Name()) {
-      return module_->LocalLookup(name, active_scopes_);
+      auto lv = module_->LocalLookup(name, active_scopes_);
+      NSASM_RETURN_IF_ERROR(lv);
+      return lv->ToInt();
     } else {
       return externs_.Lookup(name, module);
     }
@@ -192,23 +194,25 @@ ErrorOr<void> Module::RunFirstPass() {
   }
 
   // Assign an address to each statement.
-  int pc = -1;
+  absl::optional<nsasm::Address> pc = absl::nullopt;
   for (Line& line : lines_) {
     Directive* dir = line.statement.Directive();
     if (dir && dir->name == D_org) {
       auto v = dir->argument.Evaluate(NullLookupContext());
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(v, dir->location);
-      pc = *v;
+      pc = nsasm::Address(*v);
     }
     int statement_size = line.statement.SerializedSize();
-    if (statement_size > 0 && pc == -1) {
+    if (statement_size > 0 && !pc.has_value()) {
       return Error("No address given for assembly")
           .SetLocation(line.statement.Location());
     }
-    if (!dir || dir->name != D_equ) {
-      line.address = pc;
+    if (pc.has_value()) {
+      if (!dir || dir->name != D_equ) {
+        line.value = LabelValue(*pc);
+      }
+      pc = pc->AddWrapped(statement_size);
     }
-    pc += statement_size;
   }
 
   return {};
@@ -231,13 +235,13 @@ ErrorOr<int> Module::LocalIndex(absl::string_view sv,
   return Error("Reference to undefined name '%s'", sv);
 }
 
-ErrorOr<int> Module::LocalLookup(absl::string_view sv,
-                                 const std::vector<int>& active_scopes) const {
+ErrorOr<LabelValue> Module::LocalLookup(
+    absl::string_view sv, const std::vector<int>& active_scopes) const {
   auto index = LocalIndex(sv, active_scopes);
   NSASM_RETURN_IF_ERROR(index);
   const Line& line = lines_[*index];
-  if (line.address.has_value()) {
-    return *line.address;
+  if (line.value.has_value()) {
+    return LabelValue::FromInt(line.value->ToInt());
   }
   return Error("Value '%s' accessed before definition", sv);
 }
@@ -246,11 +250,11 @@ ErrorOr<void> Module::RunSecondPass(const LookupContext& lookup_context) {
   // Second pass is for evaluating .equ expressions only.
   for (Line& line : lines_) {
     const Directive* dir = line.statement.Directive();
-    if (dir && dir->name == D_equ && !line.address.has_value()) {
+    if (dir && dir->name == D_equ && !line.value.has_value()) {
       ModuleLookupContext context(this, line.active_scopes, lookup_context);
       auto value = dir->argument.Evaluate(context);
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(value, line.statement.Location());
-      line.address = *value;
+      line.value = LabelValue::FromInt(*value);
     }
   }
   return {};
@@ -264,43 +268,46 @@ ErrorOr<void> Module::Assemble(OutputSink* sink,
     const int size = line.statement.SerializedSize();
     ModuleLookupContext context(this, line.active_scopes, lookup_context);
     if (size > 0) {
-      if (!line.address.has_value()) {
+      if (!line.value.has_value()) {
         return Error("logic error: no address for statement")
             .SetLocation(line.statement.Location());
       }
+      Address address = line.value->ToAddress();
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(
-          line.statement.Assemble(*line.address, context, sink),
+          line.statement.Assemble(address, context, sink),
           line.statement.Location());
-      if (!owned_bytes_.ClaimBytes(*line.address, size)) {
-        return Error("Second write to same address $%06x in module",
-                     *line.address)
+      if (!owned_bytes_.ClaimBytes(address, size)) {
+        return Error("Second write to same address %s in module",
+                     address.ToString())
             .SetLocation(line.statement.Location());
       }
     } else if (directive && directive->name == D_entry) {
-      if (!line.address.has_value()) {
+      if (!line.value.has_value()) {
         return Error("logic error: no address for .entry directive")
             .SetLocation(line.statement.Location());
       }
+      Address address = line.value->ToAddress();
       if (!directive->return_convention_argument.IsDefault()) {
-        return_conventions_[*line.address] =
-            directive->return_convention_argument;
+        return_conventions_[address] = directive->return_convention_argument;
       }
     } else if (directive && directive->name == D_remote) {
-      auto address = directive->argument.Evaluate(context);
-      NSASM_RETURN_IF_ERROR_WITH_LOCATION(address, directive->location);
-      auto it = unnamed_targets_.find(*address);
+      auto arg_val = directive->argument.Evaluate(context);
+      NSASM_RETURN_IF_ERROR_WITH_LOCATION(arg_val, directive->location);
+      Address address(*arg_val);
+      auto it = unnamed_targets_.find(address);
       if (it == unnamed_targets_.end()) {
-        unnamed_targets_[*address] = directive->flag_state_argument;
+        unnamed_targets_[address] = directive->flag_state_argument;
       } else {
         it->second |= directive->flag_state_argument;
       }
       if (!directive->return_convention_argument.IsDefault()) {
-        return_conventions_[*address] = directive->return_convention_argument;
+        return_conventions_[address] = directive->return_convention_argument;
       }
     }
     if (instruction) {
-      // We know line.address has a value, or we wouldn't have gotten this far
-      auto branch_target = instruction->FarBranchTarget(*line.address);
+      // We know line.value has a value, or we wouldn't have gotten this far
+      auto branch_target =
+          instruction->FarBranchTarget(line.value->ToAddress());
       if (branch_target.has_value()) {
         // FarBranchTarget() does not perform lookup, so if we have a value,
         // this is our branch target.
@@ -315,13 +322,13 @@ ErrorOr<void> Module::Assemble(OutputSink* sink,
   }
   for (const auto& node : global_to_line_) {
     const Line& line = lines_[node.second];
-    if (!line.address.has_value()) {
+    if (!line.value.has_value()) {
       return Error("Label missing a value")
           .SetLocation(line.statement.Location());
     }
-    int value = *line.address;
-    if (!value_to_global_.contains(value)) {
-      value_to_global_[value] = node.first;
+    nsasm::Address address = line.value->ToAddress();
+    if (!address_to_global_.contains(address)) {
+      address_to_global_[address] = node.first;
     }
   }
   return {};
@@ -332,32 +339,34 @@ void Module::DebugPrint() const {
     for (const auto& label : line.labels) {
       absl::PrintF("       %s:\n", label);
     }
-    if (line.address.has_value()) {
-      absl::PrintF("%06x     %s\n", *line.address, line.statement.ToString());
+    if (line.value.has_value()) {
+      absl::PrintF("%06x     %s\n", line.value->ToNumber(T_long),
+                   line.statement.ToString());
     } else {
       absl::PrintF("           %s\n", line.statement.ToString());
     }
   }
 }
 
-ErrorOr<int> Module::ValueForName(absl::string_view sv) const {
+ErrorOr<LabelValue> Module::ValueForName(absl::string_view sv) const {
   auto line_loc = global_to_line_.find(sv);
   if (line_loc == global_to_line_.end()) {
     return Error("No label named %s in module %s", sv, module_name_);
   }
-  const absl::optional<int>& value = lines_[line_loc->second].address;
+  const absl::optional<LabelValue>& value = lines_[line_loc->second].value;
   if (value.has_value()) {
     return *value;
   }
   return Error("logic error: No value at label %s::%s", module_name_, sv);
 }
 
-absl::optional<std::string> Module::NameForAddress(int address) const {
+absl::optional<std::string> Module::NameForAddress(
+    nsasm::Address address) const {
   if (module_name_.empty()) {
     return absl::nullopt;
   }
-  auto it = value_to_global_.find(address);
-  if (it == value_to_global_.end()) {
+  auto it = address_to_global_.find(address);
+  if (it == address_to_global_.end()) {
     return absl::nullopt;
   }
   return absl::StrCat(module_name_, "::", it->second);

@@ -10,14 +10,15 @@
 
 namespace nsasm {
 
-ErrorOr<std::map<int, StatusFlags>> Disassembler::Disassemble(
-    int starting_address, const StatusFlags& initial_status_flags) {
+ErrorOr<std::map<nsasm::Address, StatusFlags>> Disassembler::Disassemble(
+    nsasm::Address starting_address, const StatusFlags& initial_status_flags) {
   // Map of newly decoded, or locally modified, instructions.  This is
   // written to disassembly_ at the end of this function, assuming we did not
   // exit with an error.
-  std::map<int, DisassembledInstruction> new_disassembly;
+  std::map<nsasm::Address, DisassembledInstruction> new_disassembly;
   auto get_instruction =
-      [this, &new_disassembly](int address) -> DisassembledInstruction* {
+      [this,
+       &new_disassembly](nsasm::Address address) -> DisassembledInstruction* {
     // return the instruction if it already is in the new map
     auto new_disassembly_it = new_disassembly.find(address);
     if (new_disassembly_it != new_disassembly.end()) {
@@ -35,8 +36,8 @@ ErrorOr<std::map<int, StatusFlags>> Disassembler::Disassemble(
   };
 
   // Mapping of instruction addresses to jump target label name
-  std::map<int, std::string> label_names;
-  auto get_label = [this, &label_names](int address) {
+  std::map<nsasm::Address, std::string> label_names;
+  auto get_label = [this, &label_names](nsasm::Address address) {
     // Is address in label map?
     auto it = label_names.find(address);
     if (it != label_names.end()) {
@@ -53,8 +54,8 @@ ErrorOr<std::map<int, StatusFlags>> Disassembler::Disassemble(
 
   // Map of locations to consider next, and the execution state to use
   // when considering it.
-  std::map<int, ExecutionState> decode_stack;
-  auto add_to_decode_stack = [&decode_stack](int address,
+  std::map<nsasm::Address, ExecutionState> decode_stack;
+  auto add_to_decode_stack = [&decode_stack](nsasm::Address address,
                                              const ExecutionState& state) {
     auto it = decode_stack.find(address);
     if (it == decode_stack.end()) {
@@ -65,8 +66,8 @@ ErrorOr<std::map<int, StatusFlags>> Disassembler::Disassemble(
   };
 
   // Map of far branch targets to incoming states
-  std::map<int, StatusFlags> far_branch_targets;
-  auto add_far_branch = [&far_branch_targets](int address,
+  std::map<nsasm::Address, StatusFlags> far_branch_targets;
+  auto add_far_branch = [&far_branch_targets](nsasm::Address address,
                                               const ExecutionState& state) {
     auto it = far_branch_targets.find(address);
     if (it == far_branch_targets.end()) {
@@ -88,7 +89,7 @@ ErrorOr<std::map<int, StatusFlags>> Disassembler::Disassemble(
     auto next = *decode_stack.begin();
     decode_stack.erase(decode_stack.begin());
 
-    int pc = next.first;
+    nsasm::Address pc = next.first;
     const ExecutionState& current_execution_state = next.second;
 
     DisassembledInstruction* existing_instruction = get_instruction(pc);
@@ -103,14 +104,14 @@ ErrorOr<std::map<int, StatusFlags>> Disassembler::Disassemble(
 
       int instruction_bytes = InstructionLength(instruction->addressing_mode);
 
-      int next_pc = AddToPC(pc, instruction_bytes);
+      nsasm::Address next_pc = pc.AddWrapped(instruction_bytes);
       auto next_execution_state = current_execution_state;
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(
           instruction->Execute(&next_execution_state), rom_.path(), pc);
 
       auto far_branch_address = instruction->FarBranchTarget(pc);
       if (far_branch_address.has_value()) {
-        int target = *far_branch_address;
+        nsasm::Address target = *far_branch_address;
         add_far_branch(target, next_execution_state);
         if (instruction->mnemonic == M_jsr || instruction->mnemonic == M_jsl) {
           // If the subroutine call requires a yield, add that to disassembly.
@@ -126,7 +127,7 @@ ErrorOr<std::map<int, StatusFlags>> Disassembler::Disassemble(
       // need to add that address to code we should try to disassemble.
       if (instruction->IsLocalBranch()) {
         int value = *instruction->arg1.Evaluate(NullLookupContext());
-        int target = AddToPC(next_pc, value);
+        nsasm::Address target = next_pc.AddWrapped(value);
         instruction->arg1.ApplyLabel(get_label(target));
         auto branch_execution_state = current_execution_state;
         NSASM_RETURN_IF_ERROR_WITH_LOCATION(
@@ -173,7 +174,7 @@ ErrorOr<std::map<int, StatusFlags>> Disassembler::Disassemble(
         di.next_execution_state = next_execution_state;
         int instruction_bytes =
             InstructionLength(di.instruction.addressing_mode);
-        int next_pc = AddToPC(pc, instruction_bytes);
+        nsasm::Address next_pc = pc.AddWrapped(instruction_bytes);
 
         // Propagate the changed state forward to the next instruction...
         if (!di.instruction.IsExitInstruction()) {
@@ -191,7 +192,7 @@ ErrorOr<std::map<int, StatusFlags>> Disassembler::Disassemble(
               di.instruction.ExecuteBranch(&branch_execution_state),
               rom_.path(), pc);
           int value = *di.instruction.arg1.Evaluate(NullLookupContext());
-          int target = AddToPC(next_pc, value);
+          nsasm::Address target = next_pc.AddWrapped(value);
           add_to_decode_stack(target, branch_execution_state);
         }
       }
@@ -289,7 +290,8 @@ ErrorOr<void> Disassembler::Cleanup() {
   return {};
 }
 
-absl::optional<std::string> Disassembler::NameForAddress(int address) {
+absl::optional<std::string> Disassembler::NameForAddress(
+    nsasm::Address address) {
   if (entry_points_.count(address) == 0) {
     return absl::nullopt;
   }

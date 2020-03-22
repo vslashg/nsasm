@@ -28,18 +28,19 @@ class Assembler {
   // Post-assembly queries
 
   // Returns true if data has been assembled into the given byte address.
-  bool Contains(int address) const {
+  bool Contains(nsasm::Address address) const {
     return memory_module_map_.Contains(address);
   }
 
   // Returns a qualified name for a label referring to this address
-  absl::optional<std::string> NameForAddress(int address) const;
+  absl::optional<std::string> NameForAddress(nsasm::Address address) const;
 
   // Returns the collection of all jump targets found during assembly.
-  std::map<int, StatusFlags> JumpTargets() const;
+  std::map<nsasm::Address, StatusFlags> JumpTargets() const;
 
   // Returns the set of jump targets found with nonstandard calling conventions.
-  std::map<int, ReturnConvention> JumpTargetReturnConventions() const;
+  std::map<nsasm::Address, ReturnConvention> JumpTargetReturnConventions()
+      const;
 
   // Output each named module's contents to stdout
   void DebugPrint() const;

@@ -23,15 +23,7 @@ enum Mapping {
 //
 // Returns nullopt if snes_address is out of range, or if it maps to an address
 // intercepted by the SNES (for work ram or memory-mapped registers, say.)
-ErrorOr<int> SnesToROMAddress(int snes_address, Mapping mapping);
-
-// Add the given offset to an address.  Adds do not carry over into the bank
-// word.  (In other words, byte 2 does not carry into byte 3.  This is a weird
-// consequence of the 24 bit program counter being split between the PC and K
-// registers in the 65816.)
-constexpr int AddToPC(int address, int offset) {
-  return (address & 0xff0000) | ((address + offset) & 0xffff);
-}
+ErrorOr<int> SnesToROMAddress(nsasm::Address snes_address, Mapping mapping);
 
 // Representation of a SNES ROM, presumably loaded from disk.
 class Rom {
@@ -45,11 +37,11 @@ class Rom {
   // addresses with the same logic as `AddToPC()` above.
   //
   // Returns nullopt instead if given an out-of-range read region.
-  ErrorOr<std::vector<uint8_t>> Read(int address, int length) const;
+  ErrorOr<std::vector<uint8_t>> Read(nsasm::Address address, int length) const;
 
-  ErrorOr<int> ReadByte(int address) const;
-  ErrorOr<int> ReadWord(int address) const;
-  ErrorOr<int> ReadLong(int address) const;
+  ErrorOr<int> ReadByte(nsasm::Address address) const;
+  ErrorOr<int> ReadWord(nsasm::Address address) const;
+  ErrorOr<int> ReadLong(nsasm::Address address) const;
 
   const std::string& path() const { return path_; }
 
@@ -68,7 +60,7 @@ class RomIdentityTest : public OutputSink {
  public:
   RomIdentityTest(const Rom* rom) : rom_(rom) {}
 
-  ErrorOr<void> Write(int address,
+  ErrorOr<void> Write(nsasm::Address address,
                       absl::Span<const std::uint8_t> data) override;
 
  private:

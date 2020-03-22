@@ -39,7 +39,8 @@ struct Instruction {
   // `source_address` is the address where this instruction resides in memory.
   // This is used to calculate the target bank address for jumps encoded with
   // only two bytes.
-  absl::optional<int> FarBranchTarget(int source_address) const;
+  absl::optional<nsasm::Address> FarBranchTarget(
+      nsasm::Address source_address) const;
 
   // Update the provided execution state to reflect this instruction being run.
   //
@@ -66,7 +67,7 @@ struct Instruction {
   //
   // Returns an error if the instruction cannot be assembled for some reason.
   // Also forwards any error returned by the output sink.
-  ErrorOr<void> Assemble(int address, const LookupContext& context,
+  ErrorOr<void> Assemble(nsasm::Address address, const LookupContext& context,
                          OutputSink* sink) const;
 
   std::string ToString() const;

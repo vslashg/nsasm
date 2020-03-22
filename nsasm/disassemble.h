@@ -20,7 +20,7 @@ struct DisassembledInstruction {
   ExecutionState next_execution_state;
 };
 
-using DisassemblyMap = std::map<int, DisassembledInstruction>;
+using DisassemblyMap = std::map<nsasm::Address, DisassembledInstruction>;
 
 class Disassembler {
  public:
@@ -37,8 +37,8 @@ class Disassembler {
   //
   // Returns an error, or else a mapping of all far jump targets found in
   // this disassembly.
-  ErrorOr<std::map<int, StatusFlags>> Disassemble(
-      int starting_address, const StatusFlags& initial_status_flags);
+  ErrorOr<std::map<nsasm::Address, StatusFlags>> Disassemble(
+      nsasm::Address starting_address, const StatusFlags& initial_status_flags);
   ErrorOr<void> Cleanup();
 
   const DisassemblyMap& Result() const { return disassembly_; }
@@ -48,19 +48,19 @@ class Disassembler {
   // This will cause jumps to the provided addresses to set the flag state, or
   // even stop further execution.
   void AddTargetReturnConventions(
-      const std::map<int, ReturnConvention>& return_conventions) {
+      const std::map<nsasm::Address, ReturnConvention>& return_conventions) {
     return_conventions_ = return_conventions;
   }
 
  private:
-  absl::optional<std::string> NameForAddress(int address);
+  absl::optional<std::string> NameForAddress(nsasm::Address address);
 
   std::string GenSym() { return absl::StrCat("gensym", ++current_sym_); }
 
   Rom rom_;
-  std::set<int> entry_points_;
-  std::map<int, DisassembledInstruction> disassembly_;
-  std::map<int, ReturnConvention> return_conventions_;
+  std::set<nsasm::Address> entry_points_;
+  std::map<nsasm::Address, DisassembledInstruction> disassembly_;
+  std::map<nsasm::Address, ReturnConvention> return_conventions_;
   int current_sym_;
 };
 

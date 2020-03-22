@@ -4,12 +4,9 @@
 
 namespace nsasm {
 
-ErrorOr<int> SnesToROMAddress(int snes_address, Mapping mapping) {
-  if (snes_address < 0 || snes_address > 0xffffff) {
-    return Error("Address out of range").SetLocation(snes_address);
-  }
-  int bank_address = snes_address & 0xffff;
-  int bank = (snes_address >> 16) % 0xff;
+ErrorOr<int> SnesToROMAddress(nsasm::Address snes_address, Mapping mapping) {
+  int bank_address = snes_address.BankAddress();
+  int bank = snes_address.Bank();
   if (bank == 0x7e || bank == 0x7f) {
     return Error("Address in WRAM").SetLocation(snes_address);
   }
@@ -23,11 +20,11 @@ ErrorOr<int> SnesToROMAddress(int snes_address, Mapping mapping) {
     };
     return (bank_address & 0x7fff) | (bank << 15);
   } else if (mapping == kHiRom) {
-    return snes_address & 0x3fffff;
+    return bank_address | ((bank & 0x3f) << 16);
   } else if (mapping == kExHiRom) {
-    int result = snes_address & 0x3fffff;
+    int result = bank_address | ((bank & 0x3f) << 16);
     // address bit 23 is inverted and used as bit 22 of the CART address
-    if ((snes_address & 0x800000) == 0) {
+    if ((result & 0x800000) == 0) {
       result |= 0x400000;
     }
     return result;
@@ -35,7 +32,8 @@ ErrorOr<int> SnesToROMAddress(int snes_address, Mapping mapping) {
   return Error("LOGIC ERROR: Mapping mode %d unknown", mapping);
 }
 
-ErrorOr<std::vector<uint8_t>> Rom::Read(int address, int length) const {
+ErrorOr<std::vector<uint8_t>> Rom::Read(nsasm::Address address,
+                                        int length) const {
   if (length == 0) {
     return std::vector<uint8_t>();
   }
@@ -44,7 +42,7 @@ ErrorOr<std::vector<uint8_t>> Rom::Read(int address, int length) const {
   }
   auto first_address = SnesToROMAddress(address, mapping_mode_);
   auto last_address =
-      SnesToROMAddress(AddToPC(address, length - 1), mapping_mode_);
+      SnesToROMAddress(address.AddWrapped(length - 1), mapping_mode_);
   NSASM_RETURN_IF_ERROR_WITH_LOCATION(first_address, path_);
   NSASM_RETURN_IF_ERROR_WITH_LOCATION(last_address, path_);
   if (*last_address > *first_address) {
@@ -60,7 +58,7 @@ ErrorOr<std::vector<uint8_t>> Rom::Read(int address, int length) const {
     // Read wraps around a bank.  Just do this by hand.
     std::vector<uint8_t> result;
     for (int i = 0; i < length; ++i) {
-      auto rom_address = SnesToROMAddress(AddToPC(address, i), mapping_mode_);
+      auto rom_address = SnesToROMAddress(address.AddWrapped(i), mapping_mode_);
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(rom_address, path_);
       if (*rom_address >= int(data_.size())) {
         return Error("Address past end of ROM")
@@ -72,19 +70,19 @@ ErrorOr<std::vector<uint8_t>> Rom::Read(int address, int length) const {
   }
 }
 
-ErrorOr<int> Rom::ReadByte(int address) const {
+ErrorOr<int> Rom::ReadByte(nsasm::Address address) const {
   auto read = Read(address, 1);
   NSASM_RETURN_IF_ERROR(read);
   return (*read)[0];
 }
 
-ErrorOr<int> Rom::ReadWord(int address) const {
+ErrorOr<int> Rom::ReadWord(nsasm::Address address) const {
   auto read = Read(address, 2);
   NSASM_RETURN_IF_ERROR(read);
   return (*read)[0] + ((*read)[1] * 256);
 }
 
-ErrorOr<int> Rom::ReadLong(int address) const {
+ErrorOr<int> Rom::ReadLong(nsasm::Address address) const {
   auto read = Read(address, 3);
   NSASM_RETURN_IF_ERROR(read);
   return (*read)[0] + ((*read)[1] * 256) + ((*read)[2] * 256 * 256);
@@ -155,7 +153,7 @@ ErrorOr<Rom> LoadRomFile(const std::string& path) {
   }
 }
 
-ErrorOr<void> RomIdentityTest::Write(int address,
+ErrorOr<void> RomIdentityTest::Write(nsasm::Address address,
                                      absl::Span<const std::uint8_t> data) {
   auto actual = rom_->Read(address, data.size());
   NSASM_RETURN_IF_ERROR(actual);
@@ -166,8 +164,8 @@ ErrorOr<void> RomIdentityTest::Write(int address,
 
   for (size_t i = 0; i < data.size(); ++i) {
     if (data[i] != (*actual)[i]) {
-      return Error("Wrote 0x%02x to 0x%06x, expected 0x%02x", data[i],
-                   address + i, (*actual)[i]);
+      return Error("Wrote 0x%02x to %s, expected 0x%02x", data[i],
+                   address.AddWrapped(i).ToString(), (*actual)[i]);
     }
   }
 

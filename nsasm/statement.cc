@@ -42,7 +42,8 @@ int Statement::SerializedSize() const {
   }
 }
 
-ErrorOr<void> Statement::Assemble(int address, const LookupContext& context,
+ErrorOr<void> Statement::Assemble(nsasm::Address address,
+                                  const LookupContext& context,
                                   OutputSink* sink) const {
   switch (data_.index()) {
     case 0:
