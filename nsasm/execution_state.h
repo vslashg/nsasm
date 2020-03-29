@@ -134,6 +134,11 @@ class StatusFlags {
   uint8_t c_bit_ : 2;
 };
 
+inline StatusFlags& StatusFlags::operator|=(const StatusFlags& rhs) {
+  *this = *this | rhs;
+  return *this;
+}
+
 class RegisterValue {
  public:
   enum Type : int16_t {
@@ -179,11 +184,6 @@ class RegisterValue {
   Type type_;
   uint16_t value_;
 };
-
-inline StatusFlags& StatusFlags::operator|=(const StatusFlags& rhs) {
-  *this = *this | rhs;
-  return *this;
-}
 
 // Things that can be in a stack position:
 //
