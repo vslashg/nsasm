@@ -118,10 +118,7 @@ class StatusFlags {
                        lhs.XBit() | rhs.XBit(), lhs.CBit() | rhs.CBit());
   }
 
-  StatusFlags& operator|=(const StatusFlags& rhs) {
-    *this = *this | rhs;
-    return *this;
-  }
+  StatusFlags& operator|=(const StatusFlags& rhs);
 
   bool operator==(const StatusFlags& rhs) const {
     return e_bit_ == rhs.e_bit_ && m_bit_ == rhs.m_bit_ &&
@@ -182,6 +179,11 @@ class RegisterValue {
   Type type_;
   uint16_t value_;
 };
+
+inline StatusFlags& StatusFlags::operator|=(const StatusFlags& rhs) {
+  *this = *this | rhs;
+  return *this;
+}
 
 // Things that can be in a stack position:
 //
