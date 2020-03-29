@@ -18,7 +18,9 @@ class FullIdentifier {
   FullIdentifier(const FullIdentifier&) = default;
   FullIdentifier(FullIdentifier&&) = default;
 
-  const absl::optional<std::string>& OptionalModule() const { return mod_name_; }
+  const absl::optional<std::string>& OptionalModule() const {
+    return mod_name_;
+  }
   bool Qualified() const { return mod_name_.has_value(); }
   const std::string& Module() const { return *mod_name_; }
   const std::string& Identifier() const { return id_name_; }
@@ -31,23 +33,29 @@ class FullIdentifier {
   }
 
   bool operator==(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) == std::tie(rhs.mod_name_, rhs.id_name_);
+    return std::tie(mod_name_, id_name_) ==
+           std::tie(rhs.mod_name_, rhs.id_name_);
   }
   bool operator!=(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) != std::tie(rhs.mod_name_, rhs.id_name_);
+    return std::tie(mod_name_, id_name_) !=
+           std::tie(rhs.mod_name_, rhs.id_name_);
   }
   /*
   bool operator<(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) < std::tie(rhs.mod_name_, rhs.id_name_);
+    return std::tie(mod_name_, id_name_) < std::tie(rhs.mod_name_,
+  rhs.id_name_);
   }
   bool operator<=(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) <= std::tie(rhs.mod_name_, rhs.id_name_);
+    return std::tie(mod_name_, id_name_) <= std::tie(rhs.mod_name_,
+  rhs.id_name_);
   }
   bool operator>(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) > std::tie(rhs.mod_name_, rhs.id_name_);
+    return std::tie(mod_name_, id_name_) > std::tie(rhs.mod_name_,
+  rhs.id_name_);
   }
   bool operator>=(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) >= std::tie(rhs.mod_name_, rhs.id_name_);
+    return std::tie(mod_name_, id_name_) >= std::tie(rhs.mod_name_,
+  rhs.id_name_);
   }
   */
 
