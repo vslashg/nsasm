@@ -13,7 +13,7 @@ class FullIdentifier {
  public:
   FullIdentifier(std::string mod_name, std::string id_name)
       : mod_name_(std::move(mod_name)), id_name_(std::move(id_name)) {}
-  FullIdentifier(std::string id_name)
+  explicit FullIdentifier(std::string id_name)
       : mod_name_(absl::nullopt), id_name_(std::move(id_name)) {}
   FullIdentifier(const FullIdentifier&) = default;
   FullIdentifier(FullIdentifier&&) = default;
