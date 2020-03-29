@@ -35,10 +35,17 @@ cc_test(
 
 cc_library(
     name = "numeric_type",
-    srcs = [],
     hdrs = ["numeric_type.h"],
     deps = [
         ":error",
+    ],
+)
+
+cc_library(
+    name = "identifiers",
+    hdrs = ["identifiers.h"],
+    deps = [
+        "@absl//absl/strings",
     ],
 )
 
@@ -48,7 +55,9 @@ cc_library(
     hdrs = ["expression.h"],
     deps = [
         ":error",
+        ":identifiers",
         ":numeric_type",
+        "@absl//absl/memory",
         "@absl//absl/types:optional",
     ],
 )

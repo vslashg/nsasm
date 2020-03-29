@@ -14,7 +14,8 @@ TEST(Parse, round_trip) {
     nsasm::Instruction ins;
     std::tie(ins.mnemonic, ins.addressing_mode) = nsasm::DecodeOpcode(i);
     if (ins.addressing_mode == A_rel8 || ins.addressing_mode == A_rel16) {
-      ins.arg1 = absl::make_unique<Identifier>("label");
+      ins.arg1 =
+          absl::make_unique<IdentifierExpression>(FullIdentifier("label"));
     } else if (ins.addressing_mode != A_imp && ins.addressing_mode != A_acc) {
       ins.arg1 = absl::make_unique<Literal>(0, Arg1Type(ins.addressing_mode));
     }
@@ -23,7 +24,7 @@ TEST(Parse, round_trip) {
     }
 
     std::string line = absl::StrCat(
-        nsasm::ToString(ins.mnemonic), " ",
+        nsasm::ToString(ins.mnemonic),
         nsasm::ArgsToString(ins.addressing_mode, ins.arg1, ins.arg2));
     SCOPED_TRACE(i);
     SCOPED_TRACE(line);

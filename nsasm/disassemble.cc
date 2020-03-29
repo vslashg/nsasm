@@ -246,11 +246,11 @@ ErrorOr<void> Disassembler::Cleanup() {
       auto target_name = NameForAddress(*jump_target);
       if (target_name) {
         if (instruction.addressing_mode == A_dir_l) {
-          instruction.arg1 =
-              absl::make_unique<Identifier>(*target_name, "", T_long);
+          instruction.arg1 = absl::make_unique<IdentifierExpression>(
+              FullIdentifier(*target_name), T_long);
         } else if (instruction.addressing_mode == A_dir_w) {
-          instruction.arg1 =
-              absl::make_unique<Identifier>(*target_name, "", T_word);
+          instruction.arg1 = absl::make_unique<IdentifierExpression>(
+              FullIdentifier(*target_name), T_word);
         }
       }
     }

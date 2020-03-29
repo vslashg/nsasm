@@ -19,13 +19,8 @@ std::string Literal::ToString() const {
   }
 }
 
-std::string Identifier::ToString() const {
-  const char* prefix = (type_ == T_long) ? "@" : "";
-  if (module_.empty()) {
-    return absl::StrCat(prefix, identifier_);
-  } else {
-    return absl::StrCat(prefix, module_, "::", identifier_);
-  }
+std::string IdentifierExpression::ToString() const {
+  return absl::StrCat((type_ == T_long) ? "@" : "", identifier_.ToString());
 }
 
 }  // namespace nsasm

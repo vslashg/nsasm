@@ -60,14 +60,18 @@ class AssemblerLookupContext : public LookupContext {
  public:
   AssemblerLookupContext(const Assembler* assembler) : assembler_(assembler) {}
 
-  ErrorOr<int> Lookup(absl::string_view name,
-                      absl::string_view module) const override {
+  ErrorOr<int> Lookup(const FullIdentifier& id) const override {
+    if (!id.Qualified()) {
+      // This is temporary; name lookup strategy is changing soon
+      return Error("Assembler lookup can't find unqualified names");
+    }
+    const std::string& module = id.Module();
     auto module_it = assembler_->named_modules_.find(module);
     if (module_it == assembler_->named_modules_.end()) {
-      return Error("No such module '%s' (resolving '%s::%s')", module, module,
-                   name);
+      return Error("No such module '%s' (resolving '%s')", module,
+                   id.ToString());
     }
-    auto v = module_it->second->ValueForName(name);
+    auto v = module_it->second->ValueForName(id.Identifier());
     NSASM_RETURN_IF_ERROR(v);
     return v->ToInt();
   }

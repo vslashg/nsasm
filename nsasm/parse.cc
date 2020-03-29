@@ -167,12 +167,25 @@ ErrorOr<ExpressionOrNull> Comp(TokenSpan* pos) {
   bool long_identifier = false;
   if (pos->front() == '@') {
     pos->remove_prefix(1);
-    if (!pos->front().Identifier()) {
+    if (!pos->front().Identifier() && pos->front() != P_scope) {
       return Error("Expected identifier after '@', found %s",
                    pos->front().ToString())
           .SetLocation(Loc(pos));
     }
     long_identifier = true;
+  }
+  if (pos->front() == P_scope) {
+    // Qualified global name ("::foo")
+    pos->remove_prefix(1);
+    if (!pos->front().Identifier()) {
+      return Error("Expected identifier after '::', found %s",
+                   pos->front().ToString())
+          .SetLocation(Loc(pos));
+    }
+    std::string s = *pos->front().Identifier();
+    pos->remove_prefix(1);
+    return {absl::make_unique<IdentifierExpression>(
+        FullIdentifier("", s), long_identifier ? T_long : T_word)};
   }
   if (pos->front().Identifier()) {
     std::string s1 = *pos->front().Identifier();
@@ -186,11 +199,11 @@ ErrorOr<ExpressionOrNull> Comp(TokenSpan* pos) {
       }
       const std::string s2 = *pos->front().Identifier();
       pos->remove_prefix(1);
-      return {absl::make_unique<Identifier>(s2, s1,
-                                            long_identifier ? T_long : T_word)};
+      return {absl::make_unique<IdentifierExpression>(
+          FullIdentifier(s1, s2), long_identifier ? T_long : T_word)};
     }
-    return {absl::make_unique<Identifier>(s1, "",
-                                          long_identifier ? T_long : T_word)};
+    return {absl::make_unique<IdentifierExpression>(
+        FullIdentifier(s1), long_identifier ? T_long : T_word)};
   }
   if (pos->front() == '(') {
     pos->remove_prefix(1);

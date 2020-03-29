@@ -67,18 +67,24 @@ TEST(Expression, literal_type) {
 
 TEST(Expression, identifiers) {
   EXPECT_EQ(Ex("foo").ToString(), "foo");
+  EXPECT_EQ(Ex("::foo").ToString(), "::foo");
   EXPECT_EQ(Ex("foo::bar").ToString(), "foo::bar");
   EXPECT_EQ(Ex("@foo").ToString(), "@foo");
+  EXPECT_EQ(Ex("@::foo").ToString(), "@::foo");
   EXPECT_EQ(Ex("@foo::bar").ToString(), "@foo::bar");
 
   EXPECT_EQ(Ex("foo").Type(), T_word);
+  EXPECT_EQ(Ex("::foo").Type(), T_word);
   EXPECT_EQ(Ex("foo::bar").Type(), T_word);
   EXPECT_EQ(Ex("@foo").Type(), T_long);
+  EXPECT_EQ(Ex("@::foo").Type(), T_long);
   EXPECT_EQ(Ex("@foo::bar").Type(), T_long);
 
   EXPECT_EQ(Ex("foo + 1").Type(), T_word);
+  EXPECT_EQ(Ex("::foo + 1").Type(), T_word);
   EXPECT_EQ(Ex("foo::bar + 1").Type(), T_word);
   EXPECT_EQ(Ex("@foo + 1").Type(), T_long);
+  EXPECT_EQ(Ex("@::foo + 1").Type(), T_long);
   EXPECT_EQ(Ex("@foo::bar + 1").Type(), T_long);
 }
 

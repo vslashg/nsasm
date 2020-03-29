@@ -3,10 +3,12 @@
 
 #include <set>
 
+#include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
 #include "nsasm/error.h"
+#include "nsasm/identifiers.h"
 #include "nsasm/numeric_type.h"
 
 namespace nsasm {
@@ -79,13 +81,12 @@ inline UnaryOp MakeBankbyteOp() {
 
 class LookupContext {
  public:
-  virtual ErrorOr<int> Lookup(absl::string_view name,
-                              absl::string_view module) const = 0;
+  virtual ErrorOr<int> Lookup(const nsasm::FullIdentifier& id) const = 0;
 };
 
 class NullLookupContext : public LookupContext {
  public:
-  ErrorOr<int> Lookup(absl::string_view name, absl::string_view module) const {
+  ErrorOr<int> Lookup(const FullIdentifier&) const override {
     return Error("Can't perform name lookup in this context");
   }
 };
@@ -225,42 +226,39 @@ class Literal : public Expression {
   NumericType type_;
 };
 
-class Identifier : public Expression {
+class IdentifierExpression : public Expression {
  public:
-  explicit Identifier(std::string identifier, std::string module = "",
-                      NumericType type = T_word)
-      : type_(type),
-        module_(std::move(module)),
-        identifier_(std::move(identifier)) {}
+  explicit IdentifierExpression(nsasm::FullIdentifier identifier,
+                                NumericType type = T_word)
+      : type_(type), identifier_(std::move(identifier)) {}
 
   ErrorOr<int> Evaluate(const LookupContext& context) const override {
-    return context.Lookup(identifier_, module_);
+    return context.Lookup(identifier_);
   }
   NumericType Type() const override { return type_; }
   virtual bool RequiresLookup() const override { return true; }
   virtual std::set<std::string> ModuleNamesReferenced() const override {
     std::set<std::string> result;
-    if (!module_.empty()) {
-      result.insert(module_);
+    if (identifier_.Qualified()) {
+      result.insert(identifier_.Module());
     }
     return result;
   }
   std::string ToString() const override;
   absl::optional<std::string> SimpleIdentifier() const override {
-    if (module_.empty()) {
-      return identifier_;
+    if (identifier_.Qualified()) {
+      return absl::nullopt;
     }
-    return absl::nullopt;
+    return identifier_.Identifier();
   }
 
  private:
   std::unique_ptr<Expression> Copy() const override {
-    return absl::make_unique<Identifier>(identifier_, module_, type_);
+    return absl::make_unique<IdentifierExpression>(identifier_, type_);
   }
 
   NumericType type_;
-  std::string module_;
-  std::string identifier_;
+  FullIdentifier identifier_;
 };
 
 class BinaryExpression : public Expression {

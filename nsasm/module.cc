@@ -14,14 +14,14 @@ class ModuleLookupContext : public LookupContext {
                       const LookupContext& extern_vars)
       : module_(module), active_scopes_(active_scopes), externs_(extern_vars) {}
 
-  ErrorOr<int> Lookup(absl::string_view name,
-                      absl::string_view module) const override {
-    if (module.empty() || module == module_->Name()) {
-      auto lv = module_->LocalLookup(name, active_scopes_);
+  ErrorOr<int> Lookup(const FullIdentifier& id) const override {
+    // This will change when lookup/module strategy changes
+    if (!id.Qualified() || id.Module() == module_->Name()) {
+      auto lv = module_->LocalLookup(id.Identifier(), active_scopes_);
       NSASM_RETURN_IF_ERROR(lv);
       return lv->ToInt();
     } else {
-      return externs_.Lookup(name, module);
+      return externs_.Lookup(id);
     }
   }
 
