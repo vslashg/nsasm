@@ -67,7 +67,7 @@ class ABSL_MUST_USE_RESULT ErrorOr {
 };
 
 template <>
-class ErrorOr<void> {
+class ABSL_MUST_USE_RESULT ErrorOr<void> {
  public:
   ErrorOr() : value(absl::nullopt) {}
   ErrorOr(Error&& e) : value(e) {}
