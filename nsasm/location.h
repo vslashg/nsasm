@@ -14,6 +14,10 @@ class Location {
   Location() {}
   Location(std::string path) : path_(std::move(path)) {}
   Location(int line_number) : offset_(line_number), offset_type_(kLineNumber) {}
+  Location(std::string path, int line_number)
+      : path_(std::move(path)),
+        offset_(line_number),
+        offset_type_(kLineNumber) {}
   static Location FromAddress(int address) {
     Location loc;
     loc.offset_type_ = kAddress;

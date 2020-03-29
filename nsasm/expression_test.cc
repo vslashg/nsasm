@@ -6,8 +6,8 @@
 
 namespace nsasm {
 
-using ::testing::ElementsAre;
 using ::testing::IsEmpty;
+using ::testing::UnorderedElementsAre;
 
 namespace {
 ExpressionOrNull Ex(absl::string_view sv) {
@@ -88,12 +88,27 @@ TEST(Expression, identifiers) {
   EXPECT_EQ(Ex("@foo::bar + 1").Type(), T_long);
 }
 
+// Test context that assumes a module lookup context where `foo::local` is
+// exported, and where `scoped_local` is in scope but not exported.
+class TestIsLocalContext : public IsLocalContext {
+ public:
+  virtual bool IsLocal(const FullIdentifier& id) const {
+    return id == FullIdentifier("foo", "local") ||
+           id == FullIdentifier("local") ||
+           id == FullIdentifier("scoped_local");
+  }
+};
+
 TEST(Expression, namespaces) {
-  EXPECT_THAT(Ex("foo::bar + foo::baz").ModuleNamesReferenced(),
-              ElementsAre("foo"));
-  EXPECT_THAT(Ex("foo::bar + baz::blat").ModuleNamesReferenced(),
-              ElementsAre("baz", "foo"));
-  EXPECT_THAT(Ex("foo + bar + baz").ModuleNamesReferenced(), IsEmpty());
+  TestIsLocalContext is_local_context;
+  EXPECT_THAT(Ex("foo::bar + foo::local + bar::local + foo::scoped_local")
+                  .ExternalNamesReferenced(is_local_context),
+              UnorderedElementsAre(FullIdentifier("foo", "bar"),
+                                   FullIdentifier("bar", "local"),
+                                   FullIdentifier("foo", "scoped_local")));
+  EXPECT_THAT(Ex("bar + local + scoped_local")
+                  .ExternalNamesReferenced(is_local_context),
+              UnorderedElementsAre(FullIdentifier("", "bar")));
 }
 
 }  // namespace nsasm

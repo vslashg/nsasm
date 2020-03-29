@@ -23,6 +23,8 @@ class Assembler {
   ErrorOr<void> AddAsmFile(const File& file);
 
   // Assemble all modules together into a single sink.
+  //
+  // This can only be called once.
   ErrorOr<void> Assemble(OutputSink* sink);
 
   // Post-assembly queries
@@ -33,7 +35,7 @@ class Assembler {
   }
 
   // Returns a qualified name for a label referring to this address
-  absl::optional<std::string> NameForAddress(nsasm::Address address) const;
+  absl::optional<FullIdentifier> NameForAddress(nsasm::Address address) const;
 
   // Returns the collection of all jump targets found during assembly.
   std::map<nsasm::Address, StatusFlags> JumpTargets() const;
@@ -46,19 +48,18 @@ class Assembler {
   void DebugPrint() const;
 
  private:
-  ErrorOr<void> AddModule(Module&& module);
+  void AddModule(Module&& module);
 
-  // Calculates an order of named module assembly so that all
-  // .equ expressions are evaluated before any are accessed.
-  ErrorOr<std::vector<std::string>> FindAssemblyOrder();
+  // Calculates an order of module assembly so that all .equ expressions are
+  // evaluated before any are accessed.
+  ErrorOr<std::vector<Module*>> FindAssemblyOrder();
 
   friend class AssemblerLookupContext;
 
-  absl::flat_hash_map<std::string, std::unique_ptr<Module>> named_modules_;
-  std::deque<Module> unnamed_modules_;
+  std::deque<Module> modules_;
 
-  // malevolent murder maze
   RangeMap<Module*> memory_module_map_;
+  absl::flat_hash_map<FullIdentifier, Module*> name_to_module_map_;
 };
 
 // Simple factory function for assembling a collection of files

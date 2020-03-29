@@ -15,13 +15,29 @@ class ModuleLookupContext : public LookupContext {
       : module_(module), active_scopes_(active_scopes), externs_(extern_vars) {}
 
   ErrorOr<int> Lookup(const FullIdentifier& id) const override {
-    // This will change when lookup/module strategy changes
-    if (!id.Qualified() || id.Module() == module_->Name()) {
-      auto lv = module_->LocalLookup(id.Identifier(), active_scopes_);
-      NSASM_RETURN_IF_ERROR(lv);
-      return lv->ToInt();
-    } else {
+    if (id.Qualified()) {
+      // If identifier is fully qualified and is in this module's namespace,
+      // check names exported from this module first.
+      if (id.Module() == module_->module_name_) {
+        auto li = module_->LocalIndex(id.Identifier(), {});
+        if (li.ok()) {
+          auto val = module_->LocalLookup(*li, id);
+          NSASM_RETURN_IF_ERROR(val);
+          return val->ToInt();
+        }
+      }
+      // In any other case, a fully qualified name is external.
       return externs_.Lookup(id);
+    } else {
+      // An unqualified name refers to a local if there is one; otherwise search
+      // for external names in the global namespace.
+      auto li = module_->LocalIndex(id.Identifier(), active_scopes_);
+      if (li.ok()) {
+        auto val = module_->LocalLookup(*li, id);
+        NSASM_RETURN_IF_ERROR(val);
+        return val->ToInt();
+      }
+      return externs_.Lookup(FullIdentifier("", id.Identifier()));
     }
   }
 
@@ -29,6 +45,33 @@ class ModuleLookupContext : public LookupContext {
   Module* module_;
   const std::vector<int>& active_scopes_;
   const LookupContext& externs_;
+};
+
+class ModuleIsLocalContext : public IsLocalContext {
+ public:
+  ModuleIsLocalContext(Module* module, const std::vector<int>& active_scopes)
+      : module_(module), active_scopes_(active_scopes) {}
+
+  bool IsLocal(const FullIdentifier& id) const override {
+    if (id.Qualified()) {
+      if (id.Module() != module_->module_name_) {
+        // A qualified name from a different module namespace can never be
+        // local
+        return false;
+      }
+      // A qualified name from this module namespace is local iff this name
+      // is defined at global scope.  (Don't search local scopes).
+      auto li = module_->LocalIndex(id.Identifier(), {});
+      return li.ok();
+    }
+    // An unqualified name is local if it appears in any scope
+    auto li = module_->LocalIndex(id.Identifier(), active_scopes_);
+    return li.ok();
+  }
+
+ private:
+  Module* module_;
+  const std::vector<int>& active_scopes_;
 };
 
 ErrorOr<Module> Module::LoadAsmFile(const File& file) {
@@ -91,9 +134,6 @@ ErrorOr<Module> Module::LoadAsmFile(const File& file) {
                   .SetLocation(loc);
             }
             m.module_name_ = *id;
-          } else if (directive->name == D_equ) {
-            auto dependencies = directive->argument.ModuleNamesReferenced();
-            m.dependencies_.insert(dependencies.begin(), dependencies.end());
           } else if (directive->name == D_begin) {
             active_scopes.push_back(m.lines_.size() - 1);
           } else if (directive->name == D_end) {
@@ -112,6 +152,14 @@ ErrorOr<Module> Module::LoadAsmFile(const File& file) {
   if (!active_scopes.empty()) {
     return Error("Scope open without matching close")
         .SetLocation(m.lines_[active_scopes.back()].statement.Location());
+  }
+  for (const auto& line : m.lines_) {
+    const Directive* directive = m.lines_.back().statement.Directive();
+    if (directive && directive->name == D_equ) {
+      ModuleIsLocalContext context(&m, line.active_scopes);
+      auto dependencies = directive->argument.ExternalNamesReferenced(context);
+      m.dependencies_.insert(dependencies.begin(), dependencies.end());
+    }
   }
   return m;
 }
@@ -235,15 +283,13 @@ ErrorOr<int> Module::LocalIndex(absl::string_view sv,
   return Error("Reference to undefined name '%s'", sv);
 }
 
-ErrorOr<LabelValue> Module::LocalLookup(
-    absl::string_view sv, const std::vector<int>& active_scopes) const {
-  auto index = LocalIndex(sv, active_scopes);
-  NSASM_RETURN_IF_ERROR(index);
-  const Line& line = lines_[*index];
+ErrorOr<LabelValue> Module::LocalLookup(int index,
+                                        const FullIdentifier& id) const {
+  const Line& line = lines_[index];
   if (line.value.has_value()) {
     return LabelValue::FromInt(line.value->ToInt());
   }
-  return Error("Value '%s' accessed before definition", sv);
+  return Error("Value '%s' accessed before definition", id.ToString());
 }
 
 ErrorOr<void> Module::RunSecondPass(const LookupContext& lookup_context) {
@@ -258,6 +304,16 @@ ErrorOr<void> Module::RunSecondPass(const LookupContext& lookup_context) {
     }
   }
   return {};
+}
+
+const std::map<FullIdentifier, Location> Module::ExportedNames() const {
+  std::map<FullIdentifier, Location> result;
+  for (const auto& node : global_to_line_) {
+    FullIdentifier id(module_name_, node.first);
+    Location loc(path_, node.second);
+    result[std::move(id)] = std::move(loc);
+  }
+  return result;
 }
 
 ErrorOr<void> Module::Assemble(OutputSink* sink,
@@ -348,19 +404,24 @@ void Module::DebugPrint() const {
   }
 }
 
-ErrorOr<LabelValue> Module::ValueForName(absl::string_view sv) const {
-  auto line_loc = global_to_line_.find(sv);
+ErrorOr<LabelValue> Module::ValueForName(const FullIdentifier& id) const {
+  if (!id.Qualified() || id.Module() != module_name_) {
+    return Error("logic error: Lookup of name %s in %s (not present)",
+                 id.ToString(), path_);
+  }
+  auto line_loc = global_to_line_.find(id.Identifier());
   if (line_loc == global_to_line_.end()) {
-    return Error("No label named %s in module %s", sv, module_name_);
+    return Error("logic error: Lookup of name %s in %s (not present)",
+                 id.ToString(), path_);
   }
   const absl::optional<LabelValue>& value = lines_[line_loc->second].value;
   if (value.has_value()) {
     return *value;
   }
-  return Error("logic error: No value at label %s::%s", module_name_, sv);
+  return Error("logic error: No value at label %s", id.ToString());
 }
 
-absl::optional<std::string> Module::NameForAddress(
+absl::optional<FullIdentifier> Module::NameForAddress(
     nsasm::Address address) const {
   if (module_name_.empty()) {
     return absl::nullopt;
@@ -369,7 +430,7 @@ absl::optional<std::string> Module::NameForAddress(
   if (it == address_to_global_.end()) {
     return absl::nullopt;
   }
-  return absl::StrCat(module_name_, "::", it->second);
+  return FullIdentifier(module_name_, it->second);
 }
 
 }  // namespace nsasm

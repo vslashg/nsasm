@@ -40,24 +40,22 @@ class FullIdentifier {
     return std::tie(mod_name_, id_name_) !=
            std::tie(rhs.mod_name_, rhs.id_name_);
   }
-  /*
   bool operator<(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) < std::tie(rhs.mod_name_,
-  rhs.id_name_);
+    return std::tie(mod_name_, id_name_) <
+           std::tie(rhs.mod_name_, rhs.id_name_);
   }
   bool operator<=(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) <= std::tie(rhs.mod_name_,
-  rhs.id_name_);
+    return std::tie(mod_name_, id_name_) <=
+           std::tie(rhs.mod_name_, rhs.id_name_);
   }
   bool operator>(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) > std::tie(rhs.mod_name_,
-  rhs.id_name_);
+    return std::tie(mod_name_, id_name_) >
+           std::tie(rhs.mod_name_, rhs.id_name_);
   }
   bool operator>=(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) >= std::tie(rhs.mod_name_,
-  rhs.id_name_);
+    return std::tie(mod_name_, id_name_) >=
+           std::tie(rhs.mod_name_, rhs.id_name_);
   }
-  */
 
   template <typename H>
   friend H AbslHashValue(H h, const FullIdentifier& n) {
@@ -68,6 +66,11 @@ class FullIdentifier {
   absl::optional<std::string> mod_name_;
   std::string id_name_;
 };
+
+// for debugging
+inline std::ostream& operator<<(std::ostream& os, const FullIdentifier& id) {
+  return os << id.ToString();
+}
 
 }  // namespace nsasm
 

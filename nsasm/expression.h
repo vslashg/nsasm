@@ -91,6 +91,14 @@ class NullLookupContext : public LookupContext {
   }
 };
 
+class IsLocalContext {
+ public:
+  // Returns true if the given identifier refers to a local name in this
+  // context. An unqualified name that doesn't match a local will evaluate
+  // false. A qualified name that is defined in this context will evaluate true.
+  virtual bool IsLocal(const nsasm::FullIdentifier& id) const = 0;
+};
+
 // Virtual base class representing an argument value.  This can be a constant,
 // label, expression, etc.
 class Expression {
@@ -115,8 +123,10 @@ class Expression {
   // context, and see if it succeeds.
   virtual bool RequiresLookup() const = 0;
 
-  // Returns the set of modules referenced by this expression.
-  virtual std::set<std::string> ModuleNamesReferenced() const = 0;
+  // Returns the set of names referenced by this expression that aren't found by
+  // the provided local lookup context, and thus must be found in other files.
+  virtual std::set<FullIdentifier> ExternalNamesReferenced(
+      const IsLocalContext&) const = 0;
 
   // Returns a human-readable stringized represenation of this argument, coerced
   // to the requested type if provided.
@@ -175,8 +185,10 @@ class ExpressionOrNull : public Expression {
     return expr_ ? expr_->RequiresLookup() : false;
   }
 
-  virtual std::set<std::string> ModuleNamesReferenced() const override {
-    return expr_ ? expr_->ModuleNamesReferenced() : std::set<std::string>();
+  virtual std::set<FullIdentifier> ExternalNamesReferenced(
+      const IsLocalContext& is_local) const override {
+    return expr_ ? expr_->ExternalNamesReferenced(is_local)
+                 : std::set<FullIdentifier>();
   }
 
   std::string ToString() const override {
@@ -212,7 +224,8 @@ class Literal : public Expression {
   }
   NumericType Type() const override { return type_; }
   virtual bool RequiresLookup() const override { return false; }
-  virtual std::set<std::string> ModuleNamesReferenced() const override {
+  virtual std::set<FullIdentifier> ExternalNamesReferenced(
+      const IsLocalContext& is_local) const override {
     return {};
   }
   std::string ToString() const override;
@@ -237,12 +250,15 @@ class IdentifierExpression : public Expression {
   }
   NumericType Type() const override { return type_; }
   virtual bool RequiresLookup() const override { return true; }
-  virtual std::set<std::string> ModuleNamesReferenced() const override {
-    std::set<std::string> result;
-    if (identifier_.Qualified()) {
-      result.insert(identifier_.Module());
+  virtual std::set<FullIdentifier> ExternalNamesReferenced(
+      const IsLocalContext& is_local) const override {
+    if (is_local.IsLocal(identifier_)) {
+      return {};
+    } else if (identifier_.Qualified()) {
+      return {identifier_};
+    } else {
+      return {FullIdentifier("", identifier_.Identifier())};
     }
-    return result;
   }
   std::string ToString() const override;
   absl::optional<std::string> SimpleIdentifier() const override {
@@ -279,9 +295,10 @@ class BinaryExpression : public Expression {
   virtual bool RequiresLookup() const override {
     return lhs_.RequiresLookup() || rhs_.RequiresLookup();
   }
-  virtual std::set<std::string> ModuleNamesReferenced() const override {
-    auto result = lhs_.ModuleNamesReferenced();
-    auto rhs_modules = rhs_.ModuleNamesReferenced();
+  virtual std::set<FullIdentifier> ExternalNamesReferenced(
+      const IsLocalContext& is_local) const override {
+    auto result = lhs_.ExternalNamesReferenced(is_local);
+    auto rhs_modules = rhs_.ExternalNamesReferenced(is_local);
     result.insert(rhs_modules.begin(), rhs_modules.end());
     return result;
   }
@@ -310,8 +327,9 @@ class UnaryExpression : public Expression {
   }
   NumericType Type() const override { return op_.result_type(arg_.Type()); }
   virtual bool RequiresLookup() const override { return arg_.RequiresLookup(); }
-  virtual std::set<std::string> ModuleNamesReferenced() const override {
-    return arg_.ModuleNamesReferenced();
+  virtual std::set<FullIdentifier> ExternalNamesReferenced(
+      const IsLocalContext& is_local) const override {
+    return arg_.ExternalNamesReferenced(is_local);
   }
   std::string ToString() const override {
     return absl::StrFormat("op%c(%s)", op_.symbol, arg_.ToString());
@@ -336,7 +354,8 @@ class Label : public Expression {
   }
   NumericType Type() const override { return held_value_->Type(); }
   virtual bool RequiresLookup() const override { return true; }
-  virtual std::set<std::string> ModuleNamesReferenced() const override {
+  virtual std::set<FullIdentifier> ExternalNamesReferenced(
+      const IsLocalContext& is_local) const override {
     return {};
   }
   std::string ToString() const override { return label_; }

@@ -7,12 +7,14 @@
 #include "nsasm/address.h"
 #include "nsasm/error.h"
 #include "nsasm/file.h"
+#include "nsasm/identifiers.h"
 #include "nsasm/ranges.h"
 #include "nsasm/statement.h"
 
 namespace nsasm {
 
 class ModuleLookupContext;
+class ModuleIsLocalContext;
 
 class Module {
  public:
@@ -24,12 +26,18 @@ class Module {
   // error.
   static ErrorOr<Module> LoadAsmFile(const File& file);
 
+  std::string Path() const { return path_; }
   std::string Name() const { return module_name_; }
 
-  // Returns the set of module names that this module depends on.  (This is
-  // not every reference, but only for references that require early evaluation,
-  // i.e., .EQU arguments.)
-  const std::set<std::string> Dependencies() const { return dependencies_; }
+  // Returns a map from qualified identifiers that this module exports to the
+  // locations where these entities are defined.  (The locations are intended
+  // for use in error message generation.)
+  const std::map<FullIdentifier, Location> ExportedNames() const;
+
+  // Returns the set of qualified identifiers that this module depends on. (This
+  // is not every reference, but only for references that require early
+  // evaluation, i.e., .EQU arguments.)
+  const std::set<FullIdentifier> Dependencies() const { return dependencies_; }
 
   // Run the first pass of this module.  This determines the size of each
   // instruction and assigns an address to each non-.equ label, but will not
@@ -41,10 +49,10 @@ class Module {
   // this pass.
   ErrorOr<void> RunSecondPass(const LookupContext& lookup_context);
 
-  // Returns the value for the given name, or nullopt if that name is not
-  // defined by this module.  Call this only after RunFirstPass() has
+  // Returns the value for the given qualified name, or nullopt if that name is
+  // not defined by this module.  Call this only after RunFirstPass() has
   // successfully returned.
-  ErrorOr<LabelValue> ValueForName(absl::string_view sv) const;
+  ErrorOr<LabelValue> ValueForName(const FullIdentifier& sv) const;
 
   ErrorOr<void> Assemble(OutputSink* sink, const LookupContext& lookup_context);
 
@@ -52,7 +60,7 @@ class Module {
 
   // Returns a qualified name for the given address, if one is defined in this
   // module.
-  absl::optional<std::string> NameForAddress(nsasm::Address address) const;
+  absl::optional<FullIdentifier> NameForAddress(nsasm::Address address) const;
 
   // Returns the collection of all jump targets found during assembly.
   const std::map<nsasm::Address, StatusFlags>& JumpTargets() const {
@@ -79,12 +87,13 @@ class Module {
   ErrorOr<int> LocalIndex(absl::string_view sv,
                           const std::vector<int>& active_scopes) const;
 
-  // Perform an internal lookup for a given label.  As above, but returns the
-  // value associated with the label, rather than an index.
-  ErrorOr<LabelValue> LocalLookup(absl::string_view sv,
-                                  const std::vector<int>& active_scopes) const;
+  // Perform an internal lookup for a given label index (as returned from
+  // LocalIndex()).  The identifier is used to form an error message if
+  // necessary.
+  ErrorOr<LabelValue> LocalLookup(int index, const FullIdentifier& id) const;
 
   friend class nsasm::ModuleLookupContext;
+  friend class nsasm::ModuleIsLocalContext;
 
   // A line of code (an instruction or directive) inside an .asm module.
   struct Line {
@@ -102,7 +111,7 @@ class Module {
   std::string path_;
   std::string module_name_;
   std::vector<Line> lines_;
-  std::set<std::string> dependencies_;
+  std::set<FullIdentifier> dependencies_;
   absl::flat_hash_map<std::string, int> global_to_line_;
 
   DataRange owned_bytes_;

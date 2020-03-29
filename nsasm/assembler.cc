@@ -5,47 +5,51 @@
 
 namespace nsasm {
 
-nsasm::ErrorOr<void> Assembler::AddModule(Module&& module) {
-  if (module.Name().empty()) {
-    unnamed_modules_.push_back(std::move(module));
-  } else {
-    std::string name = module.Name();
-    if (named_modules_.contains(name)) {
-      return nsasm::Error("Multiple files have the same module name \"%s\"",
-                          name);
-    }
-    named_modules_[name] = absl::make_unique<Module>(std::move(module));
-  }
-  return {};
+void Assembler::AddModule(Module&& module) {
+  modules_.push_back(std::move(module));
 }
 
 nsasm::ErrorOr<void> Assembler::AddAsmFile(const File& file) {
   auto module = Module::LoadAsmFile(file);
   NSASM_RETURN_IF_ERROR(module);
-  return AddModule(*std::move(module));
+  AddModule(*std::move(module));
+  return {};
 }
 
-nsasm::ErrorOr<std::vector<std::string>> Assembler::FindAssemblyOrder() {
-  std::vector<std::string> order;
+nsasm::ErrorOr<std::vector<Module*>> Assembler::FindAssemblyOrder() {
+  std::vector<Module*> order;
 
-  absl::flat_hash_set<std::string> already_inserted;
-  while (order.size() < named_modules_.size()) {
+  absl::flat_hash_set<Module*> already_inserted;
+  absl::flat_hash_map<FullIdentifier, Location> exported_names;
+
+  while (order.size() < modules_.size()) {
     bool more_found = false;
-    for (const auto& module : named_modules_) {
-      if (already_inserted.contains(module.first)) {
+    for (auto& module : modules_) {
+      if (already_inserted.contains(&module)) {
         continue;
       }
       bool all_dependencies_met = true;
-      for (const std::string& dependency : module.second->Dependencies()) {
-        if (!already_inserted.contains(dependency)) {
+      for (const FullIdentifier& dependency : module.Dependencies()) {
+        if (!exported_names.contains(dependency)) {
           all_dependencies_met = false;
           break;
         }
       }
       if (all_dependencies_met) {
         more_found = true;
-        order.push_back(module.first);
-        already_inserted.insert(module.first);
+        order.push_back(&module);
+        already_inserted.insert(&module);
+        for (const auto& node : module.ExportedNames()) {
+          if (exported_names.contains(node.first)) {
+            return Error(
+                       "Duplicate defintion of `%s` "
+                       "(conflicting definition at %s)",
+                       node.first.ToString(), node.second.ToString())
+                .SetLocation(exported_names[node.first]);
+          }
+          exported_names[node.first] = node.second;
+          name_to_module_map_[node.first] = &module;
+        }
       }
     }
     if (!more_found) {
@@ -62,16 +66,14 @@ class AssemblerLookupContext : public LookupContext {
 
   ErrorOr<int> Lookup(const FullIdentifier& id) const override {
     if (!id.Qualified()) {
-      // This is temporary; name lookup strategy is changing soon
-      return Error("Assembler lookup can't find unqualified names");
-    }
-    const std::string& module = id.Module();
-    auto module_it = assembler_->named_modules_.find(module);
-    if (module_it == assembler_->named_modules_.end()) {
-      return Error("No such module '%s' (resolving '%s')", module,
+      return Error("logic error: assembler lookup passed unqualified name '%s'",
                    id.ToString());
     }
-    auto v = module_it->second->ValueForName(id.Identifier());
+    auto it = assembler_->name_to_module_map_.find(id);
+    if (it == assembler_->name_to_module_map_.end()) {
+      return Error("No definition for '%s' found", id.ToString());
+    }
+    auto v = it->second->ValueForName(id);
     NSASM_RETURN_IF_ERROR(v);
     return v->ToInt();
   }
@@ -81,33 +83,23 @@ class AssemblerLookupContext : public LookupContext {
 };
 
 nsasm::ErrorOr<void> Assembler::Assemble(OutputSink* sink) {
-  auto module_name_order = FindAssemblyOrder();
-  NSASM_RETURN_IF_ERROR(module_name_order);
-
-  // Get the order that modules are to be assembled in each pass
-  std::vector<Module*> module_order;
-  for (const std::string& name : *module_name_order) {
-    auto module_iter = named_modules_.find(name);
-    module_order.push_back(module_iter->second.get());
-  }
-  for (Module& module : unnamed_modules_) {
-    module_order.push_back(&module);
-  }
+  auto module_order = FindAssemblyOrder();
+  NSASM_RETURN_IF_ERROR(module_order);
 
   // First pass: laying out code and finding the address of each instruction.
-  for (Module* module : module_order) {
+  for (Module* module : *module_order) {
     NSASM_RETURN_IF_ERROR(module->RunFirstPass());
   }
 
   AssemblerLookupContext context(this);
 
   // Second pass: evaluating .equ expressions.
-  for (Module* module : module_order) {
+  for (Module* module : *module_order) {
     NSASM_RETURN_IF_ERROR(module->RunSecondPass(context));
   }
 
   // Final pass: assembly
-  for (Module* module : module_order) {
+  for (Module* module : *module_order) {
     NSASM_RETURN_IF_ERROR(module->Assemble(sink, context));
     if (!memory_module_map_.Insert(module->OwnedBytes(), module)) {
       // TODO: this could convey a lot more info...
@@ -119,10 +111,10 @@ nsasm::ErrorOr<void> Assembler::Assemble(OutputSink* sink) {
   return {};
 }
 
-absl::optional<std::string> Assembler::NameForAddress(
+absl::optional<FullIdentifier> Assembler::NameForAddress(
     nsasm::Address address) const {
-  for (const auto& node : named_modules_) {
-    auto v = node.second->NameForAddress(address);
+  for (const Module& module : modules_) {
+    auto v = module.NameForAddress(address);
     if (v.has_value()) {
       return v;
     }
@@ -131,18 +123,11 @@ absl::optional<std::string> Assembler::NameForAddress(
 }
 
 std::map<nsasm::Address, StatusFlags> Assembler::JumpTargets() const {
-  std::vector<const Module*> module_order;
-  for (const Module& m : unnamed_modules_) {
-    module_order.push_back(&m);
-  }
-  for (const auto& node : named_modules_) {
-    module_order.push_back(node.second.get());
-  }
   // TODO: add support for warnings, and report on jumps into existing modules
 
   std::map<nsasm::Address, StatusFlags> ret;
-  for (const Module* module : module_order) {
-    for (auto& node : module->JumpTargets()) {
+  for (const Module& module : modules_) {
+    for (auto& node : module.JumpTargets()) {
       nsasm::Address dest = node.first;
       if (!Contains(dest)) {
         auto it = ret.find(node.first);
@@ -160,23 +145,18 @@ std::map<nsasm::Address, StatusFlags> Assembler::JumpTargets() const {
 std::map<nsasm::Address, ReturnConvention>
 Assembler::JumpTargetReturnConventions() const {
   std::map<nsasm::Address, ReturnConvention> ret;
-  for (const Module& m : unnamed_modules_) {
+  for (const Module& m : modules_) {
     const std::map<nsasm::Address, ReturnConvention>& yields =
         m.JumpTargetReturnConventions();
-    ret.insert(yields.begin(), yields.end());
-  }
-  for (const auto& node : named_modules_) {
-    const std::map<nsasm::Address, ReturnConvention>& yields =
-        node.second->JumpTargetReturnConventions();
     ret.insert(yields.begin(), yields.end());
   }
   return ret;
 }
 
 void Assembler::DebugPrint() const {
-  for (const auto& node : named_modules_) {
-    absl::PrintF("  === debug info for %s\n", node.second->Name());
-    node.second->DebugPrint();
+  for (const Module& module : modules_) {
+    absl::PrintF("  === debug info for %s\n", module.Path());
+    module.DebugPrint();
   }
 }
 
