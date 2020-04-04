@@ -13,7 +13,7 @@ void ExpectAssembly(const std::vector<absl::string_view>& asm_contents,
                     std::vector<ExpectedBytes> expected) {
   TestSink test_sink(std::move(expected));
   std::vector<File> files;
-  for (int i = 0; i < asm_contents.size(); ++i) {
+  for (size_t i = 0; i < asm_contents.size(); ++i) {
     files.push_back(
         MakeFakeFile(absl::StrCat("fake_file_", i, ".asm"), asm_contents[i]));
   }
@@ -34,7 +34,7 @@ void ExpectAssemblyError(const std::vector<absl::string_view>& asm_contents,
                          absl::string_view message) {
   TestSink test_sink({});
   std::vector<File> files;
-  for (int i = 0; i < asm_contents.size(); ++i) {
+  for (size_t i = 0; i < asm_contents.size(); ++i) {
     files.push_back(
         MakeFakeFile(absl::StrCat("fake_file_", i, ".asm"), asm_contents[i]));
   }
