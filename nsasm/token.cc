@@ -34,6 +34,10 @@ std::string Token::ToString() const {
   if (mnemonic) {
     return absl::StrCat("mnemonic ", nsasm::ToString(*mnemonic));
   }
+  auto suffix = Suffix();
+  if (suffix) {
+    return absl::StrCat("suffix ", nsasm::ToString(*suffix));
+  }
   auto literal = Literal();
   if (literal) {
     return absl::StrCat("literal ", *literal);
@@ -156,7 +160,13 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
         result.emplace_back(*directive, loc);
         continue;
       }
-      return Error("Unrecognized directive '%s' in input", identifier)
+      // suffix?
+      auto suffix = ToSuffix(identifier);
+      if (suffix.has_value()) {
+        result.emplace_back(*suffix, loc);
+        continue;
+      }
+      return Error("Unrecognized dotted name '%s' in input", identifier)
           .SetLocation(loc);
     }
 

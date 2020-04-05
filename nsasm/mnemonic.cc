@@ -19,6 +19,8 @@ constexpr absl::string_view mnemonic_names[] = {
     "sec", "sep", "xce", "add", "sub",
 };
 
+constexpr absl::string_view suffix_names[] = {".b", ".w"};
+
 }  // namespace
 
 absl::string_view ToString(Mnemonic m) {
@@ -26,6 +28,13 @@ absl::string_view ToString(Mnemonic m) {
     return "";
   }
   return mnemonic_names[m];
+}
+
+absl::string_view ToString(Suffix m) {
+  if (m < S_b || m > S_w) {
+    return "";
+  }
+  return suffix_names[m];
 }
 
 absl::optional<Mnemonic> ToMnemonic(std::string s) {
@@ -63,6 +72,17 @@ absl::optional<Mnemonic> ToMnemonic(std::string s) {
   return iter->second;
 }
 
+absl::optional<Suffix> ToSuffix(std::string s) {
+  static auto lookup = new absl::flat_hash_map<absl::string_view, Suffix>{
+      {".b", S_b}, {".w", S_w}};
+  absl::AsciiStrToLower(&s);
+  auto iter = lookup->find(s);
+  if (iter == lookup->end()) {
+    return absl::nullopt;
+  }
+  return iter->second;
+}
+
 namespace {
 std::vector<Mnemonic>* MakeAllMnemonics() {
   auto result = new std::vector<Mnemonic>;
@@ -71,11 +91,22 @@ std::vector<Mnemonic>* MakeAllMnemonics() {
   }
   return result;
 }
+
+std::vector<Suffix>* MakeAllSuffixes() {
+  auto result = new std::vector<Suffix>{S_b, S_w};
+  return result;
+}
+
 }  // namespace
 
 const std::vector<Mnemonic>& AllMnemonics() {
   static std::vector<Mnemonic>* all_mnemonics = MakeAllMnemonics();
   return *all_mnemonics;
+}
+
+const std::vector<Suffix>& AllSuffixes() {
+  static std::vector<Suffix>* all_suffixes = MakeAllSuffixes();
+  return *all_suffixes;
 }
 
 }  // namespace nsasm

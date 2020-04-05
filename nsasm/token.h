@@ -33,6 +33,8 @@ class Token {
       : value_(number), location_(loc), type_(type) {}
   explicit Token(nsasm::Mnemonic mnemonic, Location loc)
       : value_(mnemonic), location_(loc) {}
+  explicit Token(nsasm::Suffix suffix, Location loc)
+      : value_(suffix), location_(loc) {}
   explicit Token(nsasm::DirectiveName directive_name, Location loc)
       : value_(directive_name), location_(loc) {}
   explicit Token(char punctuation, Location loc)
@@ -48,6 +50,9 @@ class Token {
   const int* Literal() const { return absl::get_if<int>(&value_); }
   const nsasm::Mnemonic* Mnemonic() const {
     return absl::get_if<nsasm::Mnemonic>(&value_);
+  }
+  const nsasm::Suffix* Suffix() const {
+    return absl::get_if<nsasm::Suffix>(&value_);
   }
   const nsasm::DirectiveName* DirectiveName() const {
     return absl::get_if<nsasm::DirectiveName>(&value_);
@@ -71,8 +76,8 @@ class Token {
   bool operator!=(const Token& rhs) const { return value_ != rhs.value_; }
 
  private:
-  absl::variant<std::string, int, nsasm::Mnemonic, nsasm::DirectiveName,
-                nsasm::Punctuation, nsasm::EndOfLine>
+  absl::variant<std::string, int, nsasm::Mnemonic, nsasm::Suffix,
+                nsasm::DirectiveName, nsasm::Punctuation, nsasm::EndOfLine>
       value_;
   nsasm::Location location_;
   NumericType type_ = T_unknown;
@@ -120,6 +125,19 @@ inline bool operator==(const Token& lhs, nsasm::Mnemonic rhs) {
   return lhs == Token(rhs, Location());
 }
 inline bool operator!=(const Token& lhs, nsasm::Mnemonic rhs) {
+  return lhs != Token(rhs, Location());
+}
+
+inline bool operator==(nsasm::Suffix lhs, const Token& rhs) {
+  return Token(lhs, Location()) == rhs;
+}
+inline bool operator!=(nsasm::Suffix lhs, const Token& rhs) {
+  return Token(lhs, Location()) != rhs;
+}
+inline bool operator==(const Token& lhs, nsasm::Suffix rhs) {
+  return lhs == Token(rhs, Location());
+}
+inline bool operator!=(const Token& lhs, nsasm::Suffix rhs) {
   return lhs != Token(rhs, Location());
 }
 

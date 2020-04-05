@@ -51,9 +51,10 @@ TEST(Token, names) {
   }
   {
     // Sanity check that something that looks like assembly can be tokenized
-    auto x = Tokenize("label1 ADC ($1234,X)", Location());
+    auto x = Tokenize("label1 ADC.w ($1234,X)", Location());
     NSASM_ASSERT_OK(x);
-    EXPECT_EQ(*x, TokenVector("label1", M_adc, '(', 0x1234, ',', 'X', ')'));
+    EXPECT_EQ(*x,
+              TokenVector("label1", M_adc, S_w, '(', 0x1234, ',', 'X', ')'));
   }
   {
     // Sanity check that something that looks like assembly can be tokenized

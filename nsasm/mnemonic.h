@@ -123,6 +123,18 @@ const std::vector<Mnemonic>& AllMnemonics();
 absl::string_view ToString(Mnemonic m);
 absl::optional<Mnemonic> ToMnemonic(std::string s);
 
+// Instruction suffixes (indicating data size of instruction) 
+enum Suffix {
+  S_b,
+  S_w,
+};
+
+// Helper functions, as above
+
+const std::vector<Suffix>& AllSuffixes();
+absl::string_view ToString(Suffix m);
+absl::optional<Suffix> ToSuffix(std::string s);
+
 }  // namespace nsasm
 
 #endif  // NSASM_MNEMONIC_H_
