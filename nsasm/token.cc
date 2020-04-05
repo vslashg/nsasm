@@ -17,8 +17,7 @@ bool IsHexDigit(char ch) {
 bool IsDecimalDigit(char ch) { return (ch >= '0' && ch <= '9'); }
 
 bool IsIdentifierFirstChar(char ch) {
-  return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_' ||
-         ch == '.';
+  return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_';
 }
 
 bool IsIdentifierChar(char ch) {
@@ -143,6 +142,24 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
       continue;
     }
 
+    // directives
+    if (sv[0] == '.') {
+      std::string identifier = ".";
+      sv.remove_prefix(1);
+      while (!sv.empty() && IsIdentifierChar(sv[0])) {
+        identifier.push_back(sv[0]);
+        sv.remove_prefix(1);
+      }
+      // directive?
+      auto directive = ToDirectiveName(identifier);
+      if (directive.has_value()) {
+        result.emplace_back(*directive, loc);
+        continue;
+      }
+      return Error("Unrecognized directive '%s' in input", identifier)
+          .SetLocation(loc);
+    }
+
     // identifiers and keywords
     if (IsIdentifierFirstChar(sv[0])) {
       std::string identifier;
@@ -156,12 +173,6 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
       auto mnemonic = ToMnemonic(identifier);
       if (mnemonic.has_value()) {
         result.emplace_back(*mnemonic, loc);
-        continue;
-      }
-      // directive?
-      auto directive = ToDirectiveName(identifier);
-      if (directive.has_value()) {
-        result.emplace_back(*directive, loc);
         continue;
       }
       // register name?
