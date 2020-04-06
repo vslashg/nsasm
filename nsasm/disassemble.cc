@@ -199,8 +199,30 @@ ErrorOr<std::map<nsasm::Address, StatusFlags>> Disassembler::Disassemble(
     }
   }
 
-  // If we got here, disassembly was a success.  Copy the entries from the
-  // temporary map to the permanent state.
+  // If we got here, disassembly was a success.
+
+  // Add a suffix to each new disassembly instruction that supports one.
+  for (auto& node : new_disassembly) {
+    Instruction& ins = node.second.instruction;
+    const StatusFlags& flags = node.second.current_execution_state.Flags();
+    StatusFlagUsed flag_used = FlagControllingInstructionSize(ins.mnemonic);
+    if (flag_used == kUsesMFlag) {
+      if (flags.MBit() == B_on) {
+        ins.suffix = S_b;
+      } else if (flags.MBit() == B_off) {
+        ins.suffix = S_w;
+      }
+    }
+    if (flag_used == kUsesXFlag) {
+      if (flags.XBit() == B_on) {
+        ins.suffix = S_b;
+      } else if (flags.XBit() == B_off) {
+        ins.suffix = S_w;
+      }
+    }
+  }
+  
+  // Copy the entries from the temporary map to the permanent state.
   for (const auto& node : new_disassembly) {
     disassembly_[node.first] = node.second;
   }
