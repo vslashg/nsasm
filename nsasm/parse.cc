@@ -217,13 +217,19 @@ ErrorOr<ExpressionOrNull> Comp(TokenSpan* pos) {
 }
 
 ErrorOr<Instruction> CreateInstruction(
-    Mnemonic mnemonic, SyntacticAddressingMode sam, Location location,
-    ExpressionOrNull arg1 = ExpressionOrNull(),
+    Mnemonic mnemonic, Suffix suffix, SyntacticAddressingMode sam,
+    Location location, ExpressionOrNull arg1 = ExpressionOrNull(),
     ExpressionOrNull arg2 = ExpressionOrNull()) {
   auto am = DeduceMode(mnemonic, sam, arg1, arg2);
   NSASM_RETURN_IF_ERROR_WITH_LOCATION(am, location);
+  if (suffix != S_none &&
+      FlagControllingInstructionSize(mnemonic) == kNotVariable) {
+    return Error("Instruction `%s` does not support a length suffix",
+                 ToString(mnemonic)).SetLocation(location);
+  }
   Instruction i;
   i.mnemonic = mnemonic;
+  i.suffix = suffix;
   i.addressing_mode = *am;
   i.arg1 = std::move(arg1);
   i.arg2 = std::move(arg2);
@@ -238,15 +244,21 @@ ErrorOr<Instruction> ParseInstructionCore(TokenSpan* pos) {
   Mnemonic mnemonic = *pos->front().Mnemonic();
   pos->remove_prefix(1);
 
+  Suffix suffix = S_none;
+  if (const Suffix* s = pos->front().Suffix()) {
+    suffix = *s;
+    pos->remove_prefix(1);
+  }
+
   if (AtEndOrSuffix(pos)) {
-    return CreateInstruction(mnemonic, SA_imp, Loc(pos));
+    return CreateInstruction(mnemonic, suffix, SA_imp, Loc(pos));
   }
 
   NSASM_RETURN_IF_ERROR(ConfirmLegalRegister(pos, "A", "directly"));
   if (pos->front() == 'A') {
     pos->remove_prefix(1);
     NSASM_RETURN_IF_ERROR(ConfirmAtEndOrSuffix(pos, "after A operand"));
-    return CreateInstruction(mnemonic, SA_acc, Loc(pos));
+    return CreateInstruction(mnemonic, suffix, SA_acc, Loc(pos));
   }
 
   if (pos->front() == '#') {
@@ -254,7 +266,8 @@ ErrorOr<Instruction> ParseInstructionCore(TokenSpan* pos) {
     auto arg1 = Expr(pos);
     NSASM_RETURN_IF_ERROR(arg1);
     if (AtEndOrSuffix(pos)) {
-      return CreateInstruction(mnemonic, SA_imm, Loc(pos), std::move(*arg1));
+      return CreateInstruction(mnemonic, suffix, SA_imm, Loc(pos),
+                               std::move(*arg1));
     }
     NSASM_RETURN_IF_ERROR(Consume(pos, ',', "comma or end of line"));
     NSASM_RETURN_IF_ERROR(Consume(pos, '#', "#"));
@@ -262,8 +275,8 @@ ErrorOr<Instruction> ParseInstructionCore(TokenSpan* pos) {
     NSASM_RETURN_IF_ERROR(arg2);
     NSASM_RETURN_IF_ERROR(
         ConfirmAtEndOrSuffix(pos, "after immediate arguments"));
-    return CreateInstruction(mnemonic, SA_mov, Loc(pos), std::move(*arg1),
-                             std::move(*arg2));
+    return CreateInstruction(mnemonic, suffix, SA_mov, Loc(pos),
+                             std::move(*arg1), std::move(*arg2));
   }
 
   if (pos->front() == '[') {
@@ -272,7 +285,8 @@ ErrorOr<Instruction> ParseInstructionCore(TokenSpan* pos) {
     NSASM_RETURN_IF_ERROR(arg1);
     NSASM_RETURN_IF_ERROR(Consume(pos, ']', "close bracket"));
     if (AtEndOrSuffix(pos)) {
-      return CreateInstruction(mnemonic, SA_lng, Loc(pos), std::move(*arg1));
+      return CreateInstruction(mnemonic, suffix, SA_lng, Loc(pos),
+                               std::move(*arg1));
     }
     NSASM_RETURN_IF_ERROR(Consume(pos, ',', "comma or end of line"));
     NSASM_RETURN_IF_ERROR(
@@ -280,7 +294,8 @@ ErrorOr<Instruction> ParseInstructionCore(TokenSpan* pos) {
     NSASM_RETURN_IF_ERROR(Consume(pos, 'Y', "register Y"));
     NSASM_RETURN_IF_ERROR(
         ConfirmAtEndOrSuffix(pos, "after indirect long indexed argument"));
-    return CreateInstruction(mnemonic, SA_lng_y, Loc(pos), std::move(*arg1));
+    return CreateInstruction(mnemonic, suffix, SA_lng_y, Loc(pos),
+                             std::move(*arg1));
   }
 
   // The one ambiguity in the grammar is how to deal with a '(' character at
@@ -315,7 +330,7 @@ ErrorOr<Instruction> ParseInstructionCore(TokenSpan* pos) {
         NSASM_RETURN_IF_ERROR(Consume(pos, ')', "close parenthesis"));
         NSASM_RETURN_IF_ERROR(
             ConfirmAtEndOrSuffix(pos, "after indexed indirect argument"));
-        return CreateInstruction(mnemonic, SA_ind_x, Loc(pos),
+        return CreateInstruction(mnemonic, suffix, SA_ind_x, Loc(pos),
                                  std::move(*arg1));
       } else {
         NSASM_RETURN_IF_ERROR(Consume(pos, 'S', "X or S register"));
@@ -327,7 +342,7 @@ ErrorOr<Instruction> ParseInstructionCore(TokenSpan* pos) {
         NSASM_RETURN_IF_ERROR(Consume(pos, 'Y', "register Y"));
         NSASM_RETURN_IF_ERROR(ConfirmAtEndOrSuffix(
             pos, "after stack relative indirect indexed argument"));
-        return CreateInstruction(mnemonic, SA_stk_y, Loc(pos),
+        return CreateInstruction(mnemonic, suffix, SA_stk_y, Loc(pos),
                                  std::move(*arg1));
       }
     }
@@ -337,7 +352,8 @@ ErrorOr<Instruction> ParseInstructionCore(TokenSpan* pos) {
       // value below.
       pos->remove_prefix(1);
       if (AtEndOrSuffix(pos)) {
-        return CreateInstruction(mnemonic, SA_ind, Loc(pos), std::move(*arg1));
+        return CreateInstruction(mnemonic, suffix, SA_ind, Loc(pos),
+                                 std::move(*arg1));
       }
       if (pos->front() == ',') {
         // A comma after parens means this must be indexing
@@ -347,7 +363,7 @@ ErrorOr<Instruction> ParseInstructionCore(TokenSpan* pos) {
         NSASM_RETURN_IF_ERROR(Consume(pos, 'Y', "register Y"));
         NSASM_RETURN_IF_ERROR(
             ConfirmAtEndOrSuffix(pos, "after indirect indexed argument"));
-        return CreateInstruction(mnemonic, SA_ind_y, Loc(pos),
+        return CreateInstruction(mnemonic, suffix, SA_ind_y, Loc(pos),
                                  std::move(*arg1));
       }
       // We have to abandon this attempt and go back to parsing this as an
@@ -360,7 +376,8 @@ ErrorOr<Instruction> ParseInstructionCore(TokenSpan* pos) {
   auto arg1 = Expr(pos);
   NSASM_RETURN_IF_ERROR(arg1);
   if (AtEndOrSuffix(pos)) {
-    return CreateInstruction(mnemonic, SA_dir, Loc(pos), std::move(*arg1));
+    return CreateInstruction(mnemonic, suffix, SA_dir, Loc(pos),
+                             std::move(*arg1));
   }
   NSASM_RETURN_IF_ERROR(Consume(pos, ',', "comma or end of line"));
   NSASM_RETURN_IF_ERROR(
@@ -368,16 +385,19 @@ ErrorOr<Instruction> ParseInstructionCore(TokenSpan* pos) {
   if (pos->front() == 'X') {
     pos->remove_prefix(1);
     NSASM_RETURN_IF_ERROR(ConfirmAtEndOrSuffix(pos, "after indexed argument"));
-    return CreateInstruction(mnemonic, SA_dir_x, Loc(pos), std::move(*arg1));
+    return CreateInstruction(mnemonic, suffix, SA_dir_x, Loc(pos),
+                             std::move(*arg1));
   } else if (pos->front() == 'Y') {
     pos->remove_prefix(1);
     NSASM_RETURN_IF_ERROR(ConfirmAtEndOrSuffix(pos, "after indexed argument"));
-    return CreateInstruction(mnemonic, SA_dir_y, Loc(pos), std::move(*arg1));
+    return CreateInstruction(mnemonic, suffix, SA_dir_y, Loc(pos),
+                             std::move(*arg1));
   } else {
     NSASM_RETURN_IF_ERROR(Consume(pos, 'S', "X, Y, or S register"));
     NSASM_RETURN_IF_ERROR(
         ConfirmAtEndOrSuffix(pos, "after stack relative argument"));
-    return CreateInstruction(mnemonic, SA_stk, Loc(pos), std::move(*arg1));
+    return CreateInstruction(mnemonic, suffix, SA_stk, Loc(pos),
+                             std::move(*arg1));
   }
 }
 

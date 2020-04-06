@@ -27,9 +27,39 @@ ErrorOr<void> Instruction::CheckConsistency(
         nsasm::ToString(mnemonic), nsasm::ToString(addressing_mode));
   }
 
+  if (suffix) {
+    StatusFlagUsed flag_used =
+        FlagControllingInstructionSize(effective_mnemonic);
+    if (flag_used == kNotVariable) {
+      return Error(
+          "logic error: parser should not have accepted a suffix on "
+          "instruction %s",
+          nsasm::ToString(mnemonic));
+    }
+    bool m_flag_used = (flag_used == kUsesMFlag);
+    nsasm::BitState state =
+        m_flag_used ? status_flags.MBit() : status_flags.XBit();
+    char flag_char = m_flag_used ? 'm' : 'x';
+    if (state == B_on && suffix == S_w) {
+      return Error(
+          "Instruction %s.w uses the `w` suffix, but the `%c` flag is set "
+          "here, which causes an 8-bit access.",
+          nsasm::ToString(mnemonic), flag_char);
+    }
+    if (state == B_off && suffix == S_b) {
+      return Error(
+          "Instruction %s.b uses the `b` suffix, but the `%c` flag is unset "
+          "here, which causes a 16-bit access.",
+          nsasm::ToString(mnemonic), flag_char);
+    }
+  }
+
   if (addressing_mode == A_imm_fm) {
     // only legal if we know the state of the `m` bit
     if (status_flags.MBit() != B_on && status_flags.MBit() != B_off) {
+      // TODO: If we improve errors to allow warnings or extra notes, a message
+      // explaining that a suffix intentionally does not disambiguate in these
+      // cases would be very user-friendly.
       return Error(
           "instruction %s with immediate argument depends on `m` flag state, "
           "which is unknown here",
