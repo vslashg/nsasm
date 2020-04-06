@@ -317,4 +317,18 @@ TEST(OpcodeMap, encode) {
   }
 }
 
+TEST(OpcodeMap, controlling_flag) {
+  // Simple sanity check of controlling operation map.  An instruction with
+  // operand A_imm_fx is governed by the X flag, and similarly A_imm_fm is
+  // governed by the M flag.
+  for (int i = 0; i < 256; ++i) {
+    std::pair<Mnemonic, AddressingMode> decoded = DecodeOpcode(i);
+    if (decoded.second == A_imm_fx) {
+      EXPECT_EQ(FlagControllingInstructionSize(decoded.first), kUsesXFlag);
+    } else if (decoded.second == A_imm_fm) {
+      EXPECT_EQ(FlagControllingInstructionSize(decoded.first), kUsesMFlag);
+    }
+  }
+}
+
 }  // namespace nsasm

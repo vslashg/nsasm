@@ -19,7 +19,7 @@ constexpr absl::string_view mnemonic_names[] = {
     "sec", "sep", "xce", "add", "sub",
 };
 
-constexpr absl::string_view suffix_names[] = {".b", ".w"};
+constexpr absl::string_view suffix_names[] = {/* s_none = */ "", ".b", ".w"};
 
 }  // namespace
 

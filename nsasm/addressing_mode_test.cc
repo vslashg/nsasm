@@ -199,8 +199,8 @@ TEST(AddressingMode, simple_deduce_mode) {
         // Construct an argument of the given type
         Literal arg1(0, numeric_type);
         ExpressionOrNull arg2;
-        Instruction instruction = {m, addressing_mode, ExpressionOrNull(arg1),
-                                   arg2};
+        Instruction instruction = {m, S_none, addressing_mode,
+                                   ExpressionOrNull(arg1), arg2};
         auto deduced = DeduceMode(m, test_case.sam, arg1, arg2);
         if (deduced.ok()) {
           EXPECT_EQ(*deduced, addressing_mode)
@@ -235,8 +235,8 @@ TEST(AddressingMode, deduce_no_arg_mode) {
 
   for (Mnemonic m : AllMnemonics()) {
     SCOPED_TRACE(ToString(m));
-    Instruction implied_instruction = {m, A_imp, null, null};
-    Instruction accumulator_instruction = {m, A_acc, null, null};
+    Instruction implied_instruction = {m, S_none, A_imp, null, null};
+    Instruction accumulator_instruction = {m, S_none, A_acc, null, null};
 
     if (accumulator_instruction.CheckConsistency(dummy_status_flags).ok()) {
       // For instructions that support accumulator mode (like DEC), we should
@@ -273,7 +273,8 @@ TEST(AddressingMode, deduce_immediate_mode) {
       ExpressionOrNull arg2;
 
       // Sanity-check ImmediateArgumentUsesMBit()
-      Instruction instruction = {m, A_imm_fm, ExpressionOrNull(arg1), arg2};
+      Instruction instruction = {m, S_none, A_imm_fm, ExpressionOrNull(arg1),
+                                 arg2};
       EXPECT_TRUE(instruction.CheckConsistency(status_flags).ok());
 
       // We should deduce this as an instruction that cares about the m bit
@@ -288,7 +289,8 @@ TEST(AddressingMode, deduce_immediate_mode) {
       ExpressionOrNull arg2;
 
       // Sanity-check ImmediateArgumentUsesXBit()
-      Instruction instruction = {m, A_imm_fx, ExpressionOrNull(arg1), arg2};
+      Instruction instruction = {m, S_none, A_imm_fx, ExpressionOrNull(arg1),
+                                 arg2};
       EXPECT_TRUE(instruction.CheckConsistency(status_flags).ok());
 
       // We should deduce this as an instruction that cares about the x bit

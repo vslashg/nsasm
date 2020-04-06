@@ -333,4 +333,23 @@ bool IsLegalCombination(Mnemonic m, AddressingMode a) {
   return opcode_it != ReverseOpcodeMap().end();
 }
 
+StatusFlagUsed FlagControllingInstructionSize(Mnemonic m) {
+  // Accumulator-width instructions
+  if (m == M_adc || m == PM_add || m == M_and || m == M_asl || m == M_bit ||
+      m == M_cmp || m == M_dec || m == M_eor || m == M_inc || m == M_lda ||
+      m == M_lsr || m == M_ora || m == M_pha || m == M_pla || m == M_rol ||
+      m == M_ror || m == M_sbc || m == M_sta || m == M_stz || m == PM_sub ||
+      m == M_trb || m == M_tsb || m == M_txa || m == M_tya) {
+    return kUsesMFlag;
+  }
+  // Index-register-width instructions
+  if (m == M_cpx || m == M_cpy || m == M_dex || m == M_dey || m == M_inx ||
+      m == M_iny || m == M_ldx || m == M_ldy || m == M_phx || m == M_phy ||
+      m == M_plx || m == M_ply || m == M_stx || m == M_sty || m == M_tax ||
+      m == M_tay || m == M_tsx || m == M_txy || m == M_tyx) {
+    return kUsesXFlag;
+  }
+  return kNotVariable;
+}
+
 }  // namespace nsasm

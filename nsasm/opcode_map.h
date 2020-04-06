@@ -22,6 +22,16 @@ bool ImmediateArgumentUsesMBit(Mnemonic m);
 // controlled by the X status bit.
 bool ImmediateArgumentUsesXBit(Mnemonic m);
 
+enum StatusFlagUsed {
+  kUsesMFlag,
+  kUsesXFlag,
+  kNotVariable,
+};
+
+// Returns the status flag which determines the data size used by the given
+// mnemonic.
+StatusFlagUsed FlagControllingInstructionSize(Mnemonic m);
+
 // Returns true iff this mnemonic takes an offset (that is, if it is a branch
 // instruction.)
 bool TakesOffsetArgument(Mnemonic m);

@@ -12,6 +12,7 @@ namespace nsasm {
 
 struct Instruction {
   Mnemonic mnemonic;
+  Suffix suffix;
   AddressingMode addressing_mode;
   ExpressionOrNull arg1;
   ExpressionOrNull arg2;

@@ -6,7 +6,8 @@
 namespace nsasm {
 
 std::string Instruction::ToString() const {
-  return absl::StrFormat("%s%s%s", nsasm::ToString(mnemonic),
+  return absl::StrFormat("%s%s%s%s", nsasm::ToString(mnemonic),
+                         nsasm::ToString(suffix),
                          ArgsToString(addressing_mode, arg1, arg2),
                          return_convention.ToSuffixString());
 }

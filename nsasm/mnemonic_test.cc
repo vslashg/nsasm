@@ -31,7 +31,6 @@ void CheckToString(Suffix suf, std::string str) {
   EXPECT_EQ(*ToSuffix(upper), suf);
 }
 
-
 #define CHECK_MNEMONIC_TO_STRING(name) CheckToString(M_##name, #name)
 #define CHECK_PSEUDO_TO_STRING(name) CheckToString(PM_##name, #name)
 #define CHECK_SUFFIX_TO_STRING(name) CheckToString(S_##name, "." #name)
@@ -136,6 +135,9 @@ TEST(Mnemonic, string_conversions) {
   // Invalid strings should not be converted
   EXPECT_FALSE(ToMnemonic("").has_value());
   EXPECT_FALSE(ToMnemonic("hcf").has_value());
+
+  // The no-suffix sentinel should stringize empty
+  EXPECT_EQ(ToString(S_none), "");
 }
 
 }  // namespace

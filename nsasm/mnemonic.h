@@ -123,8 +123,9 @@ const std::vector<Mnemonic>& AllMnemonics();
 absl::string_view ToString(Mnemonic m);
 absl::optional<Mnemonic> ToMnemonic(std::string s);
 
-// Instruction suffixes (indicating data size of instruction) 
+// Instruction suffixes (indicating data size of instruction)
 enum Suffix {
+  S_none = 0,  // No suffix, used in instructions for convenience
   S_b,
   S_w,
 };

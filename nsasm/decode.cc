@@ -16,6 +16,7 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
 
   Instruction decoded;
   std::tie(decoded.mnemonic, decoded.addressing_mode) = DecodeOpcode(opcode);
+  decoded.suffix = S_none;
 
   // correct for sentinel addressing modes
   if (decoded.addressing_mode == A_imm_fm ||
