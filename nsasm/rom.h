@@ -23,14 +23,18 @@ enum Mapping {
 //
 // Returns nullopt if snes_address is out of range, or if it maps to an address
 // intercepted by the SNES (for work ram or memory-mapped registers, say.)
-ErrorOr<int> SnesToROMAddress(nsasm::Address snes_address, Mapping mapping);
+ErrorOr<size_t> SnesToROMAddress(nsasm::Address snes_address, Mapping mapping);
+
+class RomOverwriter;
 
 // Representation of a SNES ROM, presumably loaded from disk.
 class Rom {
  public:
-  Rom(Mapping mapping_mode, std::string path, std::vector<uint8_t> data)
+  Rom(Mapping mapping_mode, std::string path, std::vector<uint8_t> header,
+      std::vector<uint8_t> data)
       : mapping_mode_(mapping_mode),
         path_(std::move(path)),
+        header_(std::move(header)),
         data_(std::move(data)) {}
 
   // Returns `length` bytes of program data, starting at `address`, incrementing
@@ -46,8 +50,10 @@ class Rom {
   const std::string& path() const { return path_; }
 
  private:
+  friend class RomOverwriter;
   Mapping mapping_mode_;
   std::string path_;
+  std::vector<uint8_t> header_;
   std::vector<uint8_t> data_;
 };
 
@@ -65,6 +71,21 @@ class RomIdentityTest : public OutputSink {
 
  private:
   const Rom* rom_;
+};
+
+// Sink for assembling data over an existing ROM file.
+class RomOverwriter : public OutputSink {
+ public:
+  RomOverwriter(const Rom* rom) : rom_(rom), data_(rom->data_) {}
+
+  ErrorOr<void> Write(nsasm::Address address,
+                      absl::Span<const std::uint8_t> data) override;
+
+  ErrorOr<void> CreateFile(const std::string& path) const;
+
+ private:
+  const Rom* rom_;  
+  std::vector<uint8_t> data_;
 };
 
 }  // namespace nsasm

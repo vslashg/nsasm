@@ -4,7 +4,7 @@
 
 namespace nsasm {
 
-ErrorOr<int> SnesToROMAddress(nsasm::Address snes_address, Mapping mapping) {
+ErrorOr<size_t> SnesToROMAddress(nsasm::Address snes_address, Mapping mapping) {
   int bank_address = snes_address.BankAddress();
   int bank = snes_address.Bank();
   if (bank == 0x7e || bank == 0x7f) {
@@ -48,7 +48,7 @@ ErrorOr<std::vector<uint8_t>> Rom::Read(nsasm::Address address,
   if (*last_address > *first_address) {
     // Normal read -- does not wrap around a bank.  This is by far the common
     // case.
-    if (*last_address >= int(data_.size())) {
+    if (*last_address >= data_.size()) {
       return Error("Address past end of ROM")
           .SetLocation(path_, *first_address);
     }
@@ -60,9 +60,9 @@ ErrorOr<std::vector<uint8_t>> Rom::Read(nsasm::Address address,
     for (int i = 0; i < length; ++i) {
       auto rom_address = SnesToROMAddress(address.AddWrapped(i), mapping_mode_);
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(rom_address, path_);
-      if (*rom_address >= int(data_.size())) {
+      if (*rom_address >= data_.size()) {
         return Error("Address past end of ROM")
-            .SetLocation(path_, *rom_address);
+            .SetLocation(path_, address.AddWrapped(i));
       }
       result.push_back(data_[*rom_address]);
     }
@@ -124,6 +124,14 @@ ErrorOr<Rom> LoadRomFile(const std::string& path) {
     return Error("File is not an SNES ROM").SetLocation(path);
   }
   // Seek to the beginning of the file (skipping the SMC header if present).
+  std::vector<uint8_t> header;
+  if (file_size % 0x1000 == 0x200) {
+    header.resize(0x200);
+    int bytes_read = fread(&header[0], 1, 0x200, f);
+    if (bytes_read != 0x200) {
+      return Error("Failed to read file").SetLocation(path);
+    }
+  }
   if (fseek(f, file_size % 0x1000, SEEK_SET) != 0) {
     fclose(f);
     return Error("Failed to read file").SetLocation(path);
@@ -145,11 +153,11 @@ ErrorOr<Rom> LoadRomFile(const std::string& path) {
     return Error("Failed to auto-detect ROM type").SetLocation(path);
   }
   if (maybe_lorom) {
-    return Rom(kLoRom, path, std::move(data));
+    return Rom(kLoRom, path, std::move(header), std::move(data));
   } else if (file_size < 0x400000) {
-    return Rom(kHiRom, path, std::move(data));
+    return Rom(kHiRom, path, std::move(header), std::move(data));
   } else {
-    return Rom(kExHiRom, path, std::move(data));
+    return Rom(kExHiRom, path, std::move(header), std::move(data));
   }
 }
 
@@ -170,6 +178,45 @@ ErrorOr<void> RomIdentityTest::Write(nsasm::Address address,
   }
 
   return Error("logic error: comparisons inconsistent??");
+}
+
+ErrorOr<void> RomOverwriter::Write(Address address,
+                                   absl::Span<const std::uint8_t> data) {
+  // just dumbly write; this could be made more efficient, but for now
+  // this whole output scheme is meh
+  for (size_t i = 0; i < data.size(); ++i) {
+    auto rom_index =
+        SnesToROMAddress(address.AddWrapped(i), rom_->mapping_mode_);
+    NSASM_RETURN_IF_ERROR(rom_index);
+    if (*rom_index > data_.size()) {
+      return Error("Attempt to write at %s, past end of file",
+                   address.AddWrapped(i).ToString());
+    }
+    data_[*rom_index] = data[i];
+  }
+  return {};
+}
+
+ErrorOr<void> RomOverwriter::CreateFile(const std::string& path) const {
+  // TODO: RAII this file handle
+  FILE* f = fopen(path.c_str(), "wb");
+  if (!f) {
+    return Error("Failed to open file for write").SetLocation(path);
+  }
+  if (!rom_->header_.empty()) {
+    size_t written = fwrite(&rom_->header_[0], 1, 0x200, f);
+    if (written != 0x200) {
+      return Error("Failed to write header").SetLocation(path);
+    }
+  }
+  size_t written = fwrite(&data_[0], 1, data_.size(), f);
+  if (written != data_.size()) {
+    return Error("Failed to write payload").SetLocation(path);
+  }
+  if (fclose(f) != 0) {
+    return Error("Failed to close file").SetLocation(path);
+  }
+  return {};
 }
 
 }  // namespace nsasm
