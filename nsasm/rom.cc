@@ -18,7 +18,7 @@ ErrorOr<size_t> SnesToROMAddress(nsasm::Address snes_address, Mapping mapping) {
     if (bank_address < 0x8000) {
       return Error("Invalid LoRom ROM address").SetLocation(snes_address);
     };
-    return (bank_address & 0x7fff) | (bank << 15);
+    return (bank_address & 0x7fff) | ((bank & 0x7f) << 15);
   } else if (mapping == kHiRom) {
     return bank_address | ((bank & 0x3f) << 16);
   } else if (mapping == kExHiRom) {
