@@ -10,6 +10,8 @@ namespace nsasm {
 // General interface for writing assembled instructions to an address map.
 class OutputSink {
  public:
+  virtual ~OutputSink() = default;
+
   // Write the given string of bytes, starting at the given address.
   // Implementations may return errors on failure cases (writes to a bad
   // address, etc.)
