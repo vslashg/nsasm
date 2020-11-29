@@ -29,7 +29,7 @@ class Location {
     if (!rhs.path_.empty()) {
       path_ = rhs.path_;
     }
-    if (!rhs.offset_type_ != kNone) {
+    if (rhs.offset_type_ != kNone) {
       offset_ = rhs.offset_;
       offset_type_ = rhs.offset_type_;
     }
