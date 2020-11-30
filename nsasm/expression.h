@@ -81,6 +81,7 @@ inline UnaryOp MakeBankbyteOp() {
 
 class LookupContext {
  public:
+  virtual ~LookupContext() = default;
   virtual ErrorOr<int> Lookup(const nsasm::FullIdentifier& id) const = 0;
 };
 
@@ -93,6 +94,8 @@ class NullLookupContext : public LookupContext {
 
 class IsLocalContext {
  public:
+  virtual ~IsLocalContext() = default;
+
   // Returns true if the given identifier refers to a local name in this
   // context. An unqualified name that doesn't match a local will evaluate
   // false. A qualified name that is defined in this context will evaluate true.
@@ -181,11 +184,11 @@ class ExpressionOrNull : public Expression {
     return absl::nullopt;
   }
 
-  virtual bool RequiresLookup() const override {
+  bool RequiresLookup() const override {
     return expr_ ? expr_->RequiresLookup() : false;
   }
 
-  virtual std::set<FullIdentifier> ExternalNamesReferenced(
+  std::set<FullIdentifier> ExternalNamesReferenced(
       const IsLocalContext& is_local) const override {
     return expr_ ? expr_->ExternalNamesReferenced(is_local)
                  : std::set<FullIdentifier>();
@@ -223,8 +226,8 @@ class Literal : public Expression {
     return value_;
   }
   NumericType Type() const override { return type_; }
-  virtual bool RequiresLookup() const override { return false; }
-  virtual std::set<FullIdentifier> ExternalNamesReferenced(
+  bool RequiresLookup() const override { return false; }
+  std::set<FullIdentifier> ExternalNamesReferenced(
       const IsLocalContext& is_local) const override {
     return {};
   }
@@ -249,8 +252,8 @@ class IdentifierExpression : public Expression {
     return context.Lookup(identifier_);
   }
   NumericType Type() const override { return type_; }
-  virtual bool RequiresLookup() const override { return true; }
-  virtual std::set<FullIdentifier> ExternalNamesReferenced(
+  bool RequiresLookup() const override { return true; }
+  std::set<FullIdentifier> ExternalNamesReferenced(
       const IsLocalContext& is_local) const override {
     if (is_local.IsLocal(identifier_)) {
       return {};
@@ -292,10 +295,10 @@ class BinaryExpression : public Expression {
   NumericType Type() const override {
     return ArtihmeticConversion(lhs_.Type(), rhs_.Type());
   }
-  virtual bool RequiresLookup() const override {
+  bool RequiresLookup() const override {
     return lhs_.RequiresLookup() || rhs_.RequiresLookup();
   }
-  virtual std::set<FullIdentifier> ExternalNamesReferenced(
+  std::set<FullIdentifier> ExternalNamesReferenced(
       const IsLocalContext& is_local) const override {
     auto result = lhs_.ExternalNamesReferenced(is_local);
     auto rhs_modules = rhs_.ExternalNamesReferenced(is_local);
@@ -326,8 +329,8 @@ class UnaryExpression : public Expression {
     return op_.function(*value);
   }
   NumericType Type() const override { return op_.result_type(arg_.Type()); }
-  virtual bool RequiresLookup() const override { return arg_.RequiresLookup(); }
-  virtual std::set<FullIdentifier> ExternalNamesReferenced(
+  bool RequiresLookup() const override { return arg_.RequiresLookup(); }
+  std::set<FullIdentifier> ExternalNamesReferenced(
       const IsLocalContext& is_local) const override {
     return arg_.ExternalNamesReferenced(is_local);
   }
@@ -353,8 +356,8 @@ class Label : public Expression {
     return held_value_->Evaluate(context);
   }
   NumericType Type() const override { return held_value_->Type(); }
-  virtual bool RequiresLookup() const override { return true; }
-  virtual std::set<FullIdentifier> ExternalNamesReferenced(
+  bool RequiresLookup() const override { return true; }
+  std::set<FullIdentifier> ExternalNamesReferenced(
       const IsLocalContext& is_local) const override {
     return {};
   }
