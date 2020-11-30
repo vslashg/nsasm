@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     for (const auto& line : *assembly) {
       if (absl::holds_alternative<ParsedLabel>(line)) {
         const ParsedLabel& label = absl::get<ParsedLabel>(line);
-        std::cout << (label.exported ? "export " : "") << label.name << ":\n";
+        std::cout << label.ToString() << ":\n";
       }
       if (absl::holds_alternative<Statement>(line)) {
         const Statement& st = absl::get<Statement>(line);

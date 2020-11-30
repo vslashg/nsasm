@@ -29,6 +29,9 @@ enum Punctuation {
   P_minusminusminus = 264,
 };
 
+// Convert a punctuation value to its unadorned spelling
+std::string ToString(Punctuation p);
+
 class Token {
  public:
   explicit Token(const std::string& identifier, Location loc)

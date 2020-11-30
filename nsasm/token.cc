@@ -48,30 +48,16 @@ std::string Token::ToString() const {
   }
   auto punctuation = Punctuation();
   if (punctuation) {
-    switch (*punctuation) {
-      case P_scope:
-        return "symbol `::`";
-      case P_export:
-        return "keyword `export`";
-      case P_noreturn:
-        return "keyword `noreturn`";
-      case P_yields:
-        return "keyword `yields`";
-      case P_plusplus:
-        return "symbol `++`";
-      case P_plusplusplus:
-        return "symbol `+++`";
-      case P_minusminus:
-        return "symbol `--`";
-      case P_minusminusminus:
-        return "symbol `---`";
-      default:
-        char v = *punctuation;
-        if (v == 'A' || v == 'S' || v == 'X' || v == 'Y') {
-          return absl::StrFormat("register %c", v);
-        }
-        return absl::StrFormat("symbol `%c`", v);
+    std::string spelling = nsasm::ToString(*punctuation);
+    if (spelling.size() > 3) {
+      // This is a keyword, not an operator
+      return absl::StrCat("keyword `", spelling, "`");
     }
+    if (spelling.size() == 1 && spelling[0] >= 'A' && spelling[0] <= 'Z') {
+      // A letter represents a register
+      return absl::StrCat("register ", spelling);
+    }
+    return absl::StrCat("symbol `", spelling, "`");
   }
   return "logic error?";
 }
@@ -237,6 +223,29 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
 
     // none of the above
     return Error("Unexpected character '%c' in input", sv[0]).SetLocation(loc);
+  }
+}
+
+std::string ToString(Punctuation p) {
+  switch (p) {
+    case P_scope:
+      return "::";
+    case P_export:
+      return "export";
+    case P_noreturn:
+      return "noreturn";
+    case P_yields:
+      return "yields";
+    case P_plusplus:
+      return "++";
+    case P_plusplusplus:
+      return "+++";
+    case P_minusminus:
+      return "--";
+    case P_minusminusminus:
+      return "---";
+    default:
+      return absl::StrFormat("%c", p);
   }
 }
 

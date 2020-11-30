@@ -38,11 +38,11 @@ TEST(Expression, order_of_operations) {
 
   EXPECT_EQ(Ex("-1-2").ToString(), "op-(op-(1), 2)");
   EXPECT_EQ(Ex("-(1-2)").ToString(), "op-(op-(1, 2))");
-  EXPECT_EQ(Ex("1--2").ToString(), "op-(1, op-(2))");
+  EXPECT_EQ(Ex("1 - -2").ToString(), "op-(1, op-(2))");
 
   EXPECT_EQ(Eval("-1-2"), -3);
   EXPECT_EQ(Eval("-(1-2)"), 1);
-  EXPECT_EQ(Eval("1--2"), 3);
+  EXPECT_EQ(Eval("1 - -2"), 3);
 
   EXPECT_EQ(Ex("foo+bar").ToString(), "op+(foo, bar)");
 }

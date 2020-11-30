@@ -8,6 +8,7 @@
 #include "nsasm/error.h"
 #include "nsasm/file.h"
 #include "nsasm/identifiers.h"
+#include "nsasm/parse.h"
 #include "nsasm/ranges.h"
 #include "nsasm/statement.h"
 
@@ -100,7 +101,8 @@ class Module {
     Line(Statement statement)
         : statement(std::move(statement)), incoming_state() {}
     Statement statement;
-    std::vector<std::string> labels;
+    std::vector<std::string> identifier_labels;
+    std::set<Punctuation> plus_minus_labels;
     bool reached = false;
     ExecutionState incoming_state;
     absl::optional<LabelValue> value;

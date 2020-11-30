@@ -125,24 +125,24 @@ ErrorOr<Rom> LoadRomFile(const std::string& path) {
   }
   // Seek to the beginning of the file (skipping the SMC header if present).
   std::vector<uint8_t> header;
+  if (fseek(f, 0, SEEK_SET) != 0) {
+    fclose(f);
+    return Error("Failed to read file").SetLocation(path);
+  }
   if (file_size % 0x1000 == 0x200) {
     header.resize(0x200);
     int bytes_read = fread(&header[0], 1, 0x200, f);
     if (bytes_read != 0x200) {
       return Error("Failed to read file").SetLocation(path);
     }
+    file_size -= 0x200;
   }
-  if (fseek(f, file_size % 0x1000, SEEK_SET) != 0) {
-    fclose(f);
-    return Error("Failed to read file").SetLocation(path);
-  }
-  file_size -= file_size % 0x1000;
   std::vector<uint8_t> data;
   data.resize(file_size);
   int bytes_read = fread(&data[0], 1, file_size, f);
   fclose(f);
   if (bytes_read != file_size || file_size < 0x10000) {
-    return Error("Failed to read file").SetLocation(path);
+    return Error("Failed to read file e").SetLocation(path);
   }
 
   bool maybe_lorom = CheckSnesHeader(

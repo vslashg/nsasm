@@ -86,16 +86,19 @@ ErrorOr<Module> Module::LoadAsmFile(const File& file) {
   auto add_label = [&m, &active_scopes](
                        const ParsedLabel& label,
                        int target_line) -> nsasm::ErrorOr<void> {
+    if (label.IsPlusOrMinus()) {
+      return {};  // +/- labels don't participate in scoping and exporting
+    }
     absl::flat_hash_map<std::string, int>* scope;
-    if (active_scopes.empty() || label.exported) {
+    if (active_scopes.empty() || label.IsExported()) {
       scope = &m.global_to_line_;
     } else {
       scope = &m.lines_[active_scopes.back()].scoped_locals;
     }
-    if (scope->contains(label.name)) {
-      return Error("Duplicate label definition for '%s'", label.name);
+    if (scope->contains(label.Identifier())) {
+      return Error("Duplicate label definition for '%s'", label.Identifier());
     }
-    (*scope)[label.name] = target_line;
+    (*scope)[label.Identifier()] = target_line;
     return {};
   };
 
@@ -116,7 +119,11 @@ ErrorOr<Module> Module::LoadAsmFile(const File& file) {
         for (const ParsedLabel& pending_label : pending_labels) {
           NSASM_RETURN_IF_ERROR_WITH_LOCATION(
               add_label(pending_label, m.lines_.size() - 1), loc);
-          m.lines_.back().labels.push_back(pending_label.name);
+          if (pending_label.IsPlusOrMinus()) {
+            m.lines_.back().plus_minus_labels.insert(pending_label.PlusOrMinus());
+          } else {
+            m.lines_.back().identifier_labels.push_back(pending_label.Identifier());
+          }
         }
         m.lines_.back().active_scopes = active_scopes;
         pending_labels.clear();
@@ -392,9 +399,12 @@ ErrorOr<void> Module::Assemble(OutputSink* sink,
 
 void Module::DebugPrint() const {
   for (const auto& line : lines_) {
-    for (const auto& label : line.labels) {
+    for (const std::string& label : line.identifier_labels) {
       absl::PrintF("       %s:\n", label);
     }
+    for (Punctuation punct : line.plus_minus_labels) {
+      absl::PrintF("       %s:\n", nsasm::ToString(punct));
+    } 
     if (line.value.has_value()) {
       absl::PrintF("%06x     %s\n", line.value->ToNumber(T_long),
                    line.statement.ToString());

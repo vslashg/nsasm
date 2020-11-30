@@ -502,6 +502,16 @@ ErrorOr<Directive> ParseDirective(TokenSpan* pos) {
 
 }  // namespace
 
+std::string ParsedLabel::ToString() const {
+  if (plus_or_minus_ != P_none) {
+    return nsasm::ToString(plus_or_minus_);
+  }
+  if (exported_) {
+    return absl::StrCat("export ", name_);
+  }
+  return name_;
+}
+
 ErrorOr<std::vector<absl::variant<Statement, ParsedLabel>>> Parse(
     absl::Span<const Token> tokens) {
   std::vector<absl::variant<Statement, ParsedLabel>> result_vector;
