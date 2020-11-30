@@ -23,6 +23,10 @@ enum Punctuation {
   P_export = 258,
   P_noreturn = 259,
   P_yields = 260,
+  P_plusplus = 261,
+  P_plusplusplus = 262,
+  P_minusminus = 263,
+  P_minusminusminus = 264,
 };
 
 class Token {

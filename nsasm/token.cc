@@ -57,6 +57,14 @@ std::string Token::ToString() const {
         return "keyword `noreturn`";
       case P_yields:
         return "keyword `yields`";
+      case P_plusplus:
+        return "symbol `++`";
+      case P_plusplusplus:
+        return "symbol `+++`";
+      case P_minusminus:
+        return "symbol `--`";
+      case P_minusminusminus:
+        return "symbol `---`";
       default:
         char v = *punctuation;
         if (v == 'A' || v == 'S' || v == 'X' || v == 'Y') {
@@ -79,11 +87,29 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
     int remain = sv.size();
 
     // punctuation
+    if (sv.size() >= 3) {
+      absl::string_view next = sv.substr(0, 3);
+      Punctuation found = P_none;
+      if (next == "+++") {
+        found = P_plusplusplus;
+      } else if (next == "---") {
+        found = P_minusminusminus;
+      }
+      if (found != P_none) {
+        sv.remove_prefix(3);
+        result.emplace_back(found, loc);
+        continue;
+      }
+    }
     if (sv.size() >= 2) {
       absl::string_view next = sv.substr(0, 2);
       Punctuation found = P_none;
       if (next == "::") {
         found = P_scope;
+      } else if (next == "++") {
+        found = P_plusplus;
+      } else if (next == "--") {
+        found = P_minusminus;
       }
       if (found != P_none) {
         sv.remove_prefix(2);

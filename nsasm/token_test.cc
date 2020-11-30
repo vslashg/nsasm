@@ -68,6 +68,13 @@ TEST(Token, names) {
     NSASM_ASSERT_OK(x);
     EXPECT_EQ(*x, TokenVector("label1", D_db, 0x12, ',', 0x34, ',', "foo"));
   }
+  {
+    // check that plus/minus labels can tokenize
+    auto x = Tokenize("++: BRA -- : --- BRA +++", Location());
+    NSASM_ASSERT_OK(x);
+    EXPECT_EQ(*x, TokenVector(P_plusplus, ':', M_bra, P_minusminus, ':',
+                              P_minusminusminus, M_bra, P_plusplusplus));
+  }
 }
 
 TEST(Token, convenience_equality_operator) {
