@@ -136,6 +136,26 @@ const std::vector<Suffix>& AllSuffixes();
 absl::string_view ToString(Suffix m);
 absl::optional<Suffix> ToSuffix(std::string s);
 
+// All assembler directives understood by nsasm
+enum DirectiveName {
+  D_begin,
+  D_db,
+  D_dl,
+  D_dw,
+  D_end,
+  D_entry,
+  D_equ,
+  D_halt,
+  D_mode,
+  D_module,
+  D_org,
+  D_remote,
+};
+
+// Conversions between DirectiveName values, and the matching strings.
+absl::string_view ToString(DirectiveName d);
+absl::optional<DirectiveName> ToDirectiveName(std::string s);
+
 }  // namespace nsasm
 
 #endif  // NSASM_MNEMONIC_H_

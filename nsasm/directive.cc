@@ -7,37 +7,6 @@
 #include "nsasm/output_sink.h"
 
 namespace nsasm {
-namespace {
-
-constexpr absl::string_view directive_names[] = {
-    ".BEGIN", ".DB",   ".DL",   ".DW",     ".END", ".ENTRY",
-    ".EQU",   ".HALT", ".MODE", ".MODULE", ".ORG", ".REMOTE",
-};
-
-}  // namespace
-
-absl::string_view ToString(DirectiveName d) {
-  if (d < D_begin || d > D_org) {
-    return "";
-  }
-  return directive_names[d];
-}
-
-absl::optional<DirectiveName> ToDirectiveName(std::string s) {
-  static auto lookup =
-      new absl::flat_hash_map<absl::string_view, DirectiveName>{
-          {".BEGIN", D_begin},   {".DB", D_db},     {".DL", D_dl},
-          {".DW", D_dw},         {".END", D_end},   {".ENTRY", D_entry},
-          {".EQU", D_equ},       {".HALT", D_halt}, {".MODE", D_mode},
-          {".MODULE", D_module}, {".ORG", D_org},   {".REMOTE", D_remote},
-      };
-  absl::AsciiStrToUpper(&s);
-  auto iter = lookup->find(s);
-  if (iter == lookup->end()) {
-    return absl::nullopt;
-  }
-  return iter->second;
-}
 
 DirectiveType DirectiveTypeByName(DirectiveName d) {
   static auto lookup = new absl::flat_hash_map<DirectiveName, DirectiveType>{

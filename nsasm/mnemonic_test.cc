@@ -31,9 +31,23 @@ void CheckToString(Suffix suf, std::string str) {
   EXPECT_EQ(*ToSuffix(upper), suf);
 }
 
+void CheckToString(DirectiveName d, std::string s) {
+  SCOPED_TRACE(s);
+  std::string upper = s;
+  absl::AsciiStrToUpper(&upper);
+  EXPECT_EQ(ToString(d), upper);
+  EXPECT_TRUE(ToDirectiveName(upper).has_value());
+  EXPECT_EQ(*ToDirectiveName(upper), d);
+
+  // lowercase strings should convert to mnemonics as well
+  EXPECT_TRUE(ToDirectiveName(s).has_value());
+  EXPECT_EQ(*ToDirectiveName(s), d);
+}
+
 #define CHECK_MNEMONIC_TO_STRING(name) CheckToString(M_##name, #name)
 #define CHECK_PSEUDO_TO_STRING(name) CheckToString(PM_##name, #name)
 #define CHECK_SUFFIX_TO_STRING(name) CheckToString(S_##name, "." #name)
+#define CHECK_DIRECTIVE_NAME(name) CheckToString(D_##name, "." #name)
 
 TEST(Mnemonic, string_conversions) {
   CHECK_MNEMONIC_TO_STRING(adc);
@@ -131,10 +145,22 @@ TEST(Mnemonic, string_conversions) {
   CHECK_PSEUDO_TO_STRING(sub);
   CHECK_SUFFIX_TO_STRING(b);
   CHECK_SUFFIX_TO_STRING(w);
+  CHECK_DIRECTIVE_NAME(begin);
+  CHECK_DIRECTIVE_NAME(db);
+  CHECK_DIRECTIVE_NAME(dw);
+  CHECK_DIRECTIVE_NAME(dl);
+  CHECK_DIRECTIVE_NAME(end);
+  CHECK_DIRECTIVE_NAME(entry);
+  CHECK_DIRECTIVE_NAME(equ);
+  CHECK_DIRECTIVE_NAME(mode);
+  CHECK_DIRECTIVE_NAME(module);
+  CHECK_DIRECTIVE_NAME(org);
 
   // Invalid strings should not be converted
   EXPECT_FALSE(ToMnemonic("").has_value());
   EXPECT_FALSE(ToMnemonic("hcf").has_value());
+  EXPECT_FALSE(ToDirectiveName("").has_value());
+  EXPECT_FALSE(ToDirectiveName(".HCF").has_value());
 
   // The no-suffix sentinel should stringize empty
   EXPECT_EQ(ToString(S_none), "");

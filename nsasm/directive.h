@@ -9,25 +9,10 @@
 #include "nsasm/calling_convention.h"
 #include "nsasm/execution_state.h"
 #include "nsasm/expression.h"
+#include "nsasm/mnemonic.h"
 #include "nsasm/output_sink.h"
 
 namespace nsasm {
-
-// All assembler directives understood by nsasm
-enum DirectiveName {
-  D_begin,
-  D_db,
-  D_dl,
-  D_dw,
-  D_end,
-  D_entry,
-  D_equ,
-  D_halt,
-  D_mode,
-  D_module,
-  D_org,
-  D_remote,
-};
 
 // The type of argument taken by a given directive
 enum DirectiveType {
@@ -40,10 +25,6 @@ enum DirectiveType {
   DT_name_arg,
   DT_remote_arg,
 };
-
-// Conversions between DirectiveName values, and the matching strings.
-absl::string_view ToString(DirectiveName d);
-absl::optional<DirectiveName> ToDirectiveName(std::string s);
 
 // Returns the type of argument that the given directive accepts.
 DirectiveType DirectiveTypeByName(DirectiveName d);

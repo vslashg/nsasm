@@ -50,6 +50,26 @@ cc_library(
 )
 
 cc_library(
+    name = "token",
+    srcs = ["token.cc"],
+    hdrs = ["token.h"],
+    deps = [
+        ":error",
+        ":mnemonic",
+        ":numeric_type",
+    ],
+)
+
+cc_test(
+    name = "token_test",
+    srcs = ["token_test.cc"],
+    deps = [
+        ":token",
+        "@gtest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "expression",
     srcs = ["expression.cc"],
     hdrs = ["expression.h"],
@@ -240,6 +260,7 @@ cc_library(
     deps = [
         ":calling_convention",
         ":expression",
+        ":mnemonic",
         ":output_sink",
         "@absl//absl/container:flat_hash_map",
         "@absl//absl/strings",
@@ -253,27 +274,6 @@ cc_test(
     deps = [
         ":directive",
         "@absl//absl/strings",
-        "@gtest//:gtest_main",
-    ],
-)
-
-cc_library(
-    name = "token",
-    srcs = ["token.cc"],
-    hdrs = ["token.h"],
-    deps = [
-        ":directive",
-        ":error",
-        ":mnemonic",
-        ":numeric_type",
-    ],
-)
-
-cc_test(
-    name = "token_test",
-    srcs = ["token_test.cc"],
-    deps = [
-        ":token",
         "@gtest//:gtest_main",
     ],
 )

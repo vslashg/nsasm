@@ -5,7 +5,6 @@
 #include <string>
 
 #include "absl/types/variant.h"
-#include "nsasm/directive.h"
 #include "nsasm/error.h"
 #include "nsasm/mnemonic.h"
 #include "nsasm/numeric_type.h"
