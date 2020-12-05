@@ -2,6 +2,47 @@ load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
+# To avoid circular dependencies, targets are layered.  No library in one
+# layer may depend on entities in a higher layer.  (Test targets may depend on
+# anything.)
+
+# Layer 1: Simple data type definitions, plus Error and I/O.
+
+cc_library(
+    name = "location",
+    hdrs = ["location.h"],
+    deps = [
+        "@absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
+    name = "error",
+    srcs = ["error.cc"],
+    hdrs = ["error.h"],
+    deps = [
+        ":location",
+        "@absl//absl/strings:str_format",
+        "@absl//absl/types:optional",
+        "@absl//absl/types:variant",
+    ],
+)
+
+cc_library(
+    name = "file",
+    srcs = ["file.cc"],
+    hdrs = ["file.h"],
+    deps = [":error"],
+)
+
+cc_library(
+    name = "numeric_type",
+    hdrs = ["numeric_type.h"],
+    deps = [
+        ":error",
+    ],
+)
+
 cc_library(
     name = "address",
     hdrs = ["address.h"],
@@ -9,6 +50,25 @@ cc_library(
         ":error",
         ":numeric_type",
         "@absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "ranges",
+    srcs = ["ranges.cc"],
+    hdrs = ["ranges.h"],
+    deps = [
+        ":address",
+        "@absl//absl/types:optional",
+    ],
+)
+
+cc_test(
+    name = "ranges_test",
+    srcs = ["ranges_test.cc"],
+    deps = [
+        ":ranges",
+        "@gtest//:gtest_main",
     ],
 )
 
@@ -34,20 +94,14 @@ cc_test(
 )
 
 cc_library(
-    name = "numeric_type",
-    hdrs = ["numeric_type.h"],
-    deps = [
-        ":error",
-    ],
-)
-
-cc_library(
     name = "identifiers",
     hdrs = ["identifiers.h"],
     deps = [
         "@absl//absl/strings",
     ],
 )
+
+# Other layers
 
 cc_library(
     name = "token",
@@ -182,33 +236,6 @@ cc_library(
 )
 
 cc_library(
-    name = "location",
-    hdrs = ["location.h"],
-    deps = [
-        "@absl//absl/strings:str_format",
-    ],
-)
-
-cc_library(
-    name = "error",
-    srcs = ["error.cc"],
-    hdrs = ["error.h"],
-    deps = [
-        ":location",
-        "@absl//absl/strings:str_format",
-        "@absl//absl/types:optional",
-        "@absl//absl/types:variant",
-    ],
-)
-
-cc_library(
-    name = "file",
-    srcs = ["file.cc"],
-    hdrs = ["file.h"],
-    deps = [":error"],
-)
-
-cc_library(
     name = "decode",
     srcs = ["decode.cc"],
     hdrs = ["decode.h"],
@@ -308,25 +335,6 @@ cc_test(
     srcs = ["parse_test.cc"],
     deps = [
         ":parse",
-        "@gtest//:gtest_main",
-    ],
-)
-
-cc_library(
-    name = "ranges",
-    srcs = ["ranges.cc"],
-    hdrs = ["ranges.h"],
-    deps = [
-        ":address",
-        "@absl//absl/types:optional",
-    ],
-)
-
-cc_test(
-    name = "ranges_test",
-    srcs = ["ranges_test.cc"],
-    deps = [
-        ":ranges",
         "@gtest//:gtest_main",
     ],
 )
