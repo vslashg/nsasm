@@ -12,8 +12,8 @@ http_archive(
 # Google Test
 http_archive(
     name = "gtest",
-    strip_prefix = "googletest-master",
-    urls = ["https://github.com/google/googletest/archive/master.zip"],
+    strip_prefix = "googletest-main",
+    urls = ["https://github.com/google/googletest/archive/main.zip"],
 )
 
 # Skylark rules
