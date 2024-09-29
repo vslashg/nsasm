@@ -8,6 +8,7 @@
 #include "nsasm/error.h"
 #include "nsasm/execution_state.h"
 #include "nsasm/instruction.h"
+#include "nsasm/memory.h"
 #include "nsasm/rom.h"
 
 namespace nsasm {
@@ -24,7 +25,8 @@ using DisassemblyMap = std::map<nsasm::Address, DisassembledInstruction>;
 
 class Disassembler {
  public:
-  Disassembler(Rom&& rom) : rom_(rom), current_sym_(0) {}
+  Disassembler(std::unique_ptr<InputSource> src)
+      : src_(std::move(src)), current_sym_(0) {}
 
   // movable but not copiable
   Disassembler(const Disassembler&) = delete;
@@ -57,7 +59,7 @@ class Disassembler {
 
   std::string GenSym() { return absl::StrCat("gensym", ++current_sym_); }
 
-  Rom rom_;
+  std::unique_ptr<InputSource> src_;
   std::set<nsasm::Address> entry_points_;
   std::map<nsasm::Address, DisassembledInstruction> disassembly_;
   std::map<nsasm::Address, ReturnConvention> return_conventions_;

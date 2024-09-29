@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     absl::PrintF("Error loading ROM: %s\n", rom.error().ToString());
     return 1;
   }
-  nsasm::RomIdentityTest rom_identity_sink(&*rom);
+  nsasm::RomIdentityTest rom_identity_sink(std::move(*rom));
 
   std::vector<nsasm::File> asm_files;
   for (int arg_index = 2; arg_index < argc; ++arg_index) {

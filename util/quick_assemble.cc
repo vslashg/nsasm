@@ -35,9 +35,9 @@ int main(int argc, char** argv) {
 
   std::unique_ptr<nsasm::OutputSink> sink;
   if (identity_test) {
-    sink = absl::make_unique<nsasm::RomIdentityTest>(&*rom);
+    sink = absl::make_unique<nsasm::RomIdentityTest>(std::move(*rom));
   } else {
-    sink = absl::make_unique<nsasm::RomOverwriter>(&*rom);
+    sink = absl::make_unique<nsasm::RomOverwriter>(std::move(*rom));
   }
 
   std::vector<nsasm::File> asm_files;

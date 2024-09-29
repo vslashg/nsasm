@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "nsasm/error.h"
-#include "nsasm/output_sink.h"
+#include "nsasm/memory.h"
 
 namespace nsasm {
 

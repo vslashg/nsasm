@@ -1,5 +1,7 @@
 #include "nsasm/rom.h"
 
+#include <memory>
+
 #include "nsasm/error.h"
 
 namespace nsasm {
@@ -70,24 +72,6 @@ ErrorOr<std::vector<uint8_t>> Rom::Read(nsasm::Address address,
   }
 }
 
-ErrorOr<int> Rom::ReadByte(nsasm::Address address) const {
-  auto read = Read(address, 1);
-  NSASM_RETURN_IF_ERROR(read);
-  return (*read)[0];
-}
-
-ErrorOr<int> Rom::ReadWord(nsasm::Address address) const {
-  auto read = Read(address, 2);
-  NSASM_RETURN_IF_ERROR(read);
-  return (*read)[0] + ((*read)[1] * 256);
-}
-
-ErrorOr<int> Rom::ReadLong(nsasm::Address address) const {
-  auto read = Read(address, 3);
-  NSASM_RETURN_IF_ERROR(read);
-  return (*read)[0] + ((*read)[1] * 256) + ((*read)[2] * 256 * 256);
-}
-
 namespace {
 
 // Returns true if, heuristically, this looks like a SNES header.
@@ -101,7 +85,7 @@ bool CheckSnesHeader(const std::vector<uint8_t>& header) {
 
 }  // namespace
 
-ErrorOr<Rom> LoadRomFile(const std::string& path) {
+ErrorOr<std::unique_ptr<Rom>> LoadRomFile(const std::string& path) {
   // TODO: RAII this file handle
   FILE* f = fopen(path.c_str(), "rb");
   if (!f) {
@@ -153,11 +137,14 @@ ErrorOr<Rom> LoadRomFile(const std::string& path) {
     return Error("Failed to auto-detect ROM type").SetLocation(path);
   }
   if (maybe_lorom) {
-    return Rom(kLoRom, path, std::move(header), std::move(data));
+    return std::make_unique<Rom>(kLoRom, path, std::move(header),
+                                 std::move(data));
   } else if (file_size < 0x400000) {
-    return Rom(kHiRom, path, std::move(header), std::move(data));
+    return std::make_unique<Rom>(kHiRom, path, std::move(header),
+                                 std::move(data));
   } else {
-    return Rom(kExHiRom, path, std::move(header), std::move(data));
+    return std::make_unique<Rom>(kExHiRom, path, std::move(header),
+                                 std::move(data));
   }
 }
 

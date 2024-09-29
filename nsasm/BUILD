@@ -54,6 +54,17 @@ cc_library(
 )
 
 cc_library(
+    name = "memory",
+    hdrs = ["memory.h"],
+    srcs = ["memory.cc"],
+    deps = [
+        ":address",
+        ":error",
+        "@absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "ranges",
     srcs = ["ranges.cc"],
     hdrs = ["ranges.h"],
@@ -201,16 +212,6 @@ cc_library(
 )
 
 cc_library(
-    name = "output_sink",
-    hdrs = ["output_sink.h"],
-    deps = [
-        ":address",
-        ":error",
-        "@absl//absl/types:span",
-    ],
-)
-
-cc_library(
     name = "calling_convention",
     srcs = ["calling_convention.cc"],
     hdrs = ["calling_convention.h"],
@@ -229,9 +230,9 @@ cc_library(
         ":addressing_mode",
         ":calling_convention",
         ":expression",
+        ":memory",
         ":mnemonic",
         ":opcode_map",
-        ":output_sink",
     ],
 )
 
@@ -264,7 +265,7 @@ cc_library(
     hdrs = ["rom.h"],
     deps = [
         ":error",
-        ":output_sink",
+        ":memory",
     ],
 )
 
@@ -287,8 +288,8 @@ cc_library(
     deps = [
         ":calling_convention",
         ":expression",
+        ":memory",
         ":mnemonic",
-        ":output_sink",
         "@absl//absl/container:flat_hash_map",
         "@absl//absl/strings",
         "@absl//absl/types:optional",

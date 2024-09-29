@@ -5,7 +5,7 @@ cc_library(
     testonly = 1,
     srcs = ["test_sink.cc"],
     hdrs = ["test_sink.h"],
-    deps = ["//nsasm:output_sink"],
+    deps = ["//nsasm:memory"],
 )
 
 cc_library(

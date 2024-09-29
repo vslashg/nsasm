@@ -5,8 +5,8 @@
 #include "nsasm/calling_convention.h"
 #include "nsasm/execution_state.h"
 #include "nsasm/expression.h"
+#include "nsasm/memory.h"
 #include "nsasm/mnemonic.h"
-#include "nsasm/output_sink.h"
 
 namespace nsasm {
 

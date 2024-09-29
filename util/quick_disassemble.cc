@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
       return 1;
     }
     if (indirect) {
-      auto indirect_address = rom->ReadWord(nsasm::Address(rd_address));
+      auto indirect_address = (*rom)->ReadWord(nsasm::Address(rd_address));
       if (!indirect_address.ok()) {
         absl::PrintF("%s\n", indirect_address.error().ToString());
         return 1;
@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
     seeds.emplace(nsasm::Address(rd_address), *parsed_flag);
   }
 
-  nsasm::Disassembler disassembler(*std::move(rom));
+  nsasm::Disassembler disassembler(std::move(*rom));
 
   for (int pass = 0; pass < 100; ++pass) {
     std::map<nsasm::Address, nsasm::StatusFlags> new_seeds;

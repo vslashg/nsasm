@@ -37,6 +37,10 @@ bazel-genfiles
 bazel-nsasm
 bazel-out
 bazel-testlogs
+MODULE.bazel*
 
 # vscode
 .vscode
+
+# github
+.devcontainer/devcontainer.json

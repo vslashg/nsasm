@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
   nsasm::ExecutionState execution_state(*parsed_flag);
   std::map<nsasm::Address, nsasm::ExecutionState> local_jumps;
   while (true) {
-    auto instruction_data = rom->Read(address, 4);
+    auto instruction_data = (*rom)->Read(address, 4);
     if (!instruction_data.ok()) {
       absl::PrintF("%s - ERROR: %s\n", address.ToString(),
                    instruction_data.error().ToString());
@@ -56,7 +56,8 @@ int main(int argc, char** argv) {
                    instruction.error().ToString());
       return 1;
     }
-    int instruction_bytes = InstructionLength(instruction->addressing_mode);
+    int instruction_bytes =
+        nsasm::InstructionLength(instruction->addressing_mode);
     nsasm::Address next_pc = address.AddWrapped(instruction_bytes);
     auto status = instruction->Execute(&execution_state);
     if (!status.ok()) {

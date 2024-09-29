@@ -2,10 +2,11 @@
 #define NSASM_ROM_H_
 
 #include <cstdint>
+#include <memory>
 #include <string>
 
 #include "nsasm/error.h"
-#include "nsasm/output_sink.h"
+#include "nsasm/memory.h"
 
 namespace nsasm {
 
@@ -28,7 +29,7 @@ ErrorOr<size_t> SnesToROMAddress(nsasm::Address snes_address, Mapping mapping);
 class RomOverwriter;
 
 // Representation of a SNES ROM, presumably loaded from disk.
-class Rom {
+class Rom : public InputSource {
  public:
   Rom(Mapping mapping_mode, std::string path, std::vector<uint8_t> header,
       std::vector<uint8_t> data)
@@ -41,13 +42,10 @@ class Rom {
   // addresses with the same logic as `AddToPC()` above.
   //
   // Returns nullopt instead if given an out-of-range read region.
-  ErrorOr<std::vector<uint8_t>> Read(nsasm::Address address, int length) const;
+  ErrorOr<std::vector<uint8_t>> Read(nsasm::Address address,
+                                     int length) const override;
 
-  ErrorOr<int> ReadByte(nsasm::Address address) const;
-  ErrorOr<int> ReadWord(nsasm::Address address) const;
-  ErrorOr<int> ReadLong(nsasm::Address address) const;
-
-  const std::string& path() const { return path_; }
+  std::string Path() const override { return path_; }
 
  private:
   friend class RomOverwriter;
@@ -57,26 +55,26 @@ class Rom {
   std::vector<uint8_t> data_;
 };
 
-ErrorOr<Rom> LoadRomFile(const std::string& path);
+ErrorOr<std::unique_ptr<Rom>> LoadRomFile(const std::string& path);
 
 // Wraps a SNES ROM and acts as an output sink.  Returns an error if any data
 // written does not match what already exists in a ROM.  This is intended for
 // testing and disassembly validation purposes.
 class RomIdentityTest : public OutputSink {
  public:
-  RomIdentityTest(const Rom* rom) : rom_(rom) {}
+  RomIdentityTest(std::unique_ptr<Rom> rom) : rom_(std::move(rom)) {}
 
   ErrorOr<void> Write(nsasm::Address address,
                       absl::Span<const std::uint8_t> data) override;
 
  private:
-  const Rom* rom_;
+  std::unique_ptr<Rom> rom_;
 };
 
 // Sink for assembling data over an existing ROM file.
 class RomOverwriter : public OutputSink {
  public:
-  RomOverwriter(const Rom* rom) : rom_(rom), data_(rom->data_) {}
+  RomOverwriter(std::unique_ptr<Rom> rom) : rom_(std::move(rom)), data_(rom->data_) {}
 
   ErrorOr<void> Write(nsasm::Address address,
                       absl::Span<const std::uint8_t> data) override;
@@ -84,7 +82,7 @@ class RomOverwriter : public OutputSink {
   ErrorOr<void> CreateFile(const std::string& path) const;
 
  private:
-  const Rom* rom_;  
+  std::unique_ptr<Rom> rom_;
   std::vector<uint8_t> data_;
 };
 

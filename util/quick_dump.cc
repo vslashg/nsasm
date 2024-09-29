@@ -62,13 +62,13 @@ int main(int argc, char** argv) {
     switch (stride) {
       default:
       case 1:
-        value = rom->ReadByte(address);
+        value = (*rom)->ReadByte(address);
         break;
       case 2:
-        value = rom->ReadWord(address);
+        value = (*rom)->ReadWord(address);
         break;
       case 3:
-        value = rom->ReadLong(address);
+        value = (*rom)->ReadLong(address);
         break;
     }
     if (!value.ok()) {

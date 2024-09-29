@@ -96,18 +96,18 @@ ErrorOr<std::map<nsasm::Address, StatusFlags>> Disassembler::Disassemble(
     if (!existing_instruction) {
       // This is the first time we've seen this address.  Try to disassemble
       // it.
-      auto instruction_data = rom_.Read(pc, 4);
-      NSASM_RETURN_IF_ERROR_WITH_LOCATION(instruction_data, rom_.path(), pc);
+      auto instruction_data = src_->Read(pc, 4);
+      NSASM_RETURN_IF_ERROR_WITH_LOCATION(instruction_data, src_->Path(), pc);
       auto instruction =
           Decode(*instruction_data, current_execution_state.Flags());
-      NSASM_RETURN_IF_ERROR_WITH_LOCATION(instruction, rom_.path(), pc);
+      NSASM_RETURN_IF_ERROR_WITH_LOCATION(instruction, src_->Path(), pc);
 
       int instruction_bytes = InstructionLength(instruction->addressing_mode);
 
       nsasm::Address next_pc = pc.AddWrapped(instruction_bytes);
       auto next_execution_state = current_execution_state;
       NSASM_RETURN_IF_ERROR_WITH_LOCATION(
-          instruction->Execute(&next_execution_state), rom_.path(), pc);
+          instruction->Execute(&next_execution_state), src_->Path(), pc);
 
       auto far_branch_address = instruction->FarBranchTarget(pc);
       if (far_branch_address.has_value()) {
@@ -131,7 +131,7 @@ ErrorOr<std::map<nsasm::Address, StatusFlags>> Disassembler::Disassemble(
         instruction->arg1.ApplyLabel(get_label(target));
         auto branch_execution_state = current_execution_state;
         NSASM_RETURN_IF_ERROR_WITH_LOCATION(
-            instruction->ExecuteBranch(&branch_execution_state), rom_.path(),
+            instruction->ExecuteBranch(&branch_execution_state), src_->Path(),
             pc);
         add_to_decode_stack(target, branch_execution_state);
       }
@@ -160,17 +160,17 @@ ErrorOr<std::map<nsasm::Address, StatusFlags>> Disassembler::Disassemble(
         // Check that the instruction still decodes with the new flag state.
         // (We can throw the answer away if so, since we've already disassembled
         // this instruction before.)
-        auto instruction_data = rom_.Read(pc, 4);
+        auto instruction_data = src_->Read(pc, 4);
         NSASM_RETURN_IF_ERROR_WITH_LOCATION(
             Decode(*instruction_data, combined_execution_state.Flags()),
-            rom_.path(), pc);
+            src_->Path(), pc);
 
         // Update the flag state on this instruction
         di.current_execution_state = combined_execution_state;
         auto next_execution_state = combined_execution_state;
 
         NSASM_RETURN_IF_ERROR_WITH_LOCATION(
-            di.instruction.Execute(&next_execution_state), rom_.path(), pc);
+            di.instruction.Execute(&next_execution_state), src_->Path(), pc);
         di.next_execution_state = next_execution_state;
         int instruction_bytes =
             InstructionLength(di.instruction.addressing_mode);
@@ -190,7 +190,7 @@ ErrorOr<std::map<nsasm::Address, StatusFlags>> Disassembler::Disassemble(
           auto branch_execution_state = current_execution_state;
           NSASM_RETURN_IF_ERROR_WITH_LOCATION(
               di.instruction.ExecuteBranch(&branch_execution_state),
-              rom_.path(), pc);
+              src_->Path(), pc);
           int value = *di.instruction.arg1.Evaluate(NullLookupContext());
           nsasm::Address target = next_pc.AddWrapped(value);
           add_to_decode_stack(target, branch_execution_state);
