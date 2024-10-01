@@ -16,7 +16,7 @@ cc_library(
     deps = [
         ":test_sink",
         "//nsasm:assembler",
-        "@gtest",
+        "@googletest//:gtest",
     ],
 )
 
@@ -25,6 +25,6 @@ cc_test(
     srcs = ["simple_tests.cc"],
     deps = [
         ":test_assembly",
-        "@gtest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )

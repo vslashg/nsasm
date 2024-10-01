@@ -37,7 +37,7 @@ bazel-genfiles
 bazel-nsasm
 bazel-out
 bazel-testlogs
-MODULE.bazel*
+MODULE.bazel.lock
 
 # vscode
 .vscode

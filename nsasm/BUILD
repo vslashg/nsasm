@@ -12,7 +12,7 @@ cc_library(
     name = "location",
     hdrs = ["location.h"],
     deps = [
-        "@absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -22,9 +22,9 @@ cc_library(
     hdrs = ["error.h"],
     deps = [
         ":location",
-        "@absl//absl/strings:str_format",
-        "@absl//absl/types:optional",
-        "@absl//absl/types:variant",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:optional",
+        "@abseil-cpp//absl/types:variant",
     ],
 )
 
@@ -49,7 +49,7 @@ cc_library(
     deps = [
         ":error",
         ":numeric_type",
-        "@absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -60,7 +60,7 @@ cc_library(
     deps = [
         ":address",
         ":error",
-        "@absl//absl/types:span",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -70,7 +70,7 @@ cc_library(
     hdrs = ["ranges.h"],
     deps = [
         ":address",
-        "@absl//absl/types:optional",
+        "@abseil-cpp//absl/types:optional",
     ],
 )
 
@@ -79,7 +79,7 @@ cc_test(
     srcs = ["ranges_test.cc"],
     deps = [
         ":ranges",
-        "@gtest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -88,9 +88,9 @@ cc_library(
     srcs = ["mnemonic.cc"],
     hdrs = ["mnemonic.h"],
     deps = [
-        "@absl//absl/container:flat_hash_map",
-        "@absl//absl/strings",
-        "@absl//absl/types:optional",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:optional",
     ],
 )
 
@@ -99,8 +99,8 @@ cc_test(
     srcs = ["mnemonic_test.cc"],
     deps = [
         ":mnemonic",
-        "@absl//absl/strings",
-        "@gtest//:gtest_main",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -108,7 +108,7 @@ cc_library(
     name = "identifiers",
     hdrs = ["identifiers.h"],
     deps = [
-        "@absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -130,7 +130,7 @@ cc_test(
     srcs = ["token_test.cc"],
     deps = [
         ":token",
-        "@gtest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -142,8 +142,8 @@ cc_library(
         ":error",
         ":identifiers",
         ":numeric_type",
-        "@absl//absl/memory",
-        "@absl//absl/types:optional",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/types:optional",
     ],
 )
 
@@ -153,7 +153,7 @@ cc_test(
     deps = [
         ":expression",
         ":parse",
-        "@gtest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -165,7 +165,7 @@ cc_library(
         ":error",
         ":expression",
         ":mnemonic",
-        "@absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -176,7 +176,7 @@ cc_test(
         ":addressing_mode",
         ":instruction",
         ":opcode_map",
-        "@gtest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -187,7 +187,7 @@ cc_library(
     deps = [
         ":addressing_mode",
         ":mnemonic",
-        "@absl//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_map",
     ],
 )
 
@@ -196,7 +196,7 @@ cc_test(
     srcs = ["opcode_map_test.cc"],
     deps = [
         ":opcode_map",
-        "@gtest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -205,9 +205,9 @@ cc_library(
     srcs = ["execution_state.cc"],
     hdrs = ["execution_state.h"],
     deps = [
-        "@absl//absl/container:inlined_vector",
-        "@absl//absl/strings",
-        "@absl//absl/types:optional",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:optional",
     ],
 )
 
@@ -217,8 +217,8 @@ cc_library(
     hdrs = ["calling_convention.h"],
     deps = [
         ":execution_state",
-        "@absl//absl/strings:str_format",
-        "@absl//absl/types:variant",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:variant",
     ],
 )
 
@@ -244,8 +244,8 @@ cc_library(
         ":error",
         ":instruction",
         ":opcode_map",
-        "@absl//absl/memory",
-        "@absl//absl/types:span",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -255,7 +255,7 @@ cc_test(
     deps = [
         ":decode",
         ":opcode_map",
-        "@gtest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -290,9 +290,9 @@ cc_library(
         ":expression",
         ":memory",
         ":mnemonic",
-        "@absl//absl/container:flat_hash_map",
-        "@absl//absl/strings",
-        "@absl//absl/types:optional",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:optional",
     ],
 )
 
@@ -301,8 +301,8 @@ cc_test(
     srcs = ["directive_test.cc"],
     deps = [
         ":directive",
-        "@absl//absl/strings",
-        "@gtest//:gtest_main",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -336,7 +336,7 @@ cc_test(
     srcs = ["parse_test.cc"],
     deps = [
         ":parse",
-        "@gtest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -350,8 +350,8 @@ cc_library(
         ":ranges",
         ":statement",
         ":token",
-        "@absl//absl/container:flat_hash_map",
-        "@absl//absl/strings:str_format",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -362,7 +362,7 @@ cc_library(
     deps = [
         ":error",
         ":module",
-        "@absl//absl/container:flat_hash_map",
-        "@absl//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
     ],
 )

@@ -6,7 +6,7 @@ cc_binary(
     deps = [
         "//nsasm:instruction",
         "//nsasm:opcode_map",
-        "@absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -17,8 +17,8 @@ cc_binary(
         "//nsasm:decode",
         "//nsasm:disassemble",
         "//nsasm:rom",
-        "@absl//absl/strings",
-        "@absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -27,8 +27,8 @@ cc_binary(
     srcs = ["quick_dump.cc"],
     deps = [
         "//nsasm:rom",
-        "@absl//absl/strings",
-        "@absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -38,7 +38,7 @@ cc_binary(
     deps = [
         "//nsasm:assembler",
         "//nsasm:rom",
-        "@absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -59,7 +59,7 @@ cc_binary(
         "//nsasm:assembler",
         "//nsasm:disassemble",
         "//nsasm:rom",
-        "@absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -69,6 +69,6 @@ cc_binary(
     deps = [
         "//nsasm:disassemble",
         "//nsasm:rom",
-        "@absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
