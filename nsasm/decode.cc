@@ -52,7 +52,7 @@ ErrorOr<Instruction> Decode(absl::Span<const uint8_t> bytes,
       decoded.addressing_mode == A_ind_w ||
       decoded.addressing_mode == A_ind_wx ||
       decoded.addressing_mode == A_lng_w) {
-    // 12 bit argument
+    // 16 bit argument
     if (bytes.size() < 2) {
       return Error("Not enough bytes to decode");
     }

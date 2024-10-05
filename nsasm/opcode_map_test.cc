@@ -244,6 +244,64 @@ InstructionMap MakeInstructionMap() {
   return map;
 }
 
+// Test that the table of opcode families matches expectations.
+//
+// Independently generated from second reference source.
+Family ExpectedFamily(Mnemonic mnemonic, AddressingMode mode) {
+  // all 24-bit addressing modes are necessarily unique to the 65816.
+  if (mode == A_dir_l || mode == A_dir_lx || mode == A_lng_b ||
+      mode == A_lng_by || mode == A_lng_w) {
+    return F_65816;
+  }
+  // Other 65816 addressing modes
+  if (mode == A_stk || mode == A_stk_y || mode == A_rel16 || mode == A_mov) {
+    return F_65816;
+  }
+
+  // New 65816 instructions per "programming the 65816"
+  if (mnemonic == M_brl || mnemonic == M_cop || mnemonic == M_jsl ||
+      mnemonic == M_mvn || mnemonic == M_mvp || mnemonic == M_pea ||
+      mnemonic == M_pei || mnemonic == M_per || mnemonic == M_phb ||
+      mnemonic == M_phd || mnemonic == M_plb || mnemonic == M_phk ||
+      mnemonic == M_pld || mnemonic == M_rep || mnemonic == M_rtl ||
+      mnemonic == M_sep || mnemonic == M_stp || mnemonic == M_tcd ||
+      mnemonic == M_tcs || mnemonic == M_tdc || mnemonic == M_tsc ||
+      mnemonic == M_txy || mnemonic == M_tyx || mnemonic == M_wai ||
+      mnemonic == M_wdm || mnemonic == M_xba || mnemonic == M_xce) {
+    return F_65816;
+  }
+
+  // JSR ($0000, X) is a 65816 extension
+  if (mnemonic == M_jsr && mode == A_ind_wx) {
+    return F_65816;
+  }
+
+  // 65C02 extension addressing modes
+  if (mode == A_ind_b | mode == A_ind_wx) {
+    return F_65C02;
+  }
+
+  // 65C02 new instructions
+  if (mnemonic == M_bra || mnemonic == M_phx || mnemonic == M_phy ||
+      mnemonic == M_plx || mnemonic == M_ply || mnemonic == M_stz ||
+      mnemonic == M_trb || mnemonic == M_tsb) {
+    return F_65C02;
+  }
+
+  // INC A and DEC A are (somehow) 65C02 extensions
+  if ((mnemonic == M_inc || mnemonic == M_dec) && mode == A_acc) {
+    return F_65C02;
+  }
+
+  // The 65C02 also adds three new addressing modes to BIT
+  if (mnemonic == M_bit &&
+      (mode == A_dir_bx || mode == A_dir_wx || mode == A_imm_fm)) {
+    return F_65C02;
+  }
+
+  return F_6502;
+}
+
 }  // namespace
 
 TEST(OpcodeMap, decode) {
@@ -328,6 +386,19 @@ TEST(OpcodeMap, controlling_flag) {
     } else if (decoded.second == A_imm_fm) {
       EXPECT_EQ(FlagControllingInstructionSize(decoded.first), kUsesMFlag);
     }
+  }
+}
+
+TEST(OpcodeMap, processor_family) {
+  // Check that each opcode is assigned to the correct family, using
+  for (int i = 0; i < 256; ++i) {
+    auto decoded = DecodeOpcode(i);
+    SCOPED_TRACE(i);
+    SCOPED_TRACE(ToString(decoded.first));
+    SCOPED_TRACE(ToString(decoded.second));
+    Family expected = ExpectedFamily(decoded.first, decoded.second);
+    Family got = FamilyForOpcode(i);
+    EXPECT_EQ(expected, got);
   }
 }
 
