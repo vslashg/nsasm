@@ -16,6 +16,8 @@ bool IsHexDigit(char ch) {
 
 bool IsDecimalDigit(char ch) { return (ch >= '0' && ch <= '9'); }
 
+bool IsBinaryDigit(char ch) { return (ch == '0' || ch == '1'); }
+
 bool IsIdentifierFirstChar(char ch) {
   return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_';
 }
@@ -140,6 +142,25 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
       if (hex_digits.size() <= 2) {
         type = T_byte;
       } else if (hex_digits.size() <= 4) {
+        type = T_word;
+      }
+      result.emplace_back(value, loc, type);
+      continue;
+    }
+
+    // binary literal
+    if (remain >= 2 && sv[0] == '%' && IsBinaryDigit(sv[1])) {
+      sv.remove_prefix(1);
+      std::string binary_digits;
+      while (!sv.empty() && IsBinaryDigit(sv[0])) {
+        binary_digits.push_back(sv[0]);
+        sv.remove_prefix(1);
+      }
+      int value = strtol(binary_digits.c_str(), nullptr, 2);
+      NumericType type = T_long;
+      if (binary_digits.size() <= 8) {
+        type = T_byte;
+      } else if (binary_digits.size() <= 16) {
         type = T_word;
       }
       result.emplace_back(value, loc, type);

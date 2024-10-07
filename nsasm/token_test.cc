@@ -33,11 +33,16 @@ TEST(Token, names) {
   }
   {
     // Test that numbers are read correctly and type is inferred from value
-    auto x = Tokenize("$12 $0012 $000012 0x12 0x0012 0x000012 12 000012",
-                      Location());
+    auto x = Tokenize(
+        "$12 $0012 $000012 "
+        "0x12 0x0012 0x000012 "
+        "%01100101 %0000000001100101 %000000000000000001100101 "
+        "12 000012 ",
+        Location());
     NSASM_ASSERT_OK(x);
-    // six hex, two decimal
-    EXPECT_EQ(*x, TokenVector(0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 12, 12));
+    // six hex, three binary, two decimal
+    EXPECT_EQ(*x, TokenVector(0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0b01100101,
+                              0b01100101, 0b01100101, 12, 12));
     if (x->size() == 8) {
       EXPECT_EQ((*x)[0].Type(), T_byte);
       EXPECT_EQ((*x)[1].Type(), T_word);
