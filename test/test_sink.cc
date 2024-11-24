@@ -4,7 +4,8 @@ namespace nsasm {
 
 ErrorOr<void> TestSink::Write(nsasm::Address address,
                               absl::Span<const std::uint8_t> data) {
-  for (int i = 0; i < data.size(); ++i) {
+  const int size = data.size();
+  for (int i = 0; i < size; ++i) {
     nsasm::Address target = address.AddWrapped(i);
     if (received_.count(target)) {
       return Error("Duplicate write to address %s", target.ToString());
@@ -23,7 +24,8 @@ ErrorOr<void> TestSink::Check() const {
   for (const ExpectedBytes& entry : expected_) {
     nsasm::Address location(entry.location);
     const std::vector<std::uint8_t>& bytes = entry.bytes;
-    for (int i = 0; i < bytes.size(); ++i) {
+    const int size = bytes.size();
+    for (int i = 0; i < size; ++i) {
       nsasm::Address target = location.AddWrapped(i);
       auto iter = received.find(target);
       if (iter == received.end()) {
