@@ -1,9 +1,10 @@
 #include "nsasm/directive.h"
 
+#include <string_view>
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/string_view.h"
 #include "nsasm/memory.h"
 
 namespace nsasm {

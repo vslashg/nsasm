@@ -11,8 +11,8 @@ namespace nsasm {
 class ParsedLabel {
  public:
   ParsedLabel() {}
-  ParsedLabel(nsasm::Punctuation p) : plus_or_minus_(p) {};
-  ParsedLabel(std::string n, bool e) : name_(std::move(n)), exported_(e) {};
+  ParsedLabel(nsasm::Punctuation p) : plus_or_minus_(p){};
+  ParsedLabel(std::string n, bool e) : name_(std::move(n)), exported_(e){};
 
   bool IsPlusOrMinus() const { return plus_or_minus_ != P_none; }
   bool IsIdentifier() const { return plus_or_minus_ == P_none; }
@@ -21,6 +21,7 @@ class ParsedLabel {
   const std::string Identifier() const { return name_; }
 
   std::string ToString() const;
+
  private:
   nsasm::Punctuation plus_or_minus_ = P_none;
   std::string name_;
@@ -33,7 +34,7 @@ ErrorOr<std::vector<absl::variant<Statement, ParsedLabel>>> Parse(
     absl::Span<const Token> tokens);
 
 // Parse a string into an expression object.  Intended for testing purposes.
-ErrorOr<ExpressionOrNull> ParseExpression(absl::string_view);
+ErrorOr<ExpressionOrNull> ParseExpression(std::string_view);
 
 }  // namespace nsasm
 

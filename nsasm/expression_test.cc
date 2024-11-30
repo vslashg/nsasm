@@ -10,13 +10,13 @@ using ::testing::IsEmpty;
 using ::testing::UnorderedElementsAre;
 
 namespace {
-ExpressionOrNull Ex(absl::string_view sv) {
+ExpressionOrNull Ex(std::string_view sv) {
   auto expr = ParseExpression(sv);
   NSASM_EXPECT_OK(expr);
   return expr.ok() ? *expr : ExpressionOrNull();
 }
 
-int Eval(absl::string_view sv) {
+int Eval(std::string_view sv) {
   auto val = Ex(sv).Evaluate(NullLookupContext());
   NSASM_EXPECT_OK(val);
   return val.ok() ? *val : -999;

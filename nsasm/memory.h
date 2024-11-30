@@ -26,7 +26,7 @@ class InputSource {
                                              int length) const = 0;
 
   // Helper functions to read 1, 2, or 3-byte long little-endian values from
-  // an address.  
+  // an address.
   ErrorOr<int> ReadByte(nsasm::Address address) const;
   ErrorOr<int> ReadWord(nsasm::Address address) const;
   ErrorOr<int> ReadLong(nsasm::Address address) const;

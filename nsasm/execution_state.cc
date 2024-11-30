@@ -10,7 +10,7 @@ bool Known(BitState s) { return s == B_off || s == B_on; }
 
 // If `*sv` begins with a valid name part, consume it and return its value.
 // Otherwise return nullopt.
-absl::optional<BitState> ConsumeNamePart(absl::string_view* sv) {
+absl::optional<BitState> ConsumeNamePart(std::string_view* sv) {
   if (sv->size() < 1) {
     return absl::nullopt;
   }
@@ -25,7 +25,7 @@ absl::optional<BitState> ConsumeNamePart(absl::string_view* sv) {
   return absl::nullopt;
 }
 
-bool ConsumeByte(absl::string_view* sv, char ch) {
+bool ConsumeByte(std::string_view* sv, char ch) {
   if (sv->size() > 0 && (*sv)[0] == ch) {
     sv->remove_prefix(1);
     return true;
@@ -41,10 +41,12 @@ std::string StatusFlags::ToName() const {
   } else if (EBit() == B_on) {
     return "emu";
   } else {
-    absl::string_view m_str =
-        !Known(MBit()) ? "" : (MBit() == B_off) ? "m16" : "m8";
-    absl::string_view x_str =
-        !Known(XBit()) ? "" : (XBit() == B_off) ? "x16" : "x8";
+    std::string_view m_str = !Known(MBit())      ? ""
+                             : (MBit() == B_off) ? "m16"
+                                                 : "m8";
+    std::string_view x_str = !Known(XBit())      ? ""
+                             : (XBit() == B_off) ? "x16"
+                                                 : "x8";
     if (m_str.empty() && x_str.empty()) {
       return "native";
     }
@@ -53,14 +55,15 @@ std::string StatusFlags::ToName() const {
 }
 
 std::string StatusFlags::ToString() const {
-  const char* c_bit_str =
-      (CBit() == B_on) ? ", c=1" : (CBit() == B_off) ? ", c=0" : "";
+  const char* c_bit_str = (CBit() == B_on)    ? ", c=1"
+                          : (CBit() == B_off) ? ", c=0"
+                                              : "";
   return absl::StrCat(ToName(), c_bit_str);
 }
 
-absl::optional<StatusFlags> StatusFlags::FromName(absl::string_view name) {
+absl::optional<StatusFlags> StatusFlags::FromName(std::string_view name) {
   std::string lower_name_str = absl::AsciiStrToLower(name);
-  absl::string_view lower_name = lower_name_str;
+  std::string_view lower_name = lower_name_str;
 
   if (lower_name == "unk") {
     return StatusFlags(B_unknown, B_unknown, B_unknown);

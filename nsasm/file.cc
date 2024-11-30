@@ -21,7 +21,7 @@ nsasm::ErrorOr<File> OpenFile(const std::string& path) {
   return File(path, std::move(lines));
 }
 
-nsasm::File MakeFakeFile(const std::string& path, absl::string_view contents) {
+nsasm::File MakeFakeFile(const std::string& path, std::string_view contents) {
   std::vector<std::string> lines = absl::StrSplit(contents, '\n');
   for (std::string& line : lines) {
     absl::StripAsciiWhitespace(&line);

@@ -120,9 +120,11 @@ ErrorOr<Module> Module::LoadAsmFile(const File& file) {
           NSASM_RETURN_IF_ERROR_WITH_LOCATION(
               add_label(pending_label, m.lines_.size() - 1), loc);
           if (pending_label.IsPlusOrMinus()) {
-            m.lines_.back().plus_minus_labels.insert(pending_label.PlusOrMinus());
+            m.lines_.back().plus_minus_labels.insert(
+                pending_label.PlusOrMinus());
           } else {
-            m.lines_.back().identifier_labels.push_back(pending_label.Identifier());
+            m.lines_.back().identifier_labels.push_back(
+                pending_label.Identifier());
           }
         }
         m.lines_.back().active_scopes = active_scopes;
@@ -273,7 +275,7 @@ ErrorOr<void> Module::RunFirstPass() {
   return {};
 }
 
-ErrorOr<int> Module::LocalIndex(absl::string_view sv,
+ErrorOr<int> Module::LocalIndex(std::string_view sv,
                                 const std::vector<int>& active_scopes) const {
   std::vector<const absl::flat_hash_map<std::string, int>*> scopes;
   for (auto it = active_scopes.rbegin(); it != active_scopes.rend(); ++it) {
@@ -404,7 +406,7 @@ void Module::DebugPrint() const {
     }
     for (Punctuation punct : line.plus_minus_labels) {
       absl::PrintF("       %s:\n", nsasm::ToString(punct));
-    } 
+    }
     if (line.value.has_value()) {
       absl::PrintF("%06x     %s\n", line.value->ToNumber(T_long),
                    line.statement.ToString());

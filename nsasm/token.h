@@ -91,7 +91,7 @@ class Token {
 
 using TokenSpan = absl::Span<const nsasm::Token>;
 
-ErrorOr<std::vector<Token>> Tokenize(absl::string_view, Location loc);
+ErrorOr<std::vector<Token>> Tokenize(std::string_view, Location loc);
 
 // Convenience comparisons.  Tokens cannot be created from values implicitly,
 // but can be compared for equality with those objects.

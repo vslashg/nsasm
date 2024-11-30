@@ -74,7 +74,8 @@ class RomIdentityTest : public OutputSink {
 // Sink for assembling data over an existing ROM file.
 class RomOverwriter : public OutputSink {
  public:
-  RomOverwriter(std::unique_ptr<Rom> rom) : rom_(std::move(rom)), data_(rom->data_) {}
+  RomOverwriter(std::unique_ptr<Rom> rom)
+      : rom_(std::move(rom)), data_(rom->data_) {}
 
   ErrorOr<void> Write(nsasm::Address address,
                       absl::Span<const std::uint8_t> data) override;

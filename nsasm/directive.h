@@ -2,8 +2,8 @@
 #define NSASM_DIRECTIVE_H_
 
 #include <iostream>
+#include <string_view>
 
-#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "nsasm/address.h"
 #include "nsasm/calling_convention.h"

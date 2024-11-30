@@ -64,7 +64,7 @@ std::string Token::ToString() const {
   return "logic error?";
 }
 
-ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
+ErrorOr<std::vector<Token>> Tokenize(std::string_view sv, Location loc) {
   std::vector<Token> result;
   while (true) {
     sv = absl::StripLeadingAsciiWhitespace(sv);
@@ -76,7 +76,7 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
 
     // punctuation
     if (sv.size() >= 3) {
-      absl::string_view next = sv.substr(0, 3);
+      std::string_view next = sv.substr(0, 3);
       Punctuation found = P_none;
       if (next == "+++") {
         found = P_plusplusplus;
@@ -90,7 +90,7 @@ ErrorOr<std::vector<Token>> Tokenize(absl::string_view sv, Location loc) {
       }
     }
     if (sv.size() >= 2) {
-      absl::string_view next = sv.substr(0, 2);
+      std::string_view next = sv.substr(0, 2);
       Punctuation found = P_none;
       if (next == "::") {
         found = P_scope;

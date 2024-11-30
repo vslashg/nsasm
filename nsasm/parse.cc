@@ -33,7 +33,7 @@ bool IsRegister(const Token& tok) {
   return tok == 'A' || tok == 'S' || tok == 'X' || tok == 'Y';
 }
 
-ErrorOr<void> Consume(TokenSpan* pos, char punct, absl::string_view message) {
+ErrorOr<void> Consume(TokenSpan* pos, char punct, std::string_view message) {
   if (pos->front() != punct) {
     return Error("Expected %s, found %s", message, pos->front().ToString())
         .SetLocation(pos->front().Location());
@@ -42,7 +42,7 @@ ErrorOr<void> Consume(TokenSpan* pos, char punct, absl::string_view message) {
   return {};
 }
 
-ErrorOr<void> ConfirmAtEnd(const TokenSpan* pos, absl::string_view message) {
+ErrorOr<void> ConfirmAtEnd(const TokenSpan* pos, std::string_view message) {
   if (!AtEnd(pos)) {
     return Error("Unexpected %s %s", pos->front().ToString(), message)
         .SetLocation(pos->front().Location());
@@ -51,7 +51,7 @@ ErrorOr<void> ConfirmAtEnd(const TokenSpan* pos, absl::string_view message) {
 }
 
 ErrorOr<void> ConfirmAtEndOrSuffix(const TokenSpan* pos,
-                                   absl::string_view message) {
+                                   std::string_view message) {
   if (!AtEndOrSuffix(pos)) {
     return Error("Unexpected %s %s", pos->front().ToString(), message)
         .SetLocation(pos->front().Location());
@@ -60,11 +60,11 @@ ErrorOr<void> ConfirmAtEndOrSuffix(const TokenSpan* pos,
 }
 
 ErrorOr<void> ConfirmLegalRegister(const TokenSpan* pos,
-                                   absl::string_view allowed,
-                                   absl::string_view message) {
+                                   std::string_view allowed,
+                                   std::string_view message) {
   if (IsRegister(pos->front())) {
     char reg = *pos->front().Punctuation();
-    if (allowed.find(reg) == absl::string_view::npos) {
+    if (allowed.find(reg) == std::string_view::npos) {
       return Error("Register %c cannot be used %s", reg, message)
           .SetLocation(pos->front().Location());
     }
@@ -225,7 +225,8 @@ ErrorOr<Instruction> CreateInstruction(
   if (suffix != S_none &&
       FlagControllingInstructionSize(mnemonic) == kNotVariable) {
     return Error("Instruction `%s` does not support a length suffix",
-                 ToString(mnemonic)).SetLocation(location);
+                 ToString(mnemonic))
+        .SetLocation(location);
   }
   Instruction i;
   i.mnemonic = mnemonic;
@@ -590,7 +591,7 @@ ErrorOr<std::vector<absl::variant<Statement, ParsedLabel>>> Parse(
   return result_vector;
 }
 
-ErrorOr<ExpressionOrNull> ParseExpression(absl::string_view s) {
+ErrorOr<ExpressionOrNull> ParseExpression(std::string_view s) {
   auto tokens = Tokenize(s, Location());
   NSASM_RETURN_IF_ERROR(tokens);
   TokenSpan pos = *tokens;

@@ -1,13 +1,14 @@
 #include "nsasm/mnemonic.h"
 
+#include <string_view>
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/ascii.h"
-#include "absl/strings/string_view.h"
 
 namespace nsasm {
 namespace {
 
-constexpr absl::string_view mnemonic_names[] = {
+constexpr std::string_view mnemonic_names[] = {
     "adc", "and", "asl", "bit", "cld", "cli", "clv", "cmp", "cpx", "cpy", "dec",
     "dex", "dey", "eor", "inc", "inx", "iny", "lda", "ldx", "ldy", "lsr", "mvn",
     "mvp", "nop", "ora", "pea", "pei", "per", "pha", "phb", "phd", "phk", "phx",
@@ -19,30 +20,30 @@ constexpr absl::string_view mnemonic_names[] = {
     "sec", "sep", "xce", "add", "sub",
 };
 
-constexpr absl::string_view suffix_names[] = {/* s_none = */ "", ".b", ".w"};
+constexpr std::string_view suffix_names[] = {/* s_none = */ "", ".b", ".w"};
 
-constexpr absl::string_view directive_names[] = {
+constexpr std::string_view directive_names[] = {
     ".BEGIN", ".DB",   ".DL",   ".DW",     ".END", ".ENTRY",
     ".EQU",   ".HALT", ".MODE", ".MODULE", ".ORG", ".REMOTE",
 };
 
 }  // namespace
 
-absl::string_view ToString(Mnemonic m) {
+std::string_view ToString(Mnemonic m) {
   if (m < M_adc || m > PM_sub) {
     return "";
   }
   return mnemonic_names[m];
 }
 
-absl::string_view ToString(Suffix m) {
+std::string_view ToString(Suffix m) {
   if (m < S_b || m > S_w) {
     return "";
   }
   return suffix_names[m];
 }
 
-absl::string_view ToString(DirectiveName d) {
+std::string_view ToString(DirectiveName d) {
   if (d < D_begin || d > D_org) {
     return "";
   }
@@ -50,7 +51,7 @@ absl::string_view ToString(DirectiveName d) {
 }
 
 absl::optional<Mnemonic> ToMnemonic(std::string s) {
-  static auto lookup = new absl::flat_hash_map<absl::string_view, Mnemonic>{
+  static auto lookup = new absl::flat_hash_map<std::string_view, Mnemonic>{
       {"adc", M_adc},  {"and", M_and}, {"asl", M_asl}, {"bit", M_bit},
       {"cld", M_cld},  {"cli", M_cli}, {"clv", M_clv}, {"cmp", M_cmp},
       {"cpx", M_cpx},  {"cpy", M_cpy}, {"dec", M_dec}, {"dex", M_dex},
@@ -85,7 +86,7 @@ absl::optional<Mnemonic> ToMnemonic(std::string s) {
 }
 
 absl::optional<Suffix> ToSuffix(std::string s) {
-  static auto lookup = new absl::flat_hash_map<absl::string_view, Suffix>{
+  static auto lookup = new absl::flat_hash_map<std::string_view, Suffix>{
       {".b", S_b}, {".w", S_w}};
   absl::AsciiStrToLower(&s);
   auto iter = lookup->find(s);
@@ -96,13 +97,12 @@ absl::optional<Suffix> ToSuffix(std::string s) {
 }
 
 absl::optional<DirectiveName> ToDirectiveName(std::string s) {
-  static auto lookup =
-      new absl::flat_hash_map<absl::string_view, DirectiveName>{
-          {".BEGIN", D_begin},   {".DB", D_db},     {".DL", D_dl},
-          {".DW", D_dw},         {".END", D_end},   {".ENTRY", D_entry},
-          {".EQU", D_equ},       {".HALT", D_halt}, {".MODE", D_mode},
-          {".MODULE", D_module}, {".ORG", D_org},   {".REMOTE", D_remote},
-      };
+  static auto lookup = new absl::flat_hash_map<std::string_view, DirectiveName>{
+      {".BEGIN", D_begin},   {".DB", D_db},     {".DL", D_dl},
+      {".DW", D_dw},         {".END", D_end},   {".ENTRY", D_entry},
+      {".EQU", D_equ},       {".HALT", D_halt}, {".MODE", D_mode},
+      {".MODULE", D_module}, {".ORG", D_org},   {".REMOTE", D_remote},
+  };
   absl::AsciiStrToUpper(&s);
   auto iter = lookup->find(s);
   if (iter == lookup->end()) {

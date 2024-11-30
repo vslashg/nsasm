@@ -221,7 +221,7 @@ ErrorOr<std::map<nsasm::Address, StatusFlags>> Disassembler::Disassemble(
       }
     }
   }
-  
+
   // Copy the entries from the temporary map to the permanent state.
   for (const auto& node : new_disassembly) {
     disassembly_[node.first] = node.second;

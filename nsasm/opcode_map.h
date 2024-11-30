@@ -10,11 +10,11 @@
 
 namespace nsasm {
 
-// Processor family 
+// Processor family
 enum Family {
-    F_6502,
-    F_65C02,
-    F_65816,
+  F_6502,
+  F_65C02,
+  F_65816,
 };
 
 std::pair<Mnemonic, AddressingMode> DecodeOpcode(uint8_t opcode);

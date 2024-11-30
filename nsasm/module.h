@@ -85,7 +85,7 @@ class Module {
   // Perform an internal lookup for a given label.  Returns an error if the
   // name does not exist.  Otherwise returns the index into lines_ where this
   // label points.
-  ErrorOr<int> LocalIndex(absl::string_view sv,
+  ErrorOr<int> LocalIndex(std::string_view sv,
                           const std::vector<int>& active_scopes) const;
 
   // Perform an internal lookup for a given label index (as returned from

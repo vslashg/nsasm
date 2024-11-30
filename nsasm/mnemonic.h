@@ -1,9 +1,9 @@
 #ifndef NSASM_MNEMONIC_H_
 #define NSASM_MNEMONIC_H_
 
+#include <string_view>
 #include <vector>
 
-#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 
 namespace nsasm {
@@ -120,7 +120,7 @@ enum Mnemonic {
 const std::vector<Mnemonic>& AllMnemonics();
 
 // Conversions between Mnemonic values, and the matching strings.
-absl::string_view ToString(Mnemonic m);
+std::string_view ToString(Mnemonic m);
 absl::optional<Mnemonic> ToMnemonic(std::string s);
 
 // Instruction suffixes (indicating data size of instruction)
@@ -133,7 +133,7 @@ enum Suffix {
 // Helper functions, as above
 
 const std::vector<Suffix>& AllSuffixes();
-absl::string_view ToString(Suffix m);
+std::string_view ToString(Suffix m);
 absl::optional<Suffix> ToSuffix(std::string s);
 
 // All assembler directives understood by nsasm
@@ -153,7 +153,7 @@ enum DirectiveName {
 };
 
 // Conversions between DirectiveName values, and the matching strings.
-absl::string_view ToString(DirectiveName d);
+std::string_view ToString(DirectiveName d);
 absl::optional<DirectiveName> ToDirectiveName(std::string s);
 
 }  // namespace nsasm

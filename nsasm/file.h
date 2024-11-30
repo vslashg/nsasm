@@ -15,7 +15,7 @@ class File;
 nsasm::ErrorOr<File> OpenFile(const std::string& path);
 
 // Construct a fake file object with the given contents.  Intended for testing.
-nsasm::File MakeFakeFile(const std::string& path, absl::string_view contents);
+nsasm::File MakeFakeFile(const std::string& path, std::string_view contents);
 
 // Abstraction for an .asm file.  Note that this just stores the full contents
 // of the file in memory, which we get away with because of just how massively
@@ -36,7 +36,7 @@ class File {
  private:
   friend nsasm::ErrorOr<File> OpenFile(const std::string& path);
   friend nsasm::File MakeFakeFile(const std::string& path,
-                                  absl::string_view contents);
+                                  std::string_view contents);
 
   File(std::string path, std::vector<std::string> lines)
       : path_(path), lines_(std::move(lines)) {}

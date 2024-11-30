@@ -317,9 +317,7 @@ std::pair<Mnemonic, AddressingMode> DecodeOpcode(uint8_t opcode) {
   return {decode_map[opcode].mnemonic, decode_map[opcode].mode};
 }
 
-Family FamilyForOpcode(uint8_t opcode) {
-  return decode_map[opcode].family;
-}
+Family FamilyForOpcode(uint8_t opcode) { return decode_map[opcode].family; }
 
 absl::optional<std::uint8_t> EncodeOpcode(Mnemonic m, AddressingMode a) {
   const auto& map = ReverseOpcodeMap();

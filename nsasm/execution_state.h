@@ -2,9 +2,9 @@
 #define NSASM_EXECUTION_STATE_H_
 
 #include <cstdint>
+#include <string_view>
 
 #include "absl/container/inlined_vector.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 
 namespace nsasm {
@@ -73,7 +73,7 @@ class StatusFlags {
 
   // Returns a StatusFlags reflecting the given name, or `nullopt` if the name
   // is not valid.
-  static absl::optional<StatusFlags> FromName(absl::string_view name);
+  static absl::optional<StatusFlags> FromName(std::string_view name);
 
   BitState EBit() const { return BitState(e_bit_); }
   BitState MBit() const { return BitState(m_bit_); }

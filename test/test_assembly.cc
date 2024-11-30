@@ -9,7 +9,7 @@
 
 namespace nsasm {
 
-void ExpectAssembly(const std::vector<absl::string_view>& asm_contents,
+void ExpectAssembly(const std::vector<std::string_view>& asm_contents,
                     std::vector<ExpectedBytes> expected) {
   TestSink test_sink(std::move(expected));
   std::vector<File> files;
@@ -30,8 +30,8 @@ void ExpectAssembly(const std::vector<absl::string_view>& asm_contents,
   }
 }
 
-void ExpectAssemblyError(const std::vector<absl::string_view>& asm_contents,
-                         absl::string_view message) {
+void ExpectAssemblyError(const std::vector<std::string_view>& asm_contents,
+                         std::string_view message) {
   TestSink test_sink({});
   std::vector<File> files;
   for (size_t i = 0; i < asm_contents.size(); ++i) {
