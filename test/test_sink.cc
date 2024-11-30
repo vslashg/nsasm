@@ -19,8 +19,6 @@ ErrorOr<void> TestSink::Check() const {
   // Local copy of received map; we will clear it as we go
   std::map<nsasm::Address, std::uint8_t> received = received_;
 
-  absl::PrintF("%d %d\n", received.size(), expected_.size());
-
   for (const ExpectedBytes& entry : expected_) {
     nsasm::Address location(entry.location);
     const std::vector<std::uint8_t>& bytes = entry.bytes;
