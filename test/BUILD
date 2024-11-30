@@ -28,3 +28,13 @@ cc_test(
         "@googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "cross_module_dependencies_test",
+    srcs = ["cross_module_dependencies_test.cc"],
+    deps = [
+        ":test_assembly",
+        ":test_sink",
+        "@googletest//:gtest_main",
+    ],
+)

@@ -32,30 +32,7 @@ class FullIdentifier {
     }
   }
 
-  bool operator==(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) ==
-           std::tie(rhs.mod_name_, rhs.id_name_);
-  }
-  bool operator!=(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) !=
-           std::tie(rhs.mod_name_, rhs.id_name_);
-  }
-  bool operator<(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) <
-           std::tie(rhs.mod_name_, rhs.id_name_);
-  }
-  bool operator<=(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) <=
-           std::tie(rhs.mod_name_, rhs.id_name_);
-  }
-  bool operator>(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) >
-           std::tie(rhs.mod_name_, rhs.id_name_);
-  }
-  bool operator>=(const FullIdentifier& rhs) const {
-    return std::tie(mod_name_, id_name_) >=
-           std::tie(rhs.mod_name_, rhs.id_name_);
-  }
+  auto operator<=>(const FullIdentifier& rhs) const = default;
 
   template <typename H>
   friend H AbslHashValue(H h, const FullIdentifier& n) {

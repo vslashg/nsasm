@@ -31,6 +31,8 @@ class File {
 
   const std::string& path() const { return path_; }
 
+  auto operator<=>(const File& rhs) const = default;
+
  private:
   friend nsasm::ErrorOr<File> OpenFile(const std::string& path);
   friend nsasm::File MakeFakeFile(const std::string& path,

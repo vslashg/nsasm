@@ -161,7 +161,7 @@ ErrorOr<Module> Module::LoadAsmFile(const File& file) {
         .SetLocation(m.lines_[active_scopes.back()].statement.Location());
   }
   for (const auto& line : m.lines_) {
-    const Directive* directive = m.lines_.back().statement.Directive();
+    const Directive* directive = line.statement.Directive();
     if (directive && directive->name == D_equ) {
       ModuleIsLocalContext context(&m, line.active_scopes);
       auto dependencies = directive->argument.ExternalNamesReferenced(context);
