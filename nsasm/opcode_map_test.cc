@@ -277,7 +277,7 @@ Family ExpectedFamily(Mnemonic mnemonic, AddressingMode mode) {
   }
 
   // 65C02 extension addressing modes
-  if (mode == A_ind_b | mode == A_ind_wx) {
+  if (mode == A_ind_b || mode == A_ind_wx) {
     return F_65C02;
   }
 
