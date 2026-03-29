@@ -5,6 +5,6 @@
 # For more details, please check https://github.com/bazelbuild/bazel/issues/18958
 ###############################################################################
 
-bazel_dep(name="abseil-cpp", version="20240722.0")
-bazel_dep(name="googletest", version="1.15.2")
-bazel_dep(name="rules_cc", version="0.1.1")
+bazel_dep(name = "abseil-cpp", version = "20260107.1")
+bazel_dep(name = "googletest", version = "1.17.0.bcr.2")
+bazel_dep(name = "rules_cc", version = "0.2.17")
