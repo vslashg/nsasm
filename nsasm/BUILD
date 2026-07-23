@@ -282,6 +282,16 @@ cc_library(
 )
 
 cc_library(
+    name = "listing",
+    srcs = ["listing.cc"],
+    hdrs = ["listing.h"],
+    deps = [
+        ":disassemble",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+cc_library(
     name = "directive",
     srcs = ["directive.cc"],
     hdrs = ["directive.h"],

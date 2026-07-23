@@ -30,6 +30,33 @@ void ExpectAssembly(const std::vector<std::string_view>& asm_contents,
   }
 }
 
+absl::optional<Assembler> AssembleForTest(
+    const std::vector<std::string_view>& asm_contents,
+    std::vector<ExpectedBytes> expected) {
+  bool check_bytes = !expected.empty();
+  TestSink test_sink(std::move(expected));
+  std::vector<File> files;
+  for (size_t i = 0; i < asm_contents.size(); ++i) {
+    files.push_back(
+        MakeFakeFile(absl::StrCat("fake_file_", i, ".asm"), asm_contents[i]));
+  }
+
+  auto assembler = Assemble(files, &test_sink);
+  if (!assembler.ok()) {
+    ADD_FAILURE() << assembler.error().ToString();
+    return absl::nullopt;
+  }
+
+  if (check_bytes) {
+    auto result = test_sink.Check();
+    if (!result.ok()) {
+      ADD_FAILURE() << result.error().ToString();
+      return absl::nullopt;
+    }
+  }
+  return *std::move(assembler);
+}
+
 void ExpectAssemblyError(const std::vector<std::string_view>& asm_contents,
                          std::string_view message) {
   TestSink test_sink({});

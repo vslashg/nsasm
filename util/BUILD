@@ -16,6 +16,7 @@ cc_binary(
     deps = [
         "//nsasm:decode",
         "//nsasm:disassemble",
+        "//nsasm:listing",
         "//nsasm:rom",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
@@ -58,6 +59,7 @@ cc_binary(
     deps = [
         "//nsasm:assembler",
         "//nsasm:disassemble",
+        "//nsasm:listing",
         "//nsasm:rom",
         "@abseil-cpp//absl/strings:str_format",
     ],

@@ -6,6 +6,7 @@
 #include "nsasm/decode.h"
 #include "nsasm/disassemble.h"
 #include "nsasm/instruction.h"
+#include "nsasm/listing.h"
 #include "nsasm/rom.h"
 
 // Test utility to exercise disassembly
@@ -92,35 +93,5 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  const nsasm::DisassemblyMap& disassembly = disassembler.Result();
-  if (disassembly.empty()) {
-    absl::PrintF("; Disassembled no instructions.\n");
-  } else {
-    nsasm::Address pc = disassembly.begin()->first;
-    absl::PrintF("; Disassembled %d instructions.\n", disassembly.size());
-    absl::PrintF("         .org %s\n", pc.ToString());
-    for (const auto& value : disassembly) {
-      if (value.first != pc) {
-        absl::PrintF("         .org %s\n", value.first.ToString());
-        pc = value.first;
-      }
-      std::string label = value.second.label;
-      const nsasm::Instruction& instruction = value.second.instruction;
-
-      if (!label.empty()) {
-        label += ':';
-      }
-      if (value.second.is_entry) {
-        absl::PrintF("%-8s .entry %s\n", label,
-                     value.second.current_execution_state.Flags().ToString());
-        label.clear();
-      }
-      std::string text =
-          absl::StrFormat("%-8s %s", label, instruction.ToString());
-      absl::PrintF("%-35s ; %s %s\n", text, pc.ToString(),
-                   value.second.next_execution_state.Flags().ToString());
-
-      pc = pc.AddWrapped(value.second.instruction.SerializedSize());
-    }
-  }
+  absl::PrintF("%s", nsasm::FormatDisassembly(disassembler.Result()));
 }

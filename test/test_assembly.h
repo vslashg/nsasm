@@ -1,6 +1,8 @@
 #ifndef TEST_TEST_ASSEMBLY_H_
 #define TEST_TEST_ASSEMBLY_H_
 
+#include "absl/types/optional.h"
+#include "nsasm/assembler.h"
 #include "test/test_sink.h"
 
 namespace nsasm {
@@ -27,6 +29,20 @@ inline void ExpectAssemblyError(std::string_view asm_contents,
                                 std::string_view message = "") {
   return ExpectAssemblyError(std::vector<std::string_view>{asm_contents},
                              message);
+}
+
+// Assembles the given sources (optionally checking output bytes, as
+// ExpectAssembly does) and returns the Assembler for post-assembly queries
+// (JumpTargets(), JumpTargetReturnConventions(), NameForAddress(), ...).
+// Adds a test failure and returns nullopt on error.
+absl::optional<Assembler> AssembleForTest(
+    const std::vector<std::string_view>& asm_contents,
+    std::vector<ExpectedBytes> expected = {});
+
+inline absl::optional<Assembler> AssembleForTest(
+    std::string_view asm_contents, std::vector<ExpectedBytes> expected = {}) {
+  return AssembleForTest(std::vector<std::string_view>{asm_contents},
+                         std::move(expected));
 }
 
 }  // namespace nsasm

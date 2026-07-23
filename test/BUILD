@@ -20,6 +20,35 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "test_rom",
+    testonly = 1,
+    srcs = ["test_rom.cc"],
+    hdrs = ["test_rom.h"],
+    deps = [
+        "//nsasm:assembler",
+        "//nsasm:error",
+        "//nsasm:rom",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "test_disassembly",
+    testonly = 1,
+    srcs = ["test_disassembly.cc"],
+    hdrs = ["test_disassembly.h"],
+    deps = [
+        "//nsasm:calling_convention",
+        "//nsasm:disassemble",
+        "//nsasm:error",
+        "//nsasm:listing",
+        "//nsasm:memory",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest",
+    ],
+)
+
 cc_test(
     name = "simple_tests",
     srcs = ["simple_tests.cc"],
